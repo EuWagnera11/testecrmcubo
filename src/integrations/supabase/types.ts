@@ -150,6 +150,7 @@ export type Database = {
           full_name: string | null
           id: string
           revenue_goal: number | null
+          status: string
           updated_at: string
           user_id: string
         }
@@ -159,6 +160,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           revenue_goal?: number | null
+          status?: string
           updated_at?: string
           user_id: string
         }
@@ -168,10 +170,84 @@ export type Database = {
           full_name?: string | null
           id?: string
           revenue_goal?: number | null
+          status?: string
           updated_at?: string
           user_id?: string
         }
         Relationships: []
+      }
+      project_fields: {
+        Row: {
+          attachments: string[] | null
+          content: string | null
+          created_at: string
+          field_type: string
+          id: string
+          last_edited_by: string | null
+          project_id: string
+          updated_at: string
+        }
+        Insert: {
+          attachments?: string[] | null
+          content?: string | null
+          created_at?: string
+          field_type: string
+          id?: string
+          last_edited_by?: string | null
+          project_id: string
+          updated_at?: string
+        }
+        Update: {
+          attachments?: string[] | null
+          content?: string | null
+          created_at?: string
+          field_type?: string
+          id?: string
+          last_edited_by?: string | null
+          project_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_fields_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_members: {
+        Row: {
+          created_at: string
+          id: string
+          project_id: string
+          role: Database["public"]["Enums"]["project_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          project_id: string
+          role: Database["public"]["Enums"]["project_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          project_id?: string
+          role?: Database["public"]["Enums"]["project_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_members_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       projects: {
         Row: {
@@ -264,15 +340,62 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_project_role: {
+        Args: {
+          _project_id: string
+          _role: Database["public"]["Enums"]["project_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_admin: { Args: { _user_id: string }; Returns: boolean }
+      is_approved: { Args: { _user_id: string }; Returns: boolean }
+      is_project_director: {
+        Args: { _project_id: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "director" | "user"
+      project_role:
+        | "director"
+        | "designer"
+        | "copywriter"
+        | "traffic_manager"
+        | "social_media"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -399,6 +522,15 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "director", "user"],
+      project_role: [
+        "director",
+        "designer",
+        "copywriter",
+        "traffic_manager",
+        "social_media",
+      ],
+    },
   },
 } as const
