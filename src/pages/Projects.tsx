@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Plus, Search, FolderKanban, ArrowRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Plus, Search, FolderKanban, ArrowRight, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -156,24 +157,32 @@ export default function Projects() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {filteredProjects.map((project, index) => (
-            <Card 
+            <Link 
               key={project.id} 
-              className="card-hover border-border/50"
-              style={{ animationDelay: `${index * 50}ms` }}
+              to={`/projetos/${project.id}`}
+              className="block"
             >
-              <CardContent className="p-5">
-                <div className="flex items-start justify-between mb-3">
-                  <h3 className="font-semibold text-lg">{project.name}</h3>
-                  <Badge variant="outline" className={statusConfig[project.status].className}>
-                    {statusConfig[project.status].label}
-                  </Badge>
-                </div>
-                <p className="text-sm text-muted-foreground mb-4">{project.clients?.name || 'Sem cliente'}</p>
-                <p className="text-2xl font-bold text-primary">
-                  {formatCurrency(Number(project.total_value), project.currency)}
-                </p>
-              </CardContent>
-            </Card>
+              <Card 
+                className="card-hover border-border/50 cursor-pointer"
+                style={{ animationDelay: `${index * 50}ms` }}
+              >
+                <CardContent className="p-5">
+                  <div className="flex items-start justify-between mb-3">
+                    <h3 className="font-semibold text-lg">{project.name}</h3>
+                    <Badge variant="outline" className={statusConfig[project.status].className}>
+                      {statusConfig[project.status].label}
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-4">{project.clients?.name || 'Sem cliente'}</p>
+                  <div className="flex items-center justify-between">
+                    <p className="text-2xl font-bold text-primary">
+                      {formatCurrency(Number(project.total_value), project.currency)}
+                    </p>
+                    <ExternalLink className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
           ))}
         </div>
       )}

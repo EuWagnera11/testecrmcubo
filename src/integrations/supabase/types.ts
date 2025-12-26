@@ -249,6 +249,41 @@ export type Database = {
           },
         ]
       }
+      project_metrics: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          metric_type: string
+          project_id: string
+          value: number
+        }
+        Insert: {
+          created_at?: string
+          date?: string
+          id?: string
+          metric_type: string
+          project_id: string
+          value?: number
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          metric_type?: string
+          project_id?: string
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_metrics_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projects: {
         Row: {
           advance_payment: boolean | null
@@ -259,6 +294,8 @@ export type Database = {
           deadline: string | null
           id: string
           name: string
+          share_enabled: boolean | null
+          share_token: string | null
           status: string
           total_value: number
           updated_at: string
@@ -273,6 +310,8 @@ export type Database = {
           deadline?: string | null
           id?: string
           name: string
+          share_enabled?: boolean | null
+          share_token?: string | null
           status?: string
           total_value?: number
           updated_at?: string
@@ -287,6 +326,8 @@ export type Database = {
           deadline?: string | null
           id?: string
           name?: string
+          share_enabled?: boolean | null
+          share_token?: string | null
           status?: string
           total_value?: number
           updated_at?: string

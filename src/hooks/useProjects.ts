@@ -14,6 +14,8 @@ export interface Project {
   advance_percentage: number;
   deadline: string | null;
   status: 'active' | 'completed' | 'paused';
+  share_token: string | null;
+  share_enabled: boolean | null;
   created_at: string;
   updated_at: string;
   clients?: {

@@ -11,8 +11,10 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Clients from "./pages/Clients";
 import Projects from "./pages/Projects";
+import ProjectDetails from "./pages/ProjectDetails";
 import Contracts from "./pages/Contracts";
 import Settings from "./pages/Settings";
+import ClientDashboard from "./pages/ClientDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -51,12 +53,16 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 const AppRoutes = () => (
   <BrowserRouter>
     <Routes>
+      {/* Public client dashboard - no auth required */}
+      <Route path="/cliente/:token" element={<ClientDashboard />} />
+      
       <Route path="/auth" element={<PublicRoute><Auth /></PublicRoute>} />
       <Route path="/" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="clientes" element={<Clients />} />
         <Route path="projetos" element={<Projects />} />
+        <Route path="projetos/:id" element={<ProjectDetails />} />
         <Route path="contratos" element={<Contracts />} />
         <Route path="configuracoes" element={<Settings />} />
       </Route>
