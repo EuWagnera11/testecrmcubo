@@ -103,12 +103,13 @@ export const useProjectChat = (projectId: string) => {
       throw uploadError;
     }
 
-    const { data: urlData } = supabase.storage
+    // Create signed URL instead of public URL
+    const { data: signedUrlData } = await supabase.storage
       .from('chat-attachments')
-      .getPublicUrl(filePath);
+      .createSignedUrl(filePath, 3600); // 1 hour expiration
 
     return {
-      url: urlData.publicUrl,
+      url: signedUrlData?.signedUrl || '',
       name: file.name,
       type: file.type
     };
