@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Plus, Search, Users, Mail, Phone, Building, ArrowRight, Trash2, Power, MoreVertical } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Plus, Search, Users, Mail, Phone, Building, ArrowRight, Trash2, Power, MoreVertical, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -9,18 +9,19 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useClients, CreateClientData } from '@/hooks/useClients';
+import { useClients, CreateClientData, Client } from '@/hooks/useClients';
 
 export default function Clients() {
   const { clients, isLoading, createClient, updateClient, deleteClient } = useClients();
   const [search, setSearch] = useState('');
   const [isOpen, setIsOpen] = useState(false);
+  const [editClient, setEditClient] = useState<Client | null>(null);
   const [filter, setFilter] = useState('all');
 
   const filteredClients = clients.filter(c => {
     const matchSearch = c.name.toLowerCase().includes(search.toLowerCase()) ||
       c.email?.toLowerCase().includes(search.toLowerCase());
-    const matchStatus = filter === 'all' || (c as any).status === filter;
+    const matchStatus = filter === 'all' || c.status === filter;
     return matchSearch && matchStatus;
   });
 
@@ -37,9 +38,24 @@ export default function Clients() {
     setIsOpen(false);
   };
 
-  const handleToggleStatus = async (client: any) => {
+  const handleEditSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!editClient) return;
+    
+    const formData = new FormData(e.currentTarget);
+    await updateClient.mutateAsync({
+      id: editClient.id,
+      name: formData.get('name') as string,
+      email: formData.get('email') as string || null,
+      phone: formData.get('phone') as string || null,
+      company: formData.get('company') as string || null,
+    });
+    setEditClient(null);
+  };
+
+  const handleToggleStatus = async (client: Client) => {
     const newStatus = client.status === 'active' ? 'inactive' : 'active';
-    await updateClient.mutateAsync({ id: client.id, status: newStatus } as any);
+    await updateClient.mutateAsync({ id: client.id, status: newStatus });
   };
 
   const handleDelete = async (id: string) => {
@@ -90,6 +106,63 @@ export default function Clients() {
         </Dialog>
       </div>
 
+      {/* Edit Dialog */}
+      <Dialog open={!!editClient} onOpenChange={(open) => !open && setEditClient(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl">Editar Cliente</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleEditSubmit} className="space-y-4 mt-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-name">Nome *</Label>
+              <Input 
+                id="edit-name" 
+                name="name" 
+                required 
+                placeholder="Nome do cliente" 
+                className="h-11"
+                defaultValue={editClient?.name}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-email">Email</Label>
+              <Input 
+                id="edit-email" 
+                name="email" 
+                type="email" 
+                placeholder="email@exemplo.com" 
+                className="h-11"
+                defaultValue={editClient?.email || ''}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-phone">Telefone</Label>
+              <Input 
+                id="edit-phone" 
+                name="phone" 
+                placeholder="(11) 99999-9999" 
+                className="h-11"
+                defaultValue={editClient?.phone || ''}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-company">Empresa</Label>
+              <Input 
+                id="edit-company" 
+                name="company" 
+                placeholder="Nome da empresa" 
+                className="h-11"
+                defaultValue={editClient?.company || ''}
+              />
+            </div>
+            <Button type="submit" className="w-full h-11 mt-2" disabled={updateClient.isPending}>
+              {updateClient.isPending ? 'Salvando...' : 'Salvar Alterações'}
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       {/* Search & Filter */}
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1 max-w-md">
@@ -139,7 +212,7 @@ export default function Clients() {
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
                     <h3 className="font-semibold text-lg">{client.name}</h3>
-                    {(client as any).status === 'inactive' && (
+                    {client.status === 'inactive' && (
                       <Badge variant="outline" className="bg-muted text-muted-foreground mt-1">Inativo</Badge>
                     )}
                   </div>
@@ -150,9 +223,13 @@ export default function Clients() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => setEditClient(client)}>
+                        <Pencil className="h-4 w-4 mr-2" />
+                        Editar
+                      </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => handleToggleStatus(client)}>
                         <Power className="h-4 w-4 mr-2" />
-                        {(client as any).status === 'inactive' ? 'Ativar' : 'Desativar'}
+                        {client.status === 'inactive' ? 'Ativar' : 'Desativar'}
                       </DropdownMenuItem>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
