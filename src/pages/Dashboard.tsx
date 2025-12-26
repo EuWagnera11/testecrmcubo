@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Users, FolderKanban, TrendingUp, DollarSign, Plus, ArrowRight, Calendar, ChevronLeft, ChevronRight, Target, Pencil } from 'lucide-react';
+import { Users, FolderKanban, TrendingUp, DollarSign, Plus, ArrowRight, Calendar, ChevronLeft, ChevronRight, Target, Pencil, TrendingDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -13,10 +13,12 @@ import { useProfile } from '@/hooks/useProfile';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useFinancial } from '@/hooks/useFinancial';
 import { useMonthlyGoals } from '@/hooks/useMonthlyGoals';
+import { useProjectsProfitability } from '@/hooks/useProjectsProfitability';
 import { Link } from 'react-router-dom';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, Cell } from 'recharts';
 import { format, parseISO, startOfMonth, endOfMonth, isWithinInterval, isAfter, isBefore, subMonths, addMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
 
 const projectTypeLabels: Record<string, string> = {
   one_time: 'Pontual',
@@ -33,6 +35,7 @@ export default function Dashboard() {
   const { isAdmin, isDirector } = useUserRole();
   const { transactions } = useFinancial();
   const { getGoalForMonth, upsertGoal } = useMonthlyGoals();
+  const { projects: profitProjects, totalProfit, totalRevenue, totalPayouts, averageMargin } = useProjectsProfitability();
   
   const canSeeFinancials = isAdmin || isDirector;
 
@@ -376,6 +379,128 @@ export default function Dashboard() {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* Project Profitability Report - Only for directors+ */}
+      {canSeeFinancials && profitProjects.length > 0 && (
+        <>
+          {/* Profitability Summary */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Card className="border-border/50 glass-card">
+              <CardContent className="p-5">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground font-body">Receita Total</p>
+                    <p className="text-xl font-display mt-1">{formatCurrency(totalRevenue)}</p>
+                  </div>
+                  <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <DollarSign className="h-4 w-4 text-primary" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card className="border-border/50 glass-card">
+              <CardContent className="p-5">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground font-body">Repasses Equipe</p>
+                    <p className="text-xl font-display mt-1 text-destructive">{formatCurrency(totalPayouts)}</p>
+                  </div>
+                  <div className="h-9 w-9 rounded-lg bg-destructive/10 flex items-center justify-center">
+                    <TrendingDown className="h-4 w-4 text-destructive" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card className="border-border/50 glass-card">
+              <CardContent className="p-5">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground font-body">Lucro Líquido</p>
+                    <p className={cn("text-xl font-display mt-1", totalProfit >= 0 ? "text-success" : "text-destructive")}>
+                      {formatCurrency(totalProfit)}
+                    </p>
+                  </div>
+                  <div className={cn("h-9 w-9 rounded-lg flex items-center justify-center", totalProfit >= 0 ? "bg-success/10" : "bg-destructive/10")}>
+                    <TrendingUp className={cn("h-4 w-4", totalProfit >= 0 ? "text-success" : "text-destructive")} />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card className="border-border/50 glass-card">
+              <CardContent className="p-5">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground font-body">Margem Média</p>
+                    <p className={cn("text-xl font-display mt-1", averageMargin >= 0 ? "text-success" : "text-destructive")}>
+                      {averageMargin.toFixed(1)}%
+                    </p>
+                  </div>
+                  <div className="h-9 w-9 rounded-lg bg-accent/10 flex items-center justify-center">
+                    <Target className="h-4 w-4 text-accent" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Profitability by Project Chart */}
+          <Card className="border-border/50 glass-card">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg font-semibold font-body">Lucratividade por Projeto</CardTitle>
+                <Link to="/admin" className="text-sm text-primary hover:underline font-body">
+                  Ver relatório completo <ArrowRight className="inline h-4 w-4 ml-1" />
+                </Link>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart 
+                    data={profitProjects.slice(0, 8).map(p => ({
+                      name: p.name.length > 15 ? p.name.substring(0, 15) + '...' : p.name,
+                      receita: p.total_value + p.total_alterations,
+                      repasses: p.total_payouts,
+                      lucro: p.profit,
+                    }))} 
+                    margin={{ top: 10, right: 10, left: -10, bottom: 60 }}
+                    layout="vertical"
+                  >
+                    <XAxis 
+                      type="number"
+                      tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+                      axisLine={{ stroke: 'hsl(var(--border))' }}
+                      tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
+                    />
+                    <YAxis 
+                      type="category"
+                      dataKey="name"
+                      tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+                      axisLine={{ stroke: 'hsl(var(--border))' }}
+                      width={120}
+                    />
+                    <Tooltip 
+                      contentStyle={{ 
+                        background: 'hsl(var(--card))', 
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '12px'
+                      }}
+                      formatter={(value: number) => formatCurrency(value)}
+                    />
+                    <Legend />
+                    <Bar dataKey="receita" name="Receita" fill="hsl(217, 91%, 60%)" radius={[0, 4, 4, 0]} />
+                    <Bar dataKey="repasses" name="Repasses" fill="hsl(0, 72%, 51%)" radius={[0, 4, 4, 0]} />
+                    <Bar dataKey="lucro" name="Lucro" fill="hsl(142, 76%, 36%)" radius={[0, 4, 4, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+        </>
       )}
     </div>
   );
