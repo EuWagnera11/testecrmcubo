@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { 
   ArrowLeft, Users, Plus, Trash2, Save, Share2, Copy, Check,
-  Palette, FileText, TrendingUp, MessageSquare
+  Palette, FileText, TrendingUp, MessageSquare, DollarSign, Image, Layers
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,6 +21,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { MetricsEditor } from '@/components/MetricsEditor';
 import { FileUpload } from '@/components/FileUpload';
+import { ProjectFinancials } from '@/components/ProjectFinancials';
 import { useRealtimeNotifications } from '@/hooks/useRealtimeNotifications';
 
 const fieldConfig = {
@@ -143,18 +144,31 @@ export default function ProjectDetails() {
     return new Intl.NumberFormat(locales[currency] || 'pt-BR', { style: 'currency', currency }).format(value);
   };
 
+  const canSeeFinancials = isAdmin || isDirector;
+
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
         <div>
-          <Link to="/projetos" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-2">
+          <Link to="/projetos" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-2 font-body">
             <ArrowLeft className="h-4 w-4 mr-1" /> Voltar
           </Link>
-          <h1 className="text-3xl font-bold tracking-tight">{project.name}</h1>
-          <p className="text-muted-foreground mt-1">
-            {project.clients?.name || 'Sem cliente'} • {formatCurrency(Number(project.total_value), project.currency)}
-          </p>
+          <h1 className="text-3xl font-display tracking-wide">{project.name}</h1>
+          <div className="flex items-center gap-3 mt-2 text-muted-foreground font-body">
+            <span>{project.clients?.name || 'Sem cliente'}</span>
+            <span>•</span>
+            <span className="text-primary font-display">{formatCurrency(Number(project.total_value), project.currency)}</span>
+            {(project.static_creatives || project.carousel_creatives) ? (
+              <>
+                <span>•</span>
+                <Badge variant="outline" className="text-xs">
+                  <Image className="h-3 w-3 mr-1" />
+                  {project.static_creatives || 0} estáticos + {project.carousel_creatives || 0} carrosséis
+                </Badge>
+              </>
+            ) : null}
+          </div>
         </div>
 
         {/* Share Settings */}
@@ -188,6 +202,7 @@ export default function ProjectDetails() {
         <TabsList className="h-11 mb-6">
           <TabsTrigger value="fields" className="px-4">Campos</TabsTrigger>
           <TabsTrigger value="team" className="px-4">Equipe</TabsTrigger>
+          {canSeeFinancials && <TabsTrigger value="financials" className="px-4">Financeiro</TabsTrigger>}
           <TabsTrigger value="metrics" className="px-4">Métricas</TabsTrigger>
         </TabsList>
 
@@ -323,6 +338,17 @@ export default function ProjectDetails() {
             </div>
           )}
         </TabsContent>
+
+        {/* Financials Tab */}
+        {canSeeFinancials && (
+          <TabsContent value="financials" className="space-y-4">
+            <ProjectFinancials 
+              projectId={id!} 
+              totalValue={Number(project.total_value)} 
+              currency={project.currency} 
+            />
+          </TabsContent>
+        )}
 
         {/* Metrics Tab */}
         <TabsContent value="metrics" className="space-y-4">

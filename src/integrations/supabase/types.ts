@@ -294,6 +294,41 @@ export type Database = {
         }
         Relationships: []
       }
+      project_alterations: {
+        Row: {
+          alteration_type: string
+          created_at: string
+          description: string | null
+          id: string
+          project_id: string
+          value: number
+        }
+        Insert: {
+          alteration_type: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          project_id: string
+          value?: number
+        }
+        Update: {
+          alteration_type?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          project_id?: string
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_alterations_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_fields: {
         Row: {
           attachments: string[] | null
@@ -402,11 +437,59 @@ export type Database = {
           },
         ]
       }
+      project_payouts: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string | null
+          id: string
+          member_name: string | null
+          paid: boolean | null
+          paid_at: string | null
+          project_id: string
+          role: string
+          user_id: string | null
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          member_name?: string | null
+          paid?: boolean | null
+          paid_at?: string | null
+          project_id: string
+          role: string
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          member_name?: string | null
+          paid?: boolean | null
+          paid_at?: string | null
+          project_id?: string
+          role?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_payouts_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projects: {
         Row: {
           advance_payment: boolean | null
           advance_percentage: number | null
           cancelled_at: string | null
+          carousel_creatives: number | null
           client_id: string | null
           created_at: string
           currency: string
@@ -416,6 +499,7 @@ export type Database = {
           project_type: string
           share_enabled: boolean | null
           share_token: string | null
+          static_creatives: number | null
           status: string
           total_value: number
           updated_at: string
@@ -425,6 +509,7 @@ export type Database = {
           advance_payment?: boolean | null
           advance_percentage?: number | null
           cancelled_at?: string | null
+          carousel_creatives?: number | null
           client_id?: string | null
           created_at?: string
           currency?: string
@@ -434,6 +519,7 @@ export type Database = {
           project_type?: string
           share_enabled?: boolean | null
           share_token?: string | null
+          static_creatives?: number | null
           status?: string
           total_value?: number
           updated_at?: string
@@ -443,6 +529,7 @@ export type Database = {
           advance_payment?: boolean | null
           advance_percentage?: number | null
           cancelled_at?: string | null
+          carousel_creatives?: number | null
           client_id?: string | null
           created_at?: string
           currency?: string
@@ -452,6 +539,7 @@ export type Database = {
           project_type?: string
           share_enabled?: boolean | null
           share_token?: string | null
+          static_creatives?: number | null
           status?: string
           total_value?: number
           updated_at?: string

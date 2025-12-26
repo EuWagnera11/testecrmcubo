@@ -18,6 +18,8 @@ export interface Project {
   share_token: string | null;
   share_enabled: boolean | null;
   cancelled_at: string | null;
+  static_creatives: number | null;
+  carousel_creatives: number | null;
   created_at: string;
   updated_at: string;
   clients?: {
@@ -37,6 +39,8 @@ export interface CreateProjectData {
   status?: 'active' | 'completed' | 'paused' | 'inactive';
   project_type?: string;
   cancelled_at?: string | null;
+  static_creatives?: number;
+  carousel_creatives?: number;
 }
 
 export function useProjects() {

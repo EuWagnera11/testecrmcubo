@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Search, FolderKanban, ArrowRight, ExternalLink, MoreVertical, Trash2, Power } from 'lucide-react';
+import { Plus, Search, FolderKanban, ArrowRight, ExternalLink, MoreVertical, Trash2, Power, CheckCircle, Image, Layers } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -51,6 +51,7 @@ export default function Projects() {
   const [search, setSearch] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [filter, setFilter] = useState('all');
+  const [showDesignFields, setShowDesignFields] = useState(false);
 
   const filteredProjects = projects.filter(p => {
     const matchSearch = p.name.toLowerCase().includes(search.toLowerCase());
@@ -74,14 +75,21 @@ export default function Projects() {
       deadline: formData.get('deadline') as string || undefined,
       advance_payment: formData.get('advance_payment') === 'on',
       project_type: formData.get('project_type') as string || 'one_time',
+      static_creatives: Number(formData.get('static_creatives')) || 0,
+      carousel_creatives: Number(formData.get('carousel_creatives')) || 0,
     };
     await createProject.mutateAsync(data);
     setIsOpen(false);
+    setShowDesignFields(false);
   };
 
   const handleToggleStatus = async (project: any) => {
     const newStatus = project.status === 'inactive' ? 'active' : 'inactive';
     await updateProject.mutateAsync({ id: project.id, status: newStatus });
+  };
+
+  const handleComplete = async (project: any) => {
+    await updateProject.mutateAsync({ id: project.id, status: 'completed' });
   };
 
   const handleDelete = async (id: string) => {
@@ -93,18 +101,18 @@ export default function Projects() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
-          <p className="text-muted-foreground text-sm uppercase tracking-wider mb-1">Gestão</p>
-          <h1 className="text-3xl font-bold tracking-tight">Projetos</h1>
+          <p className="text-muted-foreground text-sm uppercase tracking-wider mb-1 font-body">Gestão</p>
+          <h1 className="text-3xl font-display tracking-wide">Projetos</h1>
         </div>
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <Dialog open={isOpen} onOpenChange={(open) => { setIsOpen(open); if (!open) setShowDesignFields(false); }}>
           <DialogTrigger asChild>
             <Button className="h-11">
               <Plus className="h-4 w-4 mr-2" /> Novo Projeto
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle className="text-xl">Novo Projeto</DialogTitle>
+              <DialogTitle className="text-xl font-display">Novo Projeto</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4 mt-4">
               <div className="space-y-2">
@@ -118,7 +126,7 @@ export default function Projects() {
                     <SelectValue placeholder="Selecione um cliente" />
                   </SelectTrigger>
                   <SelectContent>
-                    {clients.filter(c => (c as any).status !== 'inactive').map(c => (
+                    {clients.filter(c => c.status !== 'inactive').map(c => (
                       <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                     ))}
                   </SelectContent>
@@ -152,10 +160,56 @@ export default function Projects() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="total_value">Valor Total</Label>
+                  <Label htmlFor="total_value">Valor Total (Cliente)</Label>
                   <Input id="total_value" name="total_value" type="number" step="0.01" placeholder="0.00" className="h-11" />
                 </div>
               </div>
+              
+              {/* Design Fields Toggle */}
+              <div className="flex items-center gap-3 py-2">
+                <Checkbox 
+                  id="has_design" 
+                  checked={showDesignFields}
+                  onCheckedChange={(checked) => setShowDesignFields(!!checked)}
+                />
+                <Label htmlFor="has_design" className="text-sm font-normal cursor-pointer">
+                  Projeto de Design (definir criativos)
+                </Label>
+              </div>
+              
+              {showDesignFields && (
+                <div className="grid grid-cols-2 gap-4 p-4 rounded-xl bg-muted/30 border border-border/50">
+                  <div className="space-y-2">
+                    <Label htmlFor="static_creatives" className="flex items-center gap-2">
+                      <Image className="h-4 w-4 text-primary" />
+                      Estáticos
+                    </Label>
+                    <Input 
+                      id="static_creatives" 
+                      name="static_creatives" 
+                      type="number" 
+                      min="0"
+                      placeholder="0" 
+                      className="h-11" 
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="carousel_creatives" className="flex items-center gap-2">
+                      <Layers className="h-4 w-4 text-primary" />
+                      Carrosséis
+                    </Label>
+                    <Input 
+                      id="carousel_creatives" 
+                      name="carousel_creatives" 
+                      type="number" 
+                      min="0"
+                      placeholder="0" 
+                      className="h-11" 
+                    />
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-2">
                 <Label htmlFor="deadline">Prazo</Label>
                 <Input id="deadline" name="deadline" type="date" className="h-11" />
@@ -200,15 +254,15 @@ export default function Projects() {
       {isLoading ? (
         <div className="text-center py-12 text-muted-foreground">Carregando...</div>
       ) : filteredProjects.length === 0 ? (
-        <Card className="border-border/50 border-dashed">
+        <Card className="border-border/50 border-dashed glass-card">
           <CardContent className="flex flex-col items-center justify-center py-16">
-            <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
+            <div className="h-16 w-16 rounded-xl bg-muted flex items-center justify-center mb-4">
               <FolderKanban className="h-8 w-8 text-muted-foreground" />
             </div>
-            <h3 className="font-semibold text-lg mb-1">
+            <h3 className="font-semibold text-lg mb-1 font-body">
               {search ? 'Nenhum projeto encontrado' : 'Nenhum projeto cadastrado'}
             </h3>
-            <p className="text-muted-foreground text-sm">
+            <p className="text-muted-foreground text-sm font-body">
               {search ? 'Tente buscar por outro termo.' : 'Crie seu primeiro projeto para começar.'}
             </p>
           </CardContent>
@@ -218,13 +272,13 @@ export default function Projects() {
           {filteredProjects.map((project, index) => (
             <Card 
               key={project.id}
-              className="card-hover border-border/50"
+              className="card-hover border-border/50 glass-card"
               style={{ animationDelay: `${index * 50}ms` }}
             >
               <CardContent className="p-5">
                 <div className="flex items-start justify-between mb-3">
                   <Link to={`/projetos/${project.id}`} className="flex-1">
-                    <h3 className="font-semibold text-lg hover:text-primary transition-colors">{project.name}</h3>
+                    <h3 className="font-semibold text-lg hover:text-primary transition-colors font-body">{project.name}</h3>
                   </Link>
                   <div className="flex items-center gap-2">
                     <Badge variant="outline" className={statusConfig[project.status]?.className}>
@@ -237,10 +291,17 @@ export default function Projects() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
+                        {project.status === 'active' && (
+                          <DropdownMenuItem onClick={() => handleComplete(project)}>
+                            <CheckCircle className="h-4 w-4 mr-2 text-success" />
+                            Concluir
+                          </DropdownMenuItem>
+                        )}
                         <DropdownMenuItem onClick={() => handleToggleStatus(project)}>
                           <Power className="h-4 w-4 mr-2" />
                           {project.status === 'inactive' ? 'Ativar' : 'Desativar'}
                         </DropdownMenuItem>
+                        <DropdownMenuSeparator />
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive">
@@ -267,15 +328,21 @@ export default function Projects() {
                     </DropdownMenu>
                   </div>
                 </div>
-                <p className="text-sm text-muted-foreground mb-1">{project.clients?.name || 'Sem cliente'}</p>
-                {(project as any).project_type && (
-                  <p className="text-xs text-muted-foreground mb-4">
-                    Tipo: {projectTypeLabels[(project as any).project_type] || (project as any).project_type}
-                  </p>
-                )}
+                <p className="text-sm text-muted-foreground mb-1 font-body">{project.clients?.name || 'Sem cliente'}</p>
+                <div className="flex items-center gap-2 mb-4">
+                  <Badge variant="secondary" className="text-xs">
+                    {projectTypeLabels[project.project_type] || project.project_type}
+                  </Badge>
+                  {(project.static_creatives || project.carousel_creatives) ? (
+                    <Badge variant="outline" className="text-xs">
+                      <Image className="h-3 w-3 mr-1" />
+                      {project.static_creatives || 0} + {project.carousel_creatives || 0}
+                    </Badge>
+                  ) : null}
+                </div>
                 <div className="flex items-center justify-between">
                   {canSeeFinancials ? (
-                    <p className="text-2xl font-bold text-primary">
+                    <p className="text-2xl font-display text-primary">
                       {formatCurrency(Number(project.total_value), project.currency)}
                     </p>
                   ) : (
