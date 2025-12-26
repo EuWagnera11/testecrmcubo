@@ -36,13 +36,30 @@ export function useProjectMembers(projectId?: string) {
   const membersQuery = useQuery({
     queryKey: ['project-members', projectId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // First get the members
+      const { data: membersData, error: membersError } = await supabase
         .from('project_members')
         .select('*')
         .eq('project_id', projectId!);
       
-      if (error) throw error;
-      return data as ProjectMember[];
+      if (membersError) throw membersError;
+      
+      // Then get profiles for those members
+      if (membersData.length === 0) return [];
+      
+      const userIds = membersData.map(m => m.user_id);
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('user_id, full_name')
+        .in('user_id', userIds);
+      
+      if (profilesError) throw profilesError;
+      
+      // Combine
+      return membersData.map(member => ({
+        ...member,
+        profiles: profilesData.find(p => p.user_id === member.user_id) || null
+      })) as ProjectMember[];
     },
     enabled: !!user && !!projectId,
   });
