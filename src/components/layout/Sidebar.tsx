@@ -7,10 +7,12 @@ import {
   Settings,
   X,
   ChevronLeft,
-  Wallet
+  Wallet,
+  BarChart3
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { useUserRole } from '@/hooks/useUserRole';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -21,15 +23,23 @@ interface SidebarProps {
 
 const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
+  { icon: BarChart3, label: 'Relatórios', path: '/admin', adminOnly: true },
   { icon: Users, label: 'Clientes', path: '/clientes' },
   { icon: FolderKanban, label: 'Projetos', path: '/projetos' },
   { icon: FileText, label: 'Contratos', path: '/contratos' },
-  { icon: Wallet, label: 'Financeiro', path: '/financeiro' },
+  { icon: Wallet, label: 'Financeiro', path: '/financeiro', directorOnly: true },
   { icon: Settings, label: 'Configurações', path: '/configuracoes' },
 ];
 
 export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: SidebarProps) {
   const location = useLocation();
+  const { isAdmin, isDirector } = useUserRole();
+  
+  const filteredNavItems = navItems.filter(item => {
+    if (item.adminOnly) return isAdmin || isDirector;
+    if (item.directorOnly) return isAdmin || isDirector;
+    return true;
+  });
 
   return (
     <>
@@ -85,7 +95,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
           {/* Navigation */}
           <nav className="flex-1 overflow-y-auto py-6">
             <ul className="space-y-1 px-3">
-              {navItems.map((item) => {
+              {filteredNavItems.map((item) => {
                 const isActive = location.pathname === item.path || 
                   (item.path === '/dashboard' && location.pathname === '/');
                 

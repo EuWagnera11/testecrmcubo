@@ -1,34 +1,32 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Refine Cubo Design System - Hybrid Theme (Light content + Dark chrome) */
+/* Refine Cubo Design System */
 
 @layer base {
   :root {
-    /* Main content area - Light/Cream theme */
-    --background: 40 20% 96%;
-    --foreground: 220 20% 10%;
+    /* Light Mode - Bege/Cream theme */
+    --background: 35 15% 95%;
+    --foreground: 220 20% 12%;
 
-    --card: 40 15% 98%;
-    --card-foreground: 220 20% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 20% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 20% 10%;
+    --popover-foreground: 220 20% 12%;
 
-    /* Orange/Terracotta accent like the reference */
-    --primary: 24 80% 50%;
+    /* Orange accent - Main brand color */
+    --primary: 28 85% 52%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 40 10% 92%;
-    --secondary-foreground: 220 20% 10%;
+    --secondary: 210 12% 90%;
+    --secondary-foreground: 220 20% 12%;
 
-    --muted: 40 10% 90%;
-    --muted-foreground: 220 10% 45%;
+    --muted: 210 12% 90%;
+    --muted-foreground: 220 12% 40%;
 
-    --accent: 24 80% 50%;
+    --accent: 28 85% 52%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 72% 51%;
@@ -40,47 +38,69 @@
     --warning: 38 92% 50%;
     --warning-foreground: 220 20% 10%;
 
-    --border: 40 10% 85%;
-    --input: 40 10% 90%;
-    --ring: 24 80% 50%;
+    --border: 220 15% 82%;
+    --input: 210 12% 90%;
+    --ring: 28 85% 52%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
+
+    /* Custom tokens */
+    --cubo-orange: 28 85% 52%;
+    --cubo-orange-glow: 28 90% 62%;
+    --cubo-charcoal: 220 20% 12%;
+    --cubo-cream: 40 20% 95%;
 
     /* Sidebar - Dark theme for contrast */
     --sidebar-background: 220 20% 8%;
-    --sidebar-foreground: 40 10% 90%;
-    --sidebar-primary: 24 80% 50%;
+    --sidebar-foreground: 210 15% 90%;
+    --sidebar-primary: 28 85% 52%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 220 15% 15%;
-    --sidebar-accent-foreground: 40 10% 95%;
+    --sidebar-accent-foreground: 210 15% 95%;
     --sidebar-border: 220 15% 15%;
-    --sidebar-ring: 24 80% 50%;
+    --sidebar-ring: 28 85% 52%;
   }
 
   .dark {
-    --background: 220 20% 6%;
-    --foreground: 40 10% 95%;
-    --card: 220 18% 9%;
-    --card-foreground: 40 10% 95%;
-    --popover: 220 18% 9%;
-    --popover-foreground: 40 10% 95%;
-    --primary: 24 80% 50%;
+    --background: 220 18% 9%;
+    --foreground: 210 15% 96%;
+    
+    --card: 220 18% 13%;
+    --card-foreground: 210 15% 96%;
+    
+    --popover: 220 18% 13%;
+    --popover-foreground: 210 15% 96%;
+    
+    --primary: 28 85% 52%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 220 15% 15%;
-    --secondary-foreground: 40 10% 95%;
-    --muted: 220 15% 12%;
-    --muted-foreground: 40 10% 55%;
-    --accent: 24 80% 50%;
+    
+    --secondary: 220 18% 16%;
+    --secondary-foreground: 210 15% 96%;
+    
+    --muted: 220 18% 16%;
+    --muted-foreground: 210 15% 55%;
+    
+    --accent: 28 85% 52%;
     --accent-foreground: 0 0% 100%;
+    
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 98%;
+    
     --success: 142 76% 36%;
     --success-foreground: 0 0% 100%;
+    
     --warning: 38 92% 50%;
     --warning-foreground: 220 20% 10%;
-    --border: 220 15% 15%;
-    --input: 220 15% 15%;
-    --ring: 24 80% 50%;
+    
+    --border: 220 18% 18%;
+    --input: 220 18% 16%;
+    --ring: 28 85% 52%;
+
+    --sidebar-background: 220 20% 6%;
+    --sidebar-foreground: 210 15% 90%;
+    --sidebar-accent: 220 18% 12%;
+    --sidebar-accent-foreground: 210 15% 95%;
+    --sidebar-border: 220 18% 12%;
   }
 }
 
@@ -91,42 +111,113 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+    font-family: 'Manrope', system-ui, -apple-system, sans-serif;
   }
 }
 
 @layer utilities {
+  /* Glass Card Effect */
   .glass-card {
-    @apply bg-card border border-border shadow-sm hover:shadow-md transition-shadow;
+    @apply backdrop-blur-md bg-card/80 border border-border/50;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
   }
 
+  /* Text Gradient */
   .text-gradient {
-    background: linear-gradient(135deg, hsl(24 80% 50%) 0%, hsl(35 90% 55%) 100%);
+    background: linear-gradient(135deg, hsl(28 85% 52%) 0%, hsl(38 90% 55%) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
 
-  .animate-float {
-    animation: float 3s ease-in-out infinite;
-  }
-
-  @keyframes float {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-10px); }
-  }
-
+  /* Hover Lift Effect */
   .card-hover {
-    @apply transition-all duration-300 hover:-translate-y-1 hover:shadow-lg;
+    @apply transition-all duration-300;
+  }
+  
+  .card-hover:hover {
+    @apply -translate-y-1;
+    box-shadow: 0 10px 30px -10px hsl(var(--primary) / 0.2);
   }
 
-  /* Geometric accent line */
+  /* Hover Lift */
+  .hover-lift {
+    @apply transition-transform duration-300;
+  }
+  
+  .hover-lift:hover {
+    @apply -translate-y-2;
+  }
+
+  /* Accent Line */
   .accent-line {
     @apply relative;
   }
   
   .accent-line::after {
     content: '';
-    @apply absolute -bottom-2 left-0 w-12 h-0.5 bg-primary;
+    @apply absolute -bottom-2 left-0 w-12 h-0.5 bg-primary rounded-full;
   }
+
+  /* Pulse Glow for CTAs */
+  .pulse-glow {
+    animation: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  /* Stagger Animation Delays */
+  .stagger-1 { animation-delay: 0.1s; }
+  .stagger-2 { animation-delay: 0.2s; }
+  .stagger-3 { animation-delay: 0.3s; }
+  .stagger-4 { animation-delay: 0.4s; }
+  .stagger-5 { animation-delay: 0.5s; }
+}
+
+/* Keyframes */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px hsl(var(--accent) / 0.4);
+  }
+  50% {
+    box-shadow: 0 0 40px hsl(var(--accent) / 0.6);
+  }
+}
+
+@keyframes glitch-skew {
+  0% { transform: skew(0deg); }
+  20% { transform: skew(-2deg); }
+  40% { transform: skew(1deg); }
+  60% { transform: skew(-1deg); }
+  80% { transform: skew(2deg); }
+  100% { transform: skew(0deg); }
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--muted));
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.5);
 }

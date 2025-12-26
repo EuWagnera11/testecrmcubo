@@ -9,10 +9,12 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { PendingApproval } from "@/components/PendingApproval";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
+import AdminDashboard from "./pages/AdminDashboard";
 import Clients from "./pages/Clients";
 import Projects from "./pages/Projects";
 import ProjectDetails from "./pages/ProjectDetails";
 import Contracts from "./pages/Contracts";
+import ContractDetails from "./pages/ContractDetails";
 import Settings from "./pages/Settings";
 import ClientDashboard from "./pages/ClientDashboard";
 import Financial from "./pages/Financial";
@@ -34,10 +36,8 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   
   if (!user) return <Navigate to="/auth" replace />;
   
-  // Admin always has access
   if (isAdmin) return <>{children}</>;
   
-  // Check approval status for non-admins
   if (status === 'pending') return <PendingApproval status="pending" />;
   if (status === 'rejected') return <PendingApproval status="rejected" />;
   
@@ -54,17 +54,17 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 const AppRoutes = () => (
   <BrowserRouter>
     <Routes>
-      {/* Public client dashboard - no auth required */}
       <Route path="/cliente/:token" element={<ClientDashboard />} />
-      
       <Route path="/auth" element={<PublicRoute><Auth /></PublicRoute>} />
       <Route path="/" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard" element={<Dashboard />} />
+        <Route path="admin" element={<AdminDashboard />} />
         <Route path="clientes" element={<Clients />} />
         <Route path="projetos" element={<Projects />} />
         <Route path="projetos/:id" element={<ProjectDetails />} />
         <Route path="contratos" element={<Contracts />} />
+        <Route path="contratos/:id" element={<ContractDetails />} />
         <Route path="financeiro" element={<Financial />} />
         <Route path="configuracoes" element={<Settings />} />
       </Route>
