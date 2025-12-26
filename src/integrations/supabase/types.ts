@@ -213,6 +213,33 @@ export type Database = {
           },
         ]
       }
+      monthly_goals: {
+        Row: {
+          created_at: string
+          id: string
+          month: string
+          revenue_goal: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          month: string
+          revenue_goal?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          month?: string
+          revenue_goal?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       onboarding_steps: {
         Row: {
           completed_at: string
@@ -379,6 +406,7 @@ export type Database = {
         Row: {
           advance_payment: boolean | null
           advance_percentage: number | null
+          cancelled_at: string | null
           client_id: string | null
           created_at: string
           currency: string
@@ -396,6 +424,7 @@ export type Database = {
         Insert: {
           advance_payment?: boolean | null
           advance_percentage?: number | null
+          cancelled_at?: string | null
           client_id?: string | null
           created_at?: string
           currency?: string
@@ -413,6 +442,7 @@ export type Database = {
         Update: {
           advance_payment?: boolean | null
           advance_percentage?: number | null
+          cancelled_at?: string | null
           client_id?: string | null
           created_at?: string
           currency?: string
