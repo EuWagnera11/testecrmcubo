@@ -23,8 +23,8 @@ export function Header({ onMenuClick }: HeaderProps) {
   };
 
   return (
-    <header className="sticky top-0 z-50 h-16 border-b border-border/50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="flex h-full items-center justify-between px-4">
+    <header className="sticky top-0 z-50 h-16 border-b border-border bg-card">
+      <div className="flex h-full items-center justify-between px-4 lg:px-8">
         <div className="flex items-center gap-4">
           <Button
             variant="ghost"
@@ -35,17 +35,13 @@ export function Header({ onMenuClick }: HeaderProps) {
             <Menu className="h-5 w-5" />
           </Button>
           
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-sm">RC</span>
-            </div>
-            <span className="font-bold text-lg hidden sm:block">
-              REFINE <span className="text-primary">CUBO</span>
-            </span>
+          <div className="flex items-center gap-2 lg:hidden">
+            <span className="text-primary font-medium italic">refine</span>
+            <span className="font-bold text-lg tracking-tight">CUBO</span>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" className="relative">
             <Bell className="h-5 w-5" />
             <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-primary text-[10px] font-medium flex items-center justify-center text-primary-foreground">
@@ -55,23 +51,23 @@ export function Header({ onMenuClick }: HeaderProps) {
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-9 w-9 rounded-full">
-                <Avatar className="h-9 w-9">
-                  <AvatarFallback className="bg-primary/20 text-primary">
+              <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                <Avatar className="h-10 w-10">
+                  <AvatarFallback className="bg-primary text-primary-foreground font-semibold">
                     {getInitials(user?.user_metadata?.full_name)}
                   </AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56" align="end">
-              <div className="flex items-center gap-2 p-2">
-                <Avatar className="h-8 w-8">
-                  <AvatarFallback className="bg-primary/20 text-primary text-xs">
+              <div className="flex items-center gap-3 p-3">
+                <Avatar className="h-10 w-10">
+                  <AvatarFallback className="bg-primary text-primary-foreground font-semibold">
                     {getInitials(user?.user_metadata?.full_name)}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col">
-                  <span className="text-sm font-medium">{user?.user_metadata?.full_name || 'Usuário'}</span>
+                  <span className="font-semibold">{user?.user_metadata?.full_name || 'Usuário'}</span>
                   <span className="text-xs text-muted-foreground">{user?.email}</span>
                 </div>
               </div>

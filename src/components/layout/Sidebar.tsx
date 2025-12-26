@@ -34,7 +34,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
       {/* Mobile overlay */}
       {isOpen && (
         <div 
-          className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-40 bg-foreground/20 backdrop-blur-sm lg:hidden"
           onClick={onClose}
         />
       )}
@@ -42,33 +42,36 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed lg:sticky top-0 left-0 z-50 lg:z-30 h-screen bg-sidebar border-r border-sidebar-border transition-all duration-300",
+          "fixed lg:sticky top-0 left-0 z-50 lg:z-30 h-screen bg-sidebar text-sidebar-foreground transition-all duration-300",
           isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
-          isCollapsed ? "lg:w-16" : "lg:w-64",
-          "w-64"
+          isCollapsed ? "lg:w-20" : "lg:w-72",
+          "w-72"
         )}
       >
         <div className="flex flex-col h-full">
-          {/* Mobile header */}
-          <div className="flex items-center justify-between h-16 px-4 border-b border-sidebar-border lg:hidden">
-            <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-sm">RC</span>
+          {/* Header */}
+          <div className="flex items-center justify-between h-16 px-6 border-b border-sidebar-border">
+            {!isCollapsed && (
+              <div className="flex items-center gap-2">
+                <span className="text-sidebar-primary font-medium italic">refine</span>
+                <span className="font-bold text-xl tracking-tight">CUBO</span>
               </div>
-              <span className="font-bold">REFINE CUBO</span>
-            </div>
-            <Button variant="ghost" size="icon" onClick={onClose}>
+            )}
+            {isCollapsed && (
+              <span className="font-bold text-xl mx-auto">C</span>
+            )}
+            
+            {/* Mobile close */}
+            <Button variant="ghost" size="icon" onClick={onClose} className="lg:hidden text-sidebar-foreground hover:bg-sidebar-accent">
               <X className="h-5 w-5" />
             </Button>
-          </div>
-
-          {/* Desktop collapse button */}
-          <div className="hidden lg:flex items-center justify-end h-16 px-2 border-b border-sidebar-border">
+            
+            {/* Desktop collapse */}
             <Button 
               variant="ghost" 
               size="icon"
               onClick={onToggleCollapse}
-              className="h-8 w-8"
+              className="hidden lg:flex h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent"
             >
               <ChevronLeft className={cn(
                 "h-4 w-4 transition-transform",
@@ -78,8 +81,8 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 overflow-y-auto py-4">
-            <ul className="space-y-1 px-2">
+          <nav className="flex-1 overflow-y-auto py-6">
+            <ul className="space-y-1 px-3">
               {navItems.map((item) => {
                 const isActive = location.pathname === item.path || 
                   (item.path === '/dashboard' && location.pathname === '/');
@@ -90,23 +93,15 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
                       to={item.path}
                       onClick={() => onClose()}
                       className={cn(
-                        "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200",
+                        "flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200",
                         "hover:bg-sidebar-accent",
-                        isActive && "bg-primary/10 text-primary border border-primary/20",
-                        !isActive && "text-sidebar-foreground"
+                        isActive && "bg-sidebar-primary text-sidebar-primary-foreground",
+                        !isActive && "text-sidebar-foreground/70 hover:text-sidebar-foreground"
                       )}
                     >
-                      <item.icon className={cn(
-                        "h-5 w-5 flex-shrink-0",
-                        isActive && "text-primary"
-                      )} />
+                      <item.icon className="h-5 w-5 flex-shrink-0" />
                       {!isCollapsed && (
-                        <span className={cn(
-                          "font-medium transition-opacity",
-                          isCollapsed && "lg:opacity-0 lg:hidden"
-                        )}>
-                          {item.label}
-                        </span>
+                        <span className="font-medium">{item.label}</span>
                       )}
                     </NavLink>
                   </li>
@@ -118,11 +113,9 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
           {/* Footer */}
           {!isCollapsed && (
             <div className="p-4 border-t border-sidebar-border">
-              <div className="rounded-lg bg-primary/10 p-3 border border-primary/20">
-                <p className="text-xs text-muted-foreground">
-                  Versão 1.0.0
-                </p>
-              </div>
+              <p className="text-xs text-sidebar-foreground/50 text-center">
+                Refine Cubo v1.0
+              </p>
             </div>
           )}
         </div>
