@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Search, FolderKanban } from 'lucide-react';
+import { Plus, Search, FolderKanban, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -17,10 +17,10 @@ const currencies = [
   { value: 'EUR', label: '€ (Euro)' },
 ];
 
-const statusColors = {
-  active: 'bg-green-500/20 text-green-400',
-  completed: 'bg-blue-500/20 text-blue-400',
-  paused: 'bg-yellow-500/20 text-yellow-400',
+const statusConfig = {
+  active: { label: 'Ativo', className: 'bg-success/15 text-success border-success/30' },
+  completed: { label: 'Concluído', className: 'bg-primary/15 text-primary border-primary/30' },
+  paused: { label: 'Pausado', className: 'bg-warning/15 text-warning border-warning/30' },
 };
 
 export default function Projects() {
@@ -52,26 +52,38 @@ export default function Projects() {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h1 className="text-2xl font-bold">Projetos</h1>
+    <div className="space-y-8 animate-fade-in">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+        <div>
+          <p className="text-muted-foreground text-sm uppercase tracking-wider mb-1">Gestão</p>
+          <h1 className="text-3xl font-bold tracking-tight">Projetos</h1>
+        </div>
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
-            <Button><Plus className="h-4 w-4 mr-2" /> Novo Projeto</Button>
+            <Button className="h-11">
+              <Plus className="h-4 w-4 mr-2" /> Novo Projeto
+            </Button>
           </DialogTrigger>
-          <DialogContent>
-            <DialogHeader><DialogTitle>Novo Projeto</DialogTitle></DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-xl">Novo Projeto</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-4 mt-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Nome do Projeto *</Label>
-                <Input id="name" name="name" required placeholder="Nome do projeto" />
+                <Input id="name" name="name" required placeholder="Nome do projeto" className="h-11" />
               </div>
               <div className="space-y-2">
                 <Label>Cliente</Label>
                 <Select name="client_id">
-                  <SelectTrigger><SelectValue placeholder="Selecione um cliente" /></SelectTrigger>
+                  <SelectTrigger className="h-11">
+                    <SelectValue placeholder="Selecione um cliente" />
+                  </SelectTrigger>
                   <SelectContent>
-                    {clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                    {clients.map(c => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -79,58 +91,87 @@ export default function Projects() {
                 <div className="space-y-2">
                   <Label>Moeda</Label>
                   <Select name="currency" defaultValue="BRL">
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="h-11">
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
-                      {currencies.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                      {currencies.map(c => (
+                        <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="total_value">Valor Total</Label>
-                  <Input id="total_value" name="total_value" type="number" step="0.01" placeholder="0.00" />
+                  <Input id="total_value" name="total_value" type="number" step="0.01" placeholder="0.00" className="h-11" />
                 </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="deadline">Prazo</Label>
-                <Input id="deadline" name="deadline" type="date" />
+                <Input id="deadline" name="deadline" type="date" className="h-11" />
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3 py-2">
                 <Checkbox id="advance_payment" name="advance_payment" />
-                <Label htmlFor="advance_payment" className="text-sm">Pagamento adiantado</Label>
+                <Label htmlFor="advance_payment" className="text-sm font-normal cursor-pointer">
+                  Pagamento adiantado
+                </Label>
               </div>
-              <Button type="submit" className="w-full" disabled={createProject.isPending}>
+              <Button type="submit" className="w-full h-11" disabled={createProject.isPending}>
                 {createProject.isPending ? 'Criando...' : 'Criar Projeto'}
+                <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </form>
           </DialogContent>
         </Dialog>
       </div>
 
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input placeholder="Buscar projetos..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
+      {/* Search */}
+      <div className="relative max-w-md">
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input 
+          placeholder="Buscar projetos..." 
+          value={search} 
+          onChange={(e) => setSearch(e.target.value)} 
+          className="pl-11 h-11" 
+        />
       </div>
 
+      {/* Content */}
       {isLoading ? (
         <div className="text-center py-12 text-muted-foreground">Carregando...</div>
       ) : filteredProjects.length === 0 ? (
-        <Card className="bg-card/50 border-border/50">
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <FolderKanban className="h-12 w-12 text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">{search ? 'Nenhum projeto encontrado' : 'Nenhum projeto cadastrado'}</p>
+        <Card className="border-border/50 border-dashed">
+          <CardContent className="flex flex-col items-center justify-center py-16">
+            <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
+              <FolderKanban className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <h3 className="font-semibold text-lg mb-1">
+              {search ? 'Nenhum projeto encontrado' : 'Nenhum projeto cadastrado'}
+            </h3>
+            <p className="text-muted-foreground text-sm">
+              {search ? 'Tente buscar por outro termo.' : 'Crie seu primeiro projeto para começar.'}
+            </p>
           </CardContent>
         </Card>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {filteredProjects.map((project) => (
-            <Card key={project.id} className="bg-card/50 border-border/50 hover:border-primary/30 transition-colors">
-              <CardContent className="p-4">
-                <div className="flex items-start justify-between mb-2">
-                  <h3 className="font-semibold">{project.name}</h3>
-                  <Badge className={statusColors[project.status]}>{project.status}</Badge>
+          {filteredProjects.map((project, index) => (
+            <Card 
+              key={project.id} 
+              className="card-hover border-border/50"
+              style={{ animationDelay: `${index * 50}ms` }}
+            >
+              <CardContent className="p-5">
+                <div className="flex items-start justify-between mb-3">
+                  <h3 className="font-semibold text-lg">{project.name}</h3>
+                  <Badge variant="outline" className={statusConfig[project.status].className}>
+                    {statusConfig[project.status].label}
+                  </Badge>
                 </div>
-                <p className="text-sm text-muted-foreground mb-2">{project.clients?.name || 'Sem cliente'}</p>
-                <p className="text-lg font-bold text-primary">{formatCurrency(Number(project.total_value), project.currency)}</p>
+                <p className="text-sm text-muted-foreground mb-4">{project.clients?.name || 'Sem cliente'}</p>
+                <p className="text-2xl font-bold text-primary">
+                  {formatCurrency(Number(project.total_value), project.currency)}
+                </p>
               </CardContent>
             </Card>
           ))}

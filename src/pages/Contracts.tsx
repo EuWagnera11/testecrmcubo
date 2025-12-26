@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { Plus, FileText } from 'lucide-react';
+import { Plus, FileText, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -13,13 +13,11 @@ import { useClients } from '@/hooks/useClients';
 import { useProjects } from '@/hooks/useProjects';
 import { Badge } from '@/components/ui/badge';
 
-const statusColors = {
-  draft: 'bg-gray-500/20 text-gray-400',
-  sent: 'bg-yellow-500/20 text-yellow-400',
-  signed: 'bg-green-500/20 text-green-400',
+const statusConfig = {
+  draft: { label: 'Rascunho', className: 'bg-muted text-muted-foreground' },
+  sent: { label: 'Enviado', className: 'bg-warning/15 text-warning border-warning/30' },
+  signed: { label: 'Assinado', className: 'bg-success/15 text-success border-success/30' },
 };
-
-const statusLabels = { draft: 'Rascunho', sent: 'Enviado', signed: 'Assinado' };
 
 export default function Contracts() {
   const { contracts, isLoading, createContract } = useContracts();
@@ -47,81 +45,116 @@ export default function Contracts() {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h1 className="text-2xl font-bold">Contratos</h1>
+    <div className="space-y-8 animate-fade-in">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+        <div>
+          <p className="text-muted-foreground text-sm uppercase tracking-wider mb-1">Documentos</p>
+          <h1 className="text-3xl font-bold tracking-tight">Contratos</h1>
+        </div>
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
-            <Button><Plus className="h-4 w-4 mr-2" /> Nova Proposta</Button>
+            <Button className="h-11">
+              <Plus className="h-4 w-4 mr-2" /> Nova Proposta
+            </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-lg">
-            <DialogHeader><DialogTitle>Criar Nova Proposta</DialogTitle></DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
+          <DialogContent className="sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="text-xl">Criar Nova Proposta</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-4 mt-4">
               <div className="space-y-2">
                 <Label htmlFor="title">Título *</Label>
-                <Input id="title" name="title" required placeholder="Título do contrato" />
+                <Input id="title" name="title" required placeholder="Título do contrato" className="h-11" />
               </div>
               <div className="space-y-2">
                 <Label>Cliente</Label>
                 <Select name="client_id">
-                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                  <SelectContent>{clients.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
+                  <SelectTrigger className="h-11">
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clients.map(c => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
                 <Label>Projeto</Label>
                 <Select name="project_id">
-                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                  <SelectContent>{projects.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
+                  <SelectTrigger className="h-11">
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {projects.map(p => (
+                      <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                    ))}
+                  </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
                 <Label>Signatário Principal</Label>
-                <div className="grid grid-cols-2 gap-2">
-                  <Input name="sig_name" placeholder="Nome" required />
-                  <Input name="sig_email" type="email" placeholder="Email" required />
+                <div className="grid grid-cols-2 gap-3">
+                  <Input name="sig_name" placeholder="Nome" required className="h-11" />
+                  <Input name="sig_email" type="email" placeholder="Email" required className="h-11" />
                 </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="terms">Termos</Label>
                 <Textarea id="terms" name="terms" placeholder="Termos principais do contrato..." rows={4} />
               </div>
-              <Button type="submit" className="w-full" disabled={createContract.isPending}>
+              <Button type="submit" className="w-full h-11" disabled={createContract.isPending}>
                 {createContract.isPending ? 'Criando...' : 'Criar Contrato'}
+                <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </form>
           </DialogContent>
         </Dialog>
       </div>
 
+      {/* Tabs */}
       <Tabs value={filter} onValueChange={setFilter}>
-        <TabsList>
-          <TabsTrigger value="all">Todos</TabsTrigger>
-          <TabsTrigger value="draft">Rascunho</TabsTrigger>
-          <TabsTrigger value="sent">Enviado</TabsTrigger>
-          <TabsTrigger value="signed">Assinado</TabsTrigger>
+        <TabsList className="h-11">
+          <TabsTrigger value="all" className="px-4">Todos</TabsTrigger>
+          <TabsTrigger value="draft" className="px-4">Rascunho</TabsTrigger>
+          <TabsTrigger value="sent" className="px-4">Enviado</TabsTrigger>
+          <TabsTrigger value="signed" className="px-4">Assinado</TabsTrigger>
         </TabsList>
       </Tabs>
 
+      {/* Content */}
       {isLoading ? (
         <div className="text-center py-12 text-muted-foreground">Carregando...</div>
       ) : filtered.length === 0 ? (
-        <Card className="bg-card/50 border-border/50">
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <FileText className="h-12 w-12 text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">Nenhum contrato encontrado</p>
+        <Card className="border-border/50 border-dashed">
+          <CardContent className="flex flex-col items-center justify-center py-16">
+            <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
+              <FileText className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <h3 className="font-semibold text-lg mb-1">Nenhum contrato encontrado</h3>
+            <p className="text-muted-foreground text-sm">Crie sua primeira proposta para começar.</p>
           </CardContent>
         </Card>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((contract) => (
-            <Card key={contract.id} className="bg-card/50 border-border/50 hover:border-primary/30 transition-colors">
-              <CardContent className="p-4">
-                <div className="flex items-start justify-between mb-2">
-                  <h3 className="font-semibold">{contract.title}</h3>
-                  <Badge className={statusColors[contract.status]}>{statusLabels[contract.status]}</Badge>
+          {filtered.map((contract, index) => (
+            <Card 
+              key={contract.id} 
+              className="card-hover border-border/50"
+              style={{ animationDelay: `${index * 50}ms` }}
+            >
+              <CardContent className="p-5">
+                <div className="flex items-start justify-between mb-3">
+                  <h3 className="font-semibold text-lg">{contract.title}</h3>
+                  <Badge variant="outline" className={statusConfig[contract.status].className}>
+                    {statusConfig[contract.status].label}
+                  </Badge>
                 </div>
                 <p className="text-sm text-muted-foreground">{contract.clients?.name || 'Sem cliente'}</p>
+                {contract.projects && (
+                  <p className="text-xs text-muted-foreground mt-1">Projeto: {contract.projects.name}</p>
+                )}
               </CardContent>
             </Card>
           ))}

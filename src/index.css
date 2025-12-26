@@ -1,30 +1,34 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Refine Cubo Design System - Dark Theme with Purple/Violet Accents */
+/* Refine Cubo Design System - Hybrid Theme (Light content + Dark chrome) */
 
 @layer base {
   :root {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
+    /* Main content area - Light/Cream theme */
+    --background: 40 20% 96%;
+    --foreground: 220 20% 10%;
 
-    --card: 240 10% 5%;
-    --card-foreground: 0 0% 98%;
+    --card: 40 15% 98%;
+    --card-foreground: 220 20% 10%;
 
-    --popover: 240 10% 5%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 20% 10%;
 
-    --primary: 263 70% 50%;
+    /* Orange/Terracotta accent like the reference */
+    --primary: 24 80% 50%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 217 33% 17%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 40 10% 92%;
+    --secondary-foreground: 220 20% 10%;
 
-    --muted: 240 5% 15%;
-    --muted-foreground: 240 5% 65%;
+    --muted: 40 10% 90%;
+    --muted-foreground: 220 10% 45%;
 
-    --accent: 217 91% 60%;
+    --accent: 24 80% 50%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 72% 51%;
@@ -34,53 +38,45 @@
     --success-foreground: 0 0% 100%;
 
     --warning: 38 92% 50%;
-    --warning-foreground: 0 0% 0%;
+    --warning-foreground: 220 20% 10%;
 
-    --border: 240 5% 17%;
-    --input: 240 5% 17%;
-    --ring: 263 70% 50%;
+    --border: 40 10% 85%;
+    --input: 40 10% 90%;
+    --ring: 24 80% 50%;
 
-    --radius: 0.75rem;
+    --radius: 0.5rem;
 
-    /* Sidebar */
-    --sidebar-background: 240 10% 4%;
-    --sidebar-foreground: 240 5% 85%;
-    --sidebar-primary: 263 70% 50%;
+    /* Sidebar - Dark theme for contrast */
+    --sidebar-background: 220 20% 8%;
+    --sidebar-foreground: 40 10% 90%;
+    --sidebar-primary: 24 80% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 5% 12%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 240 5% 15%;
-    --sidebar-ring: 263 70% 50%;
-
-    /* Custom gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(263 70% 50%) 0%, hsl(280 70% 60%) 100%);
-    --gradient-card: linear-gradient(135deg, hsl(240 10% 8%) 0%, hsl(240 10% 5%) 100%);
-    --gradient-accent: linear-gradient(135deg, hsl(217 91% 60%) 0%, hsl(263 70% 50%) 100%);
-
-    /* Card border glow */
-    --card-border-glow: 0 0 20px hsl(263 70% 50% / 0.15);
+    --sidebar-accent: 220 15% 15%;
+    --sidebar-accent-foreground: 40 10% 95%;
+    --sidebar-border: 220 15% 15%;
+    --sidebar-ring: 24 80% 50%;
   }
 
   .dark {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 240 10% 5%;
-    --card-foreground: 0 0% 98%;
-    --popover: 240 10% 5%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 263 70% 50%;
+    --background: 220 20% 8%;
+    --foreground: 40 10% 95%;
+    --card: 220 18% 10%;
+    --card-foreground: 40 10% 95%;
+    --popover: 220 18% 10%;
+    --popover-foreground: 40 10% 95%;
+    --primary: 24 80% 50%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 217 33% 17%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 5% 15%;
-    --muted-foreground: 240 5% 65%;
-    --accent: 217 91% 60%;
+    --secondary: 220 15% 18%;
+    --secondary-foreground: 40 10% 95%;
+    --muted: 220 15% 15%;
+    --muted-foreground: 40 10% 60%;
+    --accent: 24 80% 50%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 98%;
-    --border: 240 5% 17%;
-    --input: 240 5% 17%;
-    --ring: 263 70% 50%;
+    --border: 220 15% 18%;
+    --input: 220 15% 18%;
+    --ring: 24 80% 50%;
   }
 }
 
@@ -91,32 +87,17 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif;
   }
 }
 
 @layer utilities {
   .glass-card {
-    @apply bg-card/80 backdrop-blur-xl border border-border/50 shadow-lg;
-  }
-
-  .gradient-border {
-    position: relative;
-    background: linear-gradient(var(--background), var(--background)) padding-box,
-                var(--gradient-primary) border-box;
-    border: 1px solid transparent;
-  }
-
-  .glow-primary {
-    box-shadow: 0 0 30px hsl(263 70% 50% / 0.3);
-  }
-
-  .glow-accent {
-    box-shadow: 0 0 30px hsl(217 91% 60% / 0.3);
+    @apply bg-card border border-border shadow-sm hover:shadow-md transition-shadow;
   }
 
   .text-gradient {
-    background: var(--gradient-primary);
+    background: linear-gradient(135deg, hsl(24 80% 50%) 0%, hsl(35 90% 55%) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -131,12 +112,17 @@
     50% { transform: translateY(-10px); }
   }
 
-  .animate-pulse-glow {
-    animation: pulse-glow 2s ease-in-out infinite;
+  .card-hover {
+    @apply transition-all duration-300 hover:-translate-y-1 hover:shadow-lg;
   }
 
-  @keyframes pulse-glow {
-    0%, 100% { box-shadow: 0 0 20px hsl(263 70% 50% / 0.3); }
-    50% { box-shadow: 0 0 40px hsl(263 70% 50% / 0.5); }
+  /* Geometric accent line */
+  .accent-line {
+    @apply relative;
+  }
+  
+  .accent-line::after {
+    content: '';
+    @apply absolute -bottom-2 left-0 w-12 h-0.5 bg-primary;
   }
 }
