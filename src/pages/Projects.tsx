@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Search, FolderKanban, ArrowRight, ExternalLink, MoreVertical, Trash2, Power, CheckCircle, Image, Layers } from 'lucide-react';
+import { Plus, Search, FolderKanban, ArrowRight, ExternalLink, MoreVertical, Trash2, Power, CheckCircle, Image, Layers, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useProjects, CreateProjectData } from '@/hooks/useProjects';
+import { useProjects, CreateProjectData, Project } from '@/hooks/useProjects';
 import { useClients } from '@/hooks/useClients';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Badge } from '@/components/ui/badge';
@@ -52,6 +52,8 @@ export default function Projects() {
   const [isOpen, setIsOpen] = useState(false);
   const [filter, setFilter] = useState('all');
   const [showDesignFields, setShowDesignFields] = useState(false);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [isEditOpen, setIsEditOpen] = useState(false);
 
   const filteredProjects = projects.filter(p => {
     const matchSearch = p.name.toLowerCase().includes(search.toLowerCase());
@@ -83,12 +85,34 @@ export default function Projects() {
     setShowDesignFields(false);
   };
 
-  const handleToggleStatus = async (project: any) => {
+  const handleEdit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!editingProject) return;
+    
+    const formData = new FormData(e.currentTarget);
+    await updateProject.mutateAsync({
+      id: editingProject.id,
+      name: formData.get('name') as string,
+      total_value: Number(formData.get('total_value')) || 0,
+      project_type: formData.get('project_type') as string || 'one_time',
+      static_creatives: Number(formData.get('static_creatives')) || 0,
+      carousel_creatives: Number(formData.get('carousel_creatives')) || 0,
+    });
+    setIsEditOpen(false);
+    setEditingProject(null);
+  };
+
+  const openEditDialog = (project: Project) => {
+    setEditingProject(project);
+    setIsEditOpen(true);
+  };
+
+  const handleToggleStatus = async (project: Project) => {
     const newStatus = project.status === 'inactive' ? 'active' : 'inactive';
     await updateProject.mutateAsync({ id: project.id, status: newStatus });
   };
 
-  const handleComplete = async (project: any) => {
+  const handleComplete = async (project: Project) => {
     await updateProject.mutateAsync({ id: project.id, status: 'completed' });
   };
 
@@ -227,6 +251,88 @@ export default function Projects() {
             </form>
           </DialogContent>
         </Dialog>
+
+        {/* Edit Dialog */}
+        <Dialog open={isEditOpen} onOpenChange={(open) => { setIsEditOpen(open); if (!open) setEditingProject(null); }}>
+          <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-display">Editar Projeto</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleEdit} className="space-y-4 mt-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit_name">Nome do Projeto *</Label>
+                <Input 
+                  id="edit_name" 
+                  name="name" 
+                  required 
+                  placeholder="Nome do projeto" 
+                  className="h-11"
+                  defaultValue={editingProject?.name}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Tipo de Projeto</Label>
+                <Select name="project_type" defaultValue={editingProject?.project_type || 'one_time'}>
+                  <SelectTrigger className="h-11">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {projectTypes.map(t => (
+                      <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit_total_value">Valor Total (Cliente)</Label>
+                <Input 
+                  id="edit_total_value" 
+                  name="total_value" 
+                  type="number" 
+                  step="0.01" 
+                  placeholder="0.00" 
+                  className="h-11"
+                  defaultValue={editingProject?.total_value}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4 p-4 rounded-xl bg-muted/30 border border-border/50">
+                <div className="space-y-2">
+                  <Label htmlFor="edit_static_creatives" className="flex items-center gap-2">
+                    <Image className="h-4 w-4 text-primary" />
+                    Estáticos
+                  </Label>
+                  <Input 
+                    id="edit_static_creatives" 
+                    name="static_creatives" 
+                    type="number" 
+                    min="0"
+                    placeholder="0" 
+                    className="h-11"
+                    defaultValue={editingProject?.static_creatives || 0}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit_carousel_creatives" className="flex items-center gap-2">
+                    <Layers className="h-4 w-4 text-primary" />
+                    Carrosséis
+                  </Label>
+                  <Input 
+                    id="edit_carousel_creatives" 
+                    name="carousel_creatives" 
+                    type="number" 
+                    min="0"
+                    placeholder="0" 
+                    className="h-11"
+                    defaultValue={editingProject?.carousel_creatives || 0}
+                  />
+                </div>
+              </div>
+              <Button type="submit" className="w-full h-11" disabled={updateProject.isPending}>
+                {updateProject.isPending ? 'Salvando...' : 'Salvar Alterações'}
+              </Button>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Search & Filter */}
@@ -290,7 +396,11 @@ export default function Projects() {
                           <MoreVertical className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
+                      <DropdownMenuContent align="end" className="bg-popover">
+                        <DropdownMenuItem onClick={() => openEditDialog(project)}>
+                          <Pencil className="h-4 w-4 mr-2" />
+                          Editar
+                        </DropdownMenuItem>
                         {project.status === 'active' && (
                           <DropdownMenuItem onClick={() => handleComplete(project)}>
                             <CheckCircle className="h-4 w-4 mr-2 text-success" />

@@ -1,17 +1,17 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, FileText, ArrowRight, MoreVertical, Trash2 } from 'lucide-react';
+import { Plus, FileText, ArrowRight, MoreVertical, Trash2, Send, CheckCircle2, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useContracts, CreateContractData } from '@/hooks/useContracts';
+import { useContracts, CreateContractData, Contract } from '@/hooks/useContracts';
 import { useClients } from '@/hooks/useClients';
 import { useProjects } from '@/hooks/useProjects';
 import { Badge } from '@/components/ui/badge';
@@ -28,11 +28,13 @@ const contractTypes = [
 ];
 
 export default function Contracts() {
-  const { contracts, isLoading, createContract, deleteContract } = useContracts();
+  const { contracts, isLoading, createContract, updateContract, deleteContract } = useContracts();
   const { clients } = useClients();
   const { projects } = useProjects();
   const [isOpen, setIsOpen] = useState(false);
   const [filter, setFilter] = useState('all');
+  const [editingContract, setEditingContract] = useState<Contract | null>(null);
+  const [isEditOpen, setIsEditOpen] = useState(false);
 
   const filtered = filter === 'all' ? contracts : contracts.filter(c => c.status === filter);
 
@@ -52,8 +54,35 @@ export default function Contracts() {
     setIsOpen(false);
   };
 
+  const handleEdit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!editingContract) return;
+    
+    const formData = new FormData(e.currentTarget);
+    await updateContract.mutateAsync({
+      id: editingContract.id,
+      title: formData.get('title') as string,
+      terms: formData.get('terms') as string || null,
+    });
+    setIsEditOpen(false);
+    setEditingContract(null);
+  };
+
+  const handleSendContract = async (contract: Contract) => {
+    await updateContract.mutateAsync({ id: contract.id, status: 'sent' });
+  };
+
+  const handleSignContract = async (contract: Contract) => {
+    await updateContract.mutateAsync({ id: contract.id, status: 'signed' });
+  };
+
   const handleDelete = async (id: string) => {
     await deleteContract.mutateAsync(id);
+  };
+
+  const openEditDialog = (contract: Contract) => {
+    setEditingContract(contract);
+    setIsEditOpen(true);
   };
 
   return (
@@ -138,6 +167,41 @@ export default function Contracts() {
         </Dialog>
       </div>
 
+      {/* Edit Dialog */}
+      <Dialog open={isEditOpen} onOpenChange={(open) => { setIsEditOpen(open); if (!open) setEditingContract(null); }}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-xl">Editar Contrato</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleEdit} className="space-y-4 mt-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit_title">Título *</Label>
+              <Input 
+                id="edit_title" 
+                name="title" 
+                required 
+                placeholder="Título do contrato" 
+                className="h-11"
+                defaultValue={editingContract?.title}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit_terms">Termos</Label>
+              <Textarea 
+                id="edit_terms" 
+                name="terms" 
+                placeholder="Termos principais do contrato..." 
+                rows={6}
+                defaultValue={editingContract?.terms || ''}
+              />
+            </div>
+            <Button type="submit" className="w-full h-11" disabled={updateContract.isPending}>
+              {updateContract.isPending ? 'Salvando...' : 'Salvar Alterações'}
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       {/* Tabs */}
       <Tabs value={filter} onValueChange={setFilter}>
         <TabsList className="h-11">
@@ -163,15 +227,10 @@ export default function Contracts() {
         </Card>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((contract, index) => {
-            const isDraft = contract.status === 'draft';
-            const CardWrapper = isDraft ? 'div' : Link;
-            const cardProps = isDraft ? {} : { to: `/contratos/${contract.id}` };
-            
-            return (
-            <CardWrapper key={contract.id} {...cardProps as any}>
+          {filtered.map((contract, index) => (
+            <Link key={contract.id} to={`/contratos/${contract.id}`}>
             <Card 
-              className={`border-border/50 ${!isDraft ? 'cursor-pointer hover:border-primary/50 transition-colors' : 'opacity-80'}`}
+              className="border-border/50 cursor-pointer hover:border-primary/50 transition-colors"
               style={{ animationDelay: `${index * 50}ms` }}
             >
               <CardContent className="p-5">
@@ -182,12 +241,33 @@ export default function Contracts() {
                       {statusConfig[contract.status].label}
                     </Badge>
                     <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
+                      <DropdownMenuTrigger asChild onClick={(e) => e.preventDefault()}>
                         <Button variant="ghost" size="icon" className="h-8 w-8">
                           <MoreVertical className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
+                      <DropdownMenuContent align="end" className="bg-popover">
+                        <DropdownMenuItem onClick={(e) => { e.preventDefault(); openEditDialog(contract); }}>
+                          <Pencil className="h-4 w-4 mr-2" />
+                          Editar
+                        </DropdownMenuItem>
+                        
+                        {contract.status === 'draft' && (
+                          <DropdownMenuItem onClick={(e) => { e.preventDefault(); handleSendContract(contract); }}>
+                            <Send className="h-4 w-4 mr-2 text-warning" />
+                            Enviar
+                          </DropdownMenuItem>
+                        )}
+                        
+                        {contract.status === 'sent' && (
+                          <DropdownMenuItem onClick={(e) => { e.preventDefault(); handleSignContract(contract); }}>
+                            <CheckCircle2 className="h-4 w-4 mr-2 text-success" />
+                            Marcar como Assinado
+                          </DropdownMenuItem>
+                        )}
+                        
+                        <DropdownMenuSeparator />
+                        
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive">
@@ -220,9 +300,8 @@ export default function Contracts() {
                 )}
               </CardContent>
             </Card>
-            </CardWrapper>
-            );
-          })}
+            </Link>
+          ))}
         </div>
       )}
     </div>
