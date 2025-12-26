@@ -135,12 +135,12 @@ export function TaskDialog({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Responsável</Label>
-              <Select value={assignedTo} onValueChange={setAssignedTo}>
+              <Select value={assignedTo || '__none__'} onValueChange={(v) => setAssignedTo(v === '__none__' ? '' : v)}>
                 <SelectTrigger className="h-11">
                   <SelectValue placeholder="Selecione" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Nenhum</SelectItem>
+                  <SelectItem value="__none__">Nenhum</SelectItem>
                   {projectMembers.map(member => (
                     <SelectItem key={member.user_id} value={member.user_id}>
                       {member.profiles?.full_name || 'Sem nome'}
