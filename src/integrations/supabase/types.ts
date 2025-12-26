@@ -402,6 +402,7 @@ export type Database = {
           field_type: string
           id: string
           last_edited_by: string | null
+          link_url: string | null
           project_id: string
           updated_at: string
         }
@@ -412,6 +413,7 @@ export type Database = {
           field_type: string
           id?: string
           last_edited_by?: string | null
+          link_url?: string | null
           project_id: string
           updated_at?: string
         }
@@ -422,6 +424,7 @@ export type Database = {
           field_type?: string
           id?: string
           last_edited_by?: string | null
+          link_url?: string | null
           project_id?: string
           updated_at?: string
         }

@@ -23,6 +23,7 @@ export interface ProjectField {
   field_type: 'design' | 'copy' | 'traffic' | 'social_media' | 'general';
   content: string | null;
   attachments: string[] | null;
+  link_url: string | null;
   last_edited_by: string | null;
   created_at: string;
   updated_at: string;
@@ -150,13 +151,16 @@ export function useProjectFields(projectId?: string) {
   });
 
   const updateField = useMutation({
-    mutationFn: async ({ fieldId, content, attachments }: { fieldId: string; content: string; attachments?: string[] }) => {
+    mutationFn: async ({ fieldId, content, attachments, linkUrl }: { fieldId: string; content: string; attachments?: string[]; linkUrl?: string }) => {
       const updateData: Record<string, any> = { 
         content, 
         last_edited_by: user!.id 
       };
       if (attachments !== undefined) {
         updateData.attachments = attachments;
+      }
+      if (linkUrl !== undefined) {
+        updateData.link_url = linkUrl;
       }
       const { data, error } = await supabase
         .from('project_fields')
