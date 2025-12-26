@@ -15,6 +15,8 @@ import { useContracts, CreateContractData, Contract } from '@/hooks/useContracts
 import { useClients } from '@/hooks/useClients';
 import { useProjects } from '@/hooks/useProjects';
 import { Badge } from '@/components/ui/badge';
+import { ContractTemplateSelector } from '@/components/ContractTemplateSelector';
+import { ContractTemplate } from '@/hooks/useContractTemplates';
 
 const statusConfig = {
   draft: { label: 'Rascunho', className: 'bg-muted text-muted-foreground' },
@@ -35,8 +37,15 @@ export default function Contracts() {
   const [filter, setFilter] = useState('all');
   const [editingContract, setEditingContract] = useState<Contract | null>(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<ContractTemplate | null>(null);
+  const [termsValue, setTermsValue] = useState('');
 
   const filtered = filter === 'all' ? contracts : contracts.filter(c => c.status === filter);
+
+  const handleSelectTemplate = (template: ContractTemplate) => {
+    setSelectedTemplate(template);
+    setTermsValue(template.terms);
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -45,13 +54,15 @@ export default function Contracts() {
       title: formData.get('title') as string,
       client_id: formData.get('client_id') as string || undefined,
       project_id: formData.get('project_id') as string || undefined,
-      terms: formData.get('terms') as string || undefined,
+      terms: termsValue || formData.get('terms') as string || undefined,
       signatories: [
         { name: formData.get('sig_name') as string, email: formData.get('sig_email') as string, role: 'contratante' as const },
       ],
     };
     await createContract.mutateAsync(data);
     setIsOpen(false);
+    setSelectedTemplate(null);
+    setTermsValue('');
   };
 
   const handleEdit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -104,6 +115,14 @@ export default function Contracts() {
               <DialogTitle className="text-xl">Criar Nova Proposta</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+              {/* Template Selector */}
+              <ContractTemplateSelector onSelectTemplate={handleSelectTemplate} />
+              
+              {selectedTemplate && (
+                <div className="p-3 bg-primary/10 rounded-lg text-sm">
+                  <span className="font-medium">Template aplicado:</span> {selectedTemplate.name}
+                </div>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="title">Título *</Label>
                 <Input id="title" name="title" required placeholder="Título do contrato" className="h-11" />
@@ -156,7 +175,14 @@ export default function Contracts() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="terms">Termos</Label>
-                <Textarea id="terms" name="terms" placeholder="Termos principais do contrato..." rows={4} />
+                <Textarea 
+                  id="terms" 
+                  name="terms" 
+                  placeholder="Termos principais do contrato..." 
+                  rows={4}
+                  value={termsValue}
+                  onChange={(e) => setTermsValue(e.target.value)}
+                />
               </div>
               <Button type="submit" className="w-full h-11" disabled={createContract.isPending}>
                 {createContract.isPending ? 'Criando...' : 'Criar Contrato'}
