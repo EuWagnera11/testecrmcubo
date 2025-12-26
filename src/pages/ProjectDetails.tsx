@@ -23,6 +23,9 @@ import { MetricsEditor } from '@/components/MetricsEditor';
 import { FileUpload } from '@/components/FileUpload';
 import { ProjectFinancials } from '@/components/ProjectFinancials';
 import { useRealtimeNotifications } from '@/hooks/useRealtimeNotifications';
+import { useProjectPresence } from '@/hooks/useProjectPresence';
+import { OnlineUsers } from '@/components/OnlineUsers';
+
 
 const fieldConfig = {
   design: { label: 'Design', icon: Palette, color: 'text-pink-500', role: 'designer' as ProjectRole },
@@ -50,8 +53,9 @@ export default function ProjectDetails() {
   const { users } = useUsers();
   const { isAdmin, isDirector } = useUserRole();
   
-  // Enable realtime notifications for this project
+  // Enable realtime notifications and presence for this project
   useRealtimeNotifications(id);
+  const { onlineUsers } = useProjectPresence(id);
   
   const [fieldContents, setFieldContents] = useState<Record<string, string>>({});
   const [fieldAttachments, setFieldAttachments] = useState<Record<string, string[]>>({});
@@ -155,7 +159,7 @@ export default function ProjectDetails() {
             <ArrowLeft className="h-4 w-4 mr-1" /> Voltar
           </Link>
           <h1 className="text-3xl font-display tracking-wide">{project.name}</h1>
-          <div className="flex items-center gap-3 mt-2 text-muted-foreground font-body">
+          <div className="flex flex-wrap items-center gap-3 mt-2 text-muted-foreground font-body">
             <span>{project.clients?.name || 'Sem cliente'}</span>
             <span>•</span>
             <span className="text-primary font-display">{formatCurrency(Number(project.total_value), project.currency)}</span>
@@ -168,6 +172,12 @@ export default function ProjectDetails() {
                 </Badge>
               </>
             ) : null}
+            {onlineUsers.length > 0 && (
+              <>
+                <span>•</span>
+                <OnlineUsers users={onlineUsers} />
+              </>
+            )}
           </div>
         </div>
 
