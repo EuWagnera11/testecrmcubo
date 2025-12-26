@@ -3,13 +3,15 @@ import { Outlet } from 'react-router-dom';
 import { Header } from './Header';
 import { Sidebar } from './Sidebar';
 import { useGlobalNotifications } from '@/hooks/useGlobalNotifications';
+import { useChatNotifications } from '@/hooks/useChatNotifications';
 
 export function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  // Enable global notifications for projects and clients
+  // Enable global notifications for projects, clients, and chat
   useGlobalNotifications();
+  useChatNotifications();
 
   return (
     <div className="min-h-screen bg-background flex w-full">
