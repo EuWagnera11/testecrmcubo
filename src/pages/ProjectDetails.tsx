@@ -25,6 +25,7 @@ import { ProjectFinancials } from '@/components/ProjectFinancials';
 import { useRealtimeNotifications } from '@/hooks/useRealtimeNotifications';
 import { useProjectPresence } from '@/hooks/useProjectPresence';
 import { OnlineUsers } from '@/components/OnlineUsers';
+import { ProjectChat } from '@/components/ProjectChat';
 
 
 const fieldConfig = {
@@ -365,6 +366,9 @@ export default function ProjectDetails() {
           <MetricsEditor projectId={id!} currency={project.currency} />
         </TabsContent>
       </Tabs>
+
+      {/* Project Chat */}
+      <ProjectChat projectId={id!} />
     </div>
   );
 }
