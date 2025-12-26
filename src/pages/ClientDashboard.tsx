@@ -1,6 +1,7 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { format } from 'date-fns';
+import { PDFExport } from '@/components/PDFExport';
 import { ptBR } from 'date-fns/locale';
 import { 
   Eye, MousePointer, ShoppingCart, DollarSign, TrendingUp, 
@@ -115,19 +116,22 @@ export default function ClientDashboard() {
     return ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext || '');
   };
 
+  const contentRef = useRef<HTMLDivElement>(null);
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b border-border bg-card">
-        <div className="container mx-auto px-4 py-6">
+        <div className="container mx-auto px-4 py-6 flex justify-between items-center">
           <div className="flex items-center gap-1">
             <span className="text-primary font-medium italic text-xl">refine</span>
             <span className="font-black text-2xl tracking-tighter">CUBO</span>
           </div>
+          <PDFExport contentRef={contentRef} fileName={`relatorio-${project.name}`} />
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8 space-y-8">
+      <main ref={contentRef} className="container mx-auto px-4 py-8 space-y-8">
         {/* Project Info */}
         <div>
           <Badge variant="secondary" className="mb-2">Dashboard do Cliente</Badge>

@@ -6,7 +6,8 @@ import {
   FileText, 
   Settings,
   X,
-  ChevronLeft
+  ChevronLeft,
+  Wallet
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -23,6 +24,7 @@ const navItems = [
   { icon: Users, label: 'Clientes', path: '/clientes' },
   { icon: FolderKanban, label: 'Projetos', path: '/projetos' },
   { icon: FileText, label: 'Contratos', path: '/contratos' },
+  { icon: Wallet, label: 'Financeiro', path: '/financeiro' },
   { icon: Settings, label: 'Configurações', path: '/configuracoes' },
 ];
 

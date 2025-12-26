@@ -5,9 +5,10 @@ import { useAuth } from '@/contexts/AuthContext';
 
 interface PendingApprovalProps {
   status: 'pending' | 'rejected';
+  customMessage?: string;
 }
 
-export function PendingApproval({ status }: PendingApprovalProps) {
+export function PendingApproval({ status, customMessage }: PendingApprovalProps) {
   const { signOut } = useAuth();
 
   return (
@@ -19,9 +20,11 @@ export function PendingApproval({ status }: PendingApprovalProps) {
               <div className="h-16 w-16 rounded-full bg-warning/10 flex items-center justify-center mx-auto mb-6">
                 <Clock className="h-8 w-8 text-warning" />
               </div>
-              <h1 className="text-2xl font-bold mb-2">Aguardando Aprovação</h1>
+              <h1 className="text-2xl font-bold mb-2">
+                {customMessage ? 'Acesso Restrito' : 'Aguardando Aprovação'}
+              </h1>
               <p className="text-muted-foreground mb-6">
-                Sua conta foi criada com sucesso! Um administrador precisa aprovar seu acesso antes de você poder usar o sistema.
+                {customMessage || 'Sua conta foi criada com sucesso! Um administrador precisa aprovar seu acesso antes de você poder usar o sistema.'}
               </p>
             </>
           ) : (

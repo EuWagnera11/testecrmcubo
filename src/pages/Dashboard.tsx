@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useClients } from '@/hooks/useClients';
 import { useProjects } from '@/hooks/useProjects';
 import { useProfile } from '@/hooks/useProfile';
+import { useUserRole } from '@/hooks/useUserRole';
 import { Link } from 'react-router-dom';
 
 export default function Dashboard() {
@@ -13,6 +14,9 @@ export default function Dashboard() {
   const { clients } = useClients();
   const { projects } = useProjects();
   const { profile } = useProfile();
+  const { isAdmin, isDirector } = useUserRole();
+  
+  const canSeeFinancials = isAdmin || isDirector;
 
   const activeProjects = projects.filter(p => p.status === 'active');
   const totalValue = projects.reduce((sum, p) => sum + Number(p.total_value), 0);
@@ -29,12 +33,15 @@ export default function Dashboard() {
   const formatCurrency = (value: number) => 
     new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 
-  const metrics = [
+  const baseMetrics = [
     { title: 'Clientes', value: clients.length, icon: Users, description: 'Total cadastrados' },
     { title: 'Projetos', value: projects.length, icon: FolderKanban, description: 'Em andamento' },
     { title: 'Ativos', value: activeProjects.length, icon: TrendingUp, description: 'Este mês' },
-    { title: 'Faturamento', value: formatCurrency(totalValue), icon: DollarSign, description: 'Valor total' },
   ];
+  
+  const metrics = canSeeFinancials 
+    ? [...baseMetrics, { title: 'Faturamento', value: formatCurrency(totalValue), icon: DollarSign, description: 'Valor total' }]
+    : baseMetrics;
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -82,26 +89,28 @@ export default function Dashboard() {
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
-        {/* Revenue Goal */}
-        <Card className="border-border/50">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg font-semibold">Meta de Receita</CardTitle>
-              <TrendingUp className="h-5 w-5 text-primary" />
-            </div>
-          </CardHeader>
-          <CardContent className="pt-4">
-            <div className="flex justify-between text-sm mb-3">
-              <span className="text-muted-foreground">Progresso</span>
-              <span className="font-bold text-lg">{progressPercent.toFixed(0)}%</span>
-            </div>
-            <Progress value={progressPercent} className="h-3" />
-            <div className="flex justify-between text-sm text-muted-foreground mt-3">
-              <span>{formatCurrency(totalValue)}</span>
-              <span>Meta: {formatCurrency(revenueGoal)}</span>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Revenue Goal - Only for directors+ */}
+        {canSeeFinancials && (
+          <Card className="border-border/50">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg font-semibold">Meta de Receita</CardTitle>
+                <TrendingUp className="h-5 w-5 text-primary" />
+              </div>
+            </CardHeader>
+            <CardContent className="pt-4">
+              <div className="flex justify-between text-sm mb-3">
+                <span className="text-muted-foreground">Progresso</span>
+                <span className="font-bold text-lg">{progressPercent.toFixed(0)}%</span>
+              </div>
+              <Progress value={progressPercent} className="h-3" />
+              <div className="flex justify-between text-sm text-muted-foreground mt-3">
+                <span>{formatCurrency(totalValue)}</span>
+                <span>Meta: {formatCurrency(revenueGoal)}</span>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Recent Projects */}
         <Card className="border-border/50">
@@ -126,7 +135,9 @@ export default function Dashboard() {
                       <p className="font-medium">{project.name}</p>
                       <p className="text-sm text-muted-foreground">{project.clients?.name || 'Sem cliente'}</p>
                     </div>
-                    <span className="font-semibold text-primary">{formatCurrency(Number(project.total_value))}</span>
+                    {canSeeFinancials && (
+                      <span className="font-semibold text-primary">{formatCurrency(Number(project.total_value))}</span>
+                    )}
                   </div>
                 ))}
               </div>
