@@ -1,16 +1,20 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useProjectChat } from '@/hooks/useProjectChat';
 import { useChatNotifications } from '@/hooks/useChatNotifications';
+import { useMessageReactions } from '@/hooks/useMessageReactions';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { MessageCircle, Send, X, Paperclip, Image, FileText, Loader2 } from 'lucide-react';
+import { MessageCircle, Send, X, Paperclip, FileText, Loader2, Search } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'sonner';
+import { EmojiPicker } from './EmojiPicker';
+import { MessageReactions } from './MessageReactions';
+import { ChatSearch, ChatFilters } from './ChatSearch';
 
 interface ProjectChatProps {
   projectId: string;
@@ -27,14 +31,29 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
     startTyping,
     stopTyping
   } = useProjectChat(projectId);
+  const { reactions, fetchReactions, toggleReaction } = useMessageReactions(projectId);
   const { setCurrentProject } = useChatNotifications();
   
   const [isOpen, setIsOpen] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [filters, setFilters] = useState<ChatFilters>({
+    search: '',
+    showImages: true,
+    showFiles: true,
+    showText: true
+  });
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Fetch reactions when messages load
+  useEffect(() => {
+    if (messages.length > 0) {
+      fetchReactions(messages.map(m => m.id));
+    }
+  }, [messages, fetchReactions]);
 
   // Set current project for notifications
   useEffect(() => {
@@ -52,6 +71,31 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
+
+  // Filter messages
+  const filteredMessages = useMemo(() => {
+    return messages.filter(msg => {
+      // Search filter
+      if (filters.search) {
+        const searchLower = filters.search.toLowerCase();
+        const matchContent = msg.content?.toLowerCase().includes(searchLower);
+        const matchUser = msg.user_name?.toLowerCase().includes(searchLower);
+        const matchFile = msg.file_name?.toLowerCase().includes(searchLower);
+        if (!matchContent && !matchUser && !matchFile) return false;
+      }
+
+      // Type filters
+      const isImage = msg.file_type?.startsWith('image/');
+      const isFile = msg.file_url && !isImage;
+      const isText = !msg.file_url || (msg.content && !msg.content.startsWith('📎'));
+
+      if (isImage && !filters.showImages) return false;
+      if (isFile && !filters.showFiles) return false;
+      if (isText && !isImage && !isFile && !filters.showText) return false;
+
+      return true;
+    });
+  }, [messages, filters]);
 
   const handleSend = async () => {
     if (!newMessage.trim() || sending) return;
@@ -83,7 +127,6 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Limit file size to 10MB
     if (file.size > 10 * 1024 * 1024) {
       toast.error('Arquivo muito grande. Máximo 10MB.');
       return;
@@ -153,29 +196,48 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
           <MessageCircle className="h-5 w-5" />
           Chat do Projeto
         </CardTitle>
-        <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)}>
-          <X className="h-4 w-4" />
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="icon" onClick={() => setShowSearch(!showSearch)}>
+            <Search className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)}>
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
       </CardHeader>
       
       <CardContent className="flex-1 p-0 flex flex-col overflow-hidden">
+        {showSearch && (
+          <ChatSearch
+            filters={filters}
+            onFiltersChange={setFilters}
+            totalMessages={messages.length}
+            filteredCount={filteredMessages.length}
+          />
+        )}
+
         <ScrollArea className="flex-1 p-4" ref={scrollRef}>
           {loading ? (
             <div className="flex items-center justify-center h-full text-muted-foreground">
               Carregando mensagens...
             </div>
-          ) : messages.length === 0 ? (
+          ) : filteredMessages.length === 0 ? (
             <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-              Nenhuma mensagem ainda. Comece a conversa!
+              {messages.length === 0 
+                ? 'Nenhuma mensagem ainda. Comece a conversa!'
+                : 'Nenhuma mensagem encontrada com os filtros aplicados.'
+              }
             </div>
           ) : (
             <div className="space-y-4">
-              {messages.map((msg) => {
+              {filteredMessages.map((msg) => {
                 const isOwn = msg.user_id === user?.id;
+                const msgReactions = reactions[msg.id] || [];
+                
                 return (
                   <div
                     key={msg.id}
-                    className={`flex gap-2 ${isOwn ? 'flex-row-reverse' : ''}`}
+                    className={`flex gap-2 group ${isOwn ? 'flex-row-reverse' : ''}`}
                   >
                     <Avatar className="h-8 w-8 flex-shrink-0">
                       <AvatarImage src={msg.user_avatar || undefined} />
@@ -192,18 +254,30 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
                           {format(new Date(msg.created_at), 'HH:mm', { locale: ptBR })}
                         </span>
                       </div>
-                      <div
-                        className={`rounded-lg px-3 py-2 max-w-[220px] break-words ${
-                          isOwn
-                            ? 'bg-primary text-primary-foreground'
-                            : 'bg-muted'
-                        }`}
-                      >
-                        {msg.content && !msg.content.startsWith('📎') && (
-                          <p className="text-sm">{msg.content}</p>
+                      <div className="flex items-start gap-1">
+                        {!isOwn && (
+                          <EmojiPicker onSelect={(emoji) => toggleReaction(msg.id, emoji)} />
                         )}
-                        {renderFilePreview(msg)}
+                        <div
+                          className={`rounded-lg px-3 py-2 max-w-[220px] break-words ${
+                            isOwn
+                              ? 'bg-primary text-primary-foreground'
+                              : 'bg-muted'
+                          }`}
+                        >
+                          {msg.content && !msg.content.startsWith('📎') && (
+                            <p className="text-sm">{msg.content}</p>
+                          )}
+                          {renderFilePreview(msg)}
+                        </div>
+                        {isOwn && (
+                          <EmojiPicker onSelect={(emoji) => toggleReaction(msg.id, emoji)} />
+                        )}
                       </div>
+                      <MessageReactions
+                        reactions={msgReactions}
+                        onToggle={(emoji) => toggleReaction(msg.id, emoji)}
+                      />
                     </div>
                   </div>
                 );
@@ -212,7 +286,6 @@ export const ProjectChat = ({ projectId }: ProjectChatProps) => {
           )}
         </ScrollArea>
 
-        {/* Typing indicator */}
         {typingUsers.length > 0 && (
           <div className="px-4 py-2 text-xs text-muted-foreground animate-pulse">
             {typingUsers.length === 1 

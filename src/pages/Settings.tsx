@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Users, UserCheck, UserX, Shield, Settings as SettingsIcon, Target, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -29,7 +29,14 @@ export default function Settings() {
   const { users, isLoading, approveUser, rejectUser, setUserRole } = useUsers();
   const { isAdmin } = useUserRole();
   const { profile, updateProfile } = useProfile();
-  const [revenueGoal, setRevenueGoal] = useState(profile?.revenue_goal?.toString() || '10000');
+  const [revenueGoal, setRevenueGoal] = useState('10000');
+
+  // Sync revenueGoal with profile when it loads
+  useEffect(() => {
+    if (profile?.revenue_goal !== undefined) {
+      setRevenueGoal(profile.revenue_goal?.toString() || '10000');
+    }
+  }, [profile?.revenue_goal]);
 
   const pendingUsers = users.filter(u => u.status === 'pending');
   const allUsers = users.filter(u => u.id !== user?.id);

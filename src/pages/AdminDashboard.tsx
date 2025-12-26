@@ -80,22 +80,35 @@ export default function AdminDashboard() {
     isAfter(parseISO(p.created_at), subMonths(new Date(), 1))
   ).length;
 
+  // Calculate real growth percentages
+  const currentMonthRevenue = monthlyRevenue[5]?.receitas || 0;
+  const lastMonthRevenue = monthlyRevenue[4]?.receitas || 0;
+  const revenueGrowth = lastMonthRevenue > 0 
+    ? ((currentMonthRevenue - lastMonthRevenue) / lastMonthRevenue * 100).toFixed(0)
+    : '0';
+
+  const currentMonthExpenses = monthlyRevenue[5]?.despesas || 0;
+  const lastMonthExpenses = monthlyRevenue[4]?.despesas || 0;
+  const expenseChange = lastMonthExpenses > 0 
+    ? ((currentMonthExpenses - lastMonthExpenses) / lastMonthExpenses * 100).toFixed(0)
+    : '0';
+
   const kpis = [
     { 
       title: 'Receita Total', 
       value: formatCurrency(totalIncome), 
-      change: '+12%', 
-      isPositive: true,
+      change: `${Number(revenueGrowth) >= 0 ? '+' : ''}${revenueGrowth}%`, 
+      isPositive: Number(revenueGrowth) >= 0,
       icon: DollarSign,
-      description: 'Este período'
+      description: 'vs mês anterior'
     },
     { 
       title: 'Despesas', 
       value: formatCurrency(totalExpenses), 
-      change: '-5%', 
-      isPositive: true,
+      change: `${Number(expenseChange) >= 0 ? '+' : ''}${expenseChange}%`, 
+      isPositive: Number(expenseChange) <= 0,
       icon: TrendingUp,
-      description: 'Este período'
+      description: 'vs mês anterior'
     },
     { 
       title: 'Lucro Líquido', 
