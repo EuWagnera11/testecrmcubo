@@ -100,14 +100,32 @@ export function useProjects() {
 
   const updateProject = useMutation({
     mutationFn: async ({ id, ...projectData }: Partial<Project> & { id: string }) => {
+      // Sanitize input data
+      const sanitizedData: Record<string, unknown> = { ...projectData };
+      if (projectData.name) sanitizedData.name = sanitizeForStorage(projectData.name, 200);
+      if (projectData.total_value !== undefined) {
+        sanitizedData.total_value = sanitizeNumber(projectData.total_value, 0, 999999999);
+      }
+      if (projectData.advance_percentage !== undefined) {
+        sanitizedData.advance_percentage = sanitizeNumber(projectData.advance_percentage, 0, 100);
+      }
+
       const { data, error } = await supabase
         .from('projects')
-        .update(projectData)
+        .update(sanitizedData)
         .eq('id', id)
         .select()
         .single();
       
       if (error) throw error;
+      
+      await logAuditEvent({
+        action: 'data_update',
+        tableName: 'projects',
+        recordId: id,
+        newData: sanitizedData,
+      });
+      
       return data;
     },
     onSuccess: () => {
@@ -134,6 +152,12 @@ export function useProjects() {
         .eq('id', id);
       
       if (error) throw error;
+      
+      await logAuditEvent({
+        action: 'data_delete',
+        tableName: 'projects',
+        recordId: id,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['projects'] });

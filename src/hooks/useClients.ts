@@ -2,6 +2,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { clientSchema } from '@/lib/validation';
+import { sanitizeForStorage, sanitizeEmail, sanitizePhone } from '@/lib/sanitize';
+import { logAuditEvent } from '@/hooks/useAuditLog';
 
 export interface Client {
   id: string;
@@ -45,16 +48,36 @@ export function useClients() {
 
   const createClient = useMutation({
     mutationFn: async (clientData: CreateClientData) => {
+      // Validate and sanitize input
+      const validation = clientSchema.safeParse(clientData);
+      if (!validation.success) {
+        throw new Error(validation.error.errors[0]?.message || 'Dados inválidos');
+      }
+
+      const sanitizedData = {
+        name: sanitizeForStorage(validation.data.name, 100),
+        email: validation.data.email ? sanitizeEmail(validation.data.email) : null,
+        phone: validation.data.phone ? sanitizePhone(validation.data.phone) : null,
+        company: validation.data.company ? sanitizeForStorage(validation.data.company, 100) : null,
+        country_code: validation.data.country_code || '+55',
+        user_id: user!.id,
+      };
+
       const { data, error } = await supabase
         .from('clients')
-        .insert({
-          ...clientData,
-          user_id: user!.id,
-        })
+        .insert(sanitizedData)
         .select()
         .single();
       
       if (error) throw error;
+      
+      await logAuditEvent({
+        action: 'data_create',
+        tableName: 'clients',
+        recordId: data.id,
+        newData: { name: sanitizedData.name, email: sanitizedData.email },
+      });
+      
       return data;
     },
     onSuccess: () => {
@@ -75,14 +98,31 @@ export function useClients() {
 
   const updateClient = useMutation({
     mutationFn: async ({ id, ...clientData }: Partial<Client> & { id: string }) => {
+      // Sanitize input data
+      const sanitizedData: Record<string, unknown> = {};
+      if (clientData.name) sanitizedData.name = sanitizeForStorage(clientData.name, 100);
+      if (clientData.email) sanitizedData.email = sanitizeEmail(clientData.email);
+      if (clientData.phone) sanitizedData.phone = sanitizePhone(clientData.phone);
+      if (clientData.company) sanitizedData.company = sanitizeForStorage(clientData.company, 100);
+      if (clientData.country_code) sanitizedData.country_code = clientData.country_code;
+      if (clientData.status) sanitizedData.status = clientData.status;
+
       const { data, error } = await supabase
         .from('clients')
-        .update(clientData)
+        .update(sanitizedData)
         .eq('id', id)
         .select()
         .single();
       
       if (error) throw error;
+      
+      await logAuditEvent({
+        action: 'data_update',
+        tableName: 'clients',
+        recordId: id,
+        newData: sanitizedData,
+      });
+      
       return data;
     },
     onSuccess: () => {
@@ -109,6 +149,12 @@ export function useClients() {
         .eq('id', id);
       
       if (error) throw error;
+      
+      await logAuditEvent({
+        action: 'data_delete',
+        tableName: 'clients',
+        recordId: id,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });

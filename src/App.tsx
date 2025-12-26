@@ -52,6 +52,24 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function AdminRoute({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+  const { isAdmin, isLoading: roleLoading } = useUserRole();
+  
+  if (loading || roleLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+  
+  if (!user) return <Navigate to="/auth" replace />;
+  if (!isAdmin) return <Navigate to="/dashboard" replace />;
+  
+  return <>{children}</>;
+}
+
 const AppRoutes = () => (
   <BrowserRouter>
     <Routes>
@@ -60,7 +78,7 @@ const AppRoutes = () => (
       <Route path="/" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard" element={<Dashboard />} />
-        <Route path="admin" element={<AdminDashboard />} />
+        <Route path="admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
         <Route path="clientes" element={<Clients />} />
         <Route path="projetos" element={<Projects />} />
         <Route path="projetos/:id" element={<ProjectDetails />} />
