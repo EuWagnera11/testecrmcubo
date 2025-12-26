@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { 
   ArrowLeft, Users, Plus, Trash2, Save, Share2, Copy, Check,
-  Palette, FileText, TrendingUp, MessageSquare, DollarSign, Image, Layers, LayoutGrid
+  Palette, FileText, TrendingUp, MessageSquare, DollarSign, Image, Layers, LayoutGrid, ExternalLink
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -61,6 +61,7 @@ export default function ProjectDetails() {
   
   const [fieldContents, setFieldContents] = useState<Record<string, string>>({});
   const [fieldAttachments, setFieldAttachments] = useState<Record<string, string[]>>({});
+  const [fieldLinks, setFieldLinks] = useState<Record<string, string>>({});
   const [copied, setCopied] = useState(false);
   const [addMemberOpen, setAddMemberOpen] = useState(false);
 
@@ -77,16 +78,19 @@ export default function ProjectDetails() {
     return fieldConfig[fieldType]?.role === userProjectRole;
   };
 
-  // Initialize field contents and attachments
+  // Initialize field contents, attachments and links
   useEffect(() => {
     const contents: Record<string, string> = {};
     const attachments: Record<string, string[]> = {};
+    const links: Record<string, string> = {};
     fields.forEach(f => {
       contents[f.field_type] = f.content || '';
       attachments[f.field_type] = f.attachments || [];
+      links[f.field_type] = f.link_url || '';
     });
     setFieldContents(contents);
     setFieldAttachments(attachments);
+    setFieldLinks(links);
   }, [fields]);
 
   // Ensure all field types exist
@@ -104,7 +108,8 @@ export default function ProjectDetails() {
       await updateField.mutateAsync({ 
         fieldId: field.id, 
         content: fieldContents[fieldType] || '',
-        attachments: fieldAttachments[fieldType] || []
+        attachments: fieldAttachments[fieldType] || [],
+        linkUrl: fieldLinks[fieldType] || ''
       });
     }
   };
@@ -242,6 +247,30 @@ export default function ProjectDetails() {
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-3">
+                    {/* Link do Drive/Docs */}
+                    <div className="flex items-center gap-2">
+                      <div className="relative flex-1">
+                        <ExternalLink className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          value={fieldLinks[type] || ''}
+                          onChange={(e) => setFieldLinks(prev => ({ ...prev, [type]: e.target.value }))}
+                          placeholder="Link do Drive/Docs..."
+                          className="pl-9"
+                          disabled={!canEdit}
+                        />
+                      </div>
+                      {fieldLinks[type] && (
+                        <Button 
+                          size="icon" 
+                          variant="ghost" 
+                          asChild
+                        >
+                          <a href={fieldLinks[type]} target="_blank" rel="noopener noreferrer">
+                            <ExternalLink className="h-4 w-4" />
+                          </a>
+                        </Button>
+                      )}
+                    </div>
                     <Textarea
                       value={fieldContents[type] || ''}
                       onChange={(e) => setFieldContents(prev => ({ ...prev, [type]: e.target.value }))}
