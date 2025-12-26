@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Plus, FileText, ArrowRight, MoreVertical, Trash2, Edit } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Plus, FileText, ArrowRight, MoreVertical, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -162,10 +163,15 @@ export default function Contracts() {
         </Card>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((contract, index) => (
+          {filtered.map((contract, index) => {
+            const isDraft = contract.status === 'draft';
+            const CardWrapper = isDraft ? 'div' : Link;
+            const cardProps = isDraft ? {} : { to: `/contratos/${contract.id}` };
+            
+            return (
+            <CardWrapper key={contract.id} {...cardProps as any}>
             <Card 
-              key={contract.id} 
-              className="border-border/50"
+              className={`border-border/50 ${!isDraft ? 'cursor-pointer hover:border-primary/50 transition-colors' : 'opacity-80'}`}
               style={{ animationDelay: `${index * 50}ms` }}
             >
               <CardContent className="p-5">
@@ -214,7 +220,9 @@ export default function Contracts() {
                 )}
               </CardContent>
             </Card>
-          ))}
+            </CardWrapper>
+            );
+          })}
         </div>
       )}
     </div>

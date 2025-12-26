@@ -11,6 +11,7 @@ export interface Client {
   phone: string | null;
   country_code: string | null;
   company: string | null;
+  status: string;
   created_at: string;
   updated_at: string;
 }
