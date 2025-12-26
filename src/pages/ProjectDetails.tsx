@@ -21,6 +21,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { MetricsEditor } from '@/components/MetricsEditor';
 import { FileUpload } from '@/components/FileUpload';
+import { useRealtimeNotifications } from '@/hooks/useRealtimeNotifications';
 
 const fieldConfig = {
   design: { label: 'Design', icon: Palette, color: 'text-pink-500', role: 'designer' as ProjectRole },
@@ -47,6 +48,9 @@ export default function ProjectDetails() {
   const { fields, updateField, createField, isLoading: fieldsLoading } = useProjectFields(id);
   const { users } = useUsers();
   const { isAdmin, isDirector } = useUserRole();
+  
+  // Enable realtime notifications for this project
+  useRealtimeNotifications(id);
   
   const [fieldContents, setFieldContents] = useState<Record<string, string>>({});
   const [fieldAttachments, setFieldAttachments] = useState<Record<string, string[]>>({});

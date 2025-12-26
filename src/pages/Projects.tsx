@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { useProjects, CreateProjectData } from '@/hooks/useProjects';
 import { useClients } from '@/hooks/useClients';
+import { useUserRole } from '@/hooks/useUserRole';
 import { Badge } from '@/components/ui/badge';
 
 const currencies = [
@@ -27,6 +28,8 @@ const statusConfig = {
 export default function Projects() {
   const { projects, isLoading, createProject } = useProjects();
   const { clients } = useClients();
+  const { isAdmin, isDirector } = useUserRole();
+  const canSeeFinancials = isAdmin || isDirector;
   const [search, setSearch] = useState('');
   const [isOpen, setIsOpen] = useState(false);
 
@@ -175,9 +178,13 @@ export default function Projects() {
                   </div>
                   <p className="text-sm text-muted-foreground mb-4">{project.clients?.name || 'Sem cliente'}</p>
                   <div className="flex items-center justify-between">
-                    <p className="text-2xl font-bold text-primary">
-                      {formatCurrency(Number(project.total_value), project.currency)}
-                    </p>
+                    {canSeeFinancials ? (
+                      <p className="text-2xl font-bold text-primary">
+                        {formatCurrency(Number(project.total_value), project.currency)}
+                      </p>
+                    ) : (
+                      <Badge variant="secondary">Ver detalhes</Badge>
+                    )}
                     <ExternalLink className="h-4 w-4 text-muted-foreground" />
                   </div>
                 </CardContent>
