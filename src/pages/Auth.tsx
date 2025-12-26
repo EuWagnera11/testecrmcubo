@@ -8,9 +8,13 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, ArrowRight } from 'lucide-react';
+import { signInSchema, signUpSchema } from '@/lib/validation';
+import { logAuditEvent } from '@/hooks/useAuditLog';
 
 export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
+  const [signInErrors, setSignInErrors] = useState<Record<string, string>>({});
+  const [signUpErrors, setSignUpErrors] = useState<Record<string, string>>({});
   const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -18,20 +22,35 @@ export default function Auth() {
   const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
+    setSignInErrors({});
 
     const formData = new FormData(e.currentTarget);
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
 
-    const { error } = await signIn(email, password);
+    // Validate input
+    const validation = signInSchema.safeParse({ email, password });
+    if (!validation.success) {
+      const errors: Record<string, string> = {};
+      validation.error.errors.forEach((err) => {
+        if (err.path[0]) errors[err.path[0] as string] = err.message;
+      });
+      setSignInErrors(errors);
+      setIsLoading(false);
+      return;
+    }
+
+    const { error } = await signIn(validation.data.email, validation.data.password);
 
     if (error) {
+      await logAuditEvent({ action: 'login_failed', newData: { email: validation.data.email } });
       toast({
         title: 'Erro ao entrar',
         description: error.message,
         variant: 'destructive',
       });
     } else {
+      await logAuditEvent({ action: 'login_success' });
       navigate('/dashboard');
     }
 
@@ -41,13 +60,26 @@ export default function Auth() {
   const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
+    setSignUpErrors({});
 
     const formData = new FormData(e.currentTarget);
     const fullName = formData.get('fullName') as string;
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
 
-    const { error } = await signUp(email, password, fullName);
+    // Validate input
+    const validation = signUpSchema.safeParse({ fullName, email, password });
+    if (!validation.success) {
+      const errors: Record<string, string> = {};
+      validation.error.errors.forEach((err) => {
+        if (err.path[0]) errors[err.path[0] as string] = err.message;
+      });
+      setSignUpErrors(errors);
+      setIsLoading(false);
+      return;
+    }
+
+    const { error } = await signUp(validation.data.email, validation.data.password, validation.data.fullName);
 
     if (error) {
       toast({
@@ -56,6 +88,7 @@ export default function Auth() {
         variant: 'destructive',
       });
     } else {
+      await logAuditEvent({ action: 'signup', newData: { email: validation.data.email } });
       toast({
         title: 'Conta criada com sucesso!',
         description: 'Você já pode fazer login.',
@@ -124,8 +157,11 @@ export default function Auth() {
                         type="email"
                         placeholder="seu@email.com"
                         required
-                        className="h-12"
+                        className={`h-12 ${signInErrors.email ? 'border-destructive' : ''}`}
                       />
+                      {signInErrors.email && (
+                        <p className="text-sm text-destructive">{signInErrors.email}</p>
+                      )}
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="login-password">Senha</Label>
@@ -135,8 +171,11 @@ export default function Auth() {
                         type="password"
                         placeholder="••••••••"
                         required
-                        className="h-12"
+                        className={`h-12 ${signInErrors.password ? 'border-destructive' : ''}`}
                       />
+                      {signInErrors.password && (
+                        <p className="text-sm text-destructive">{signInErrors.password}</p>
+                      )}
                     </div>
                     <Button type="submit" className="w-full h-12 text-base font-semibold" disabled={isLoading}>
                       {isLoading ? (
@@ -161,8 +200,11 @@ export default function Auth() {
                         type="text"
                         placeholder="Seu nome"
                         required
-                        className="h-12"
+                        className={`h-12 ${signUpErrors.fullName ? 'border-destructive' : ''}`}
                       />
+                      {signUpErrors.fullName && (
+                        <p className="text-sm text-destructive">{signUpErrors.fullName}</p>
+                      )}
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="register-email">Email</Label>
@@ -172,8 +214,11 @@ export default function Auth() {
                         type="email"
                         placeholder="seu@email.com"
                         required
-                        className="h-12"
+                        className={`h-12 ${signUpErrors.email ? 'border-destructive' : ''}`}
                       />
+                      {signUpErrors.email && (
+                        <p className="text-sm text-destructive">{signUpErrors.email}</p>
+                      )}
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="register-password">Senha</Label>
@@ -182,10 +227,16 @@ export default function Auth() {
                         name="password"
                         type="password"
                         placeholder="••••••••"
-                        minLength={6}
+                        minLength={8}
                         required
-                        className="h-12"
+                        className={`h-12 ${signUpErrors.password ? 'border-destructive' : ''}`}
                       />
+                      {signUpErrors.password && (
+                        <p className="text-sm text-destructive">{signUpErrors.password}</p>
+                      )}
+                      <p className="text-xs text-muted-foreground">
+                        Mínimo 8 caracteres, com maiúscula, minúscula e número
+                      </p>
                     </div>
                     <Button type="submit" className="w-full h-12 text-base font-semibold" disabled={isLoading}>
                       {isLoading ? (

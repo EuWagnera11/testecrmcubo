@@ -2,6 +2,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { contractSchema, signatorySchema } from '@/lib/validation';
+import { sanitizeForStorage, sanitizeEmail } from '@/lib/sanitize';
+import { logAuditEvent } from '@/hooks/useAuditLog';
 
 export interface Signatory {
   id: string;
@@ -74,13 +77,32 @@ export function useContracts() {
 
   const createContract = useMutation({
     mutationFn: async ({ signatories, ...contractData }: CreateContractData) => {
+      // Validate contract
+      const validation = contractSchema.safeParse(contractData);
+      if (!validation.success) {
+        throw new Error(validation.error.errors[0]?.message || 'Dados inválidos');
+      }
+
+      // Validate signatories
+      for (const sig of signatories) {
+        const sigValidation = signatorySchema.safeParse(sig);
+        if (!sigValidation.success) {
+          throw new Error(sigValidation.error.errors[0]?.message || 'Signatário inválido');
+        }
+      }
+
+      const sanitizedData = {
+        title: sanitizeForStorage(contractData.title, 200),
+        terms: contractData.terms ? sanitizeForStorage(contractData.terms, 50000) : null,
+        client_id: contractData.client_id || null,
+        project_id: contractData.project_id || null,
+        user_id: user!.id,
+      };
+
       // Create the contract
       const { data: contract, error: contractError } = await supabase
         .from('contracts')
-        .insert({
-          ...contractData,
-          user_id: user!.id,
-        })
+        .insert(sanitizedData)
         .select()
         .single();
       
@@ -88,17 +110,26 @@ export function useContracts() {
 
       // Create signatories
       if (signatories.length > 0) {
+        const sanitizedSignatories = signatories.map(sig => ({
+          name: sanitizeForStorage(sig.name, 100),
+          email: sanitizeEmail(sig.email),
+          role: sig.role,
+          contract_id: contract.id,
+        }));
+
         const { error: signatoriesError } = await supabase
           .from('signatories')
-          .insert(
-            signatories.map(sig => ({
-              ...sig,
-              contract_id: contract.id,
-            }))
-          );
+          .insert(sanitizedSignatories);
         
         if (signatoriesError) throw signatoriesError;
       }
+
+      await logAuditEvent({
+        action: 'data_create',
+        tableName: 'contracts',
+        recordId: contract.id,
+        newData: { title: sanitizedData.title },
+      });
 
       return contract;
     },
@@ -120,14 +151,29 @@ export function useContracts() {
 
   const updateContract = useMutation({
     mutationFn: async ({ id, ...contractData }: Partial<Contract> & { id: string }) => {
+      const sanitizedData: Record<string, unknown> = {};
+      if (contractData.title) sanitizedData.title = sanitizeForStorage(contractData.title, 200);
+      if (contractData.terms) sanitizedData.terms = sanitizeForStorage(contractData.terms, 50000);
+      if (contractData.status) sanitizedData.status = contractData.status;
+      if (contractData.client_id !== undefined) sanitizedData.client_id = contractData.client_id;
+      if (contractData.project_id !== undefined) sanitizedData.project_id = contractData.project_id;
+
       const { data, error } = await supabase
         .from('contracts')
-        .update(contractData)
+        .update(sanitizedData)
         .eq('id', id)
         .select()
         .single();
       
       if (error) throw error;
+      
+      await logAuditEvent({
+        action: 'data_update',
+        tableName: 'contracts',
+        recordId: id,
+        newData: sanitizedData,
+      });
+      
       return data;
     },
     onSuccess: () => {
@@ -154,6 +200,12 @@ export function useContracts() {
         .eq('id', id);
       
       if (error) throw error;
+      
+      await logAuditEvent({
+        action: 'data_delete',
+        tableName: 'contracts',
+        recordId: id,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['contracts'] });
