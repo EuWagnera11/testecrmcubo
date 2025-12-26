@@ -13,7 +13,8 @@ export interface Project {
   advance_payment: boolean;
   advance_percentage: number;
   deadline: string | null;
-  status: 'active' | 'completed' | 'paused';
+  status: 'active' | 'completed' | 'paused' | 'inactive';
+  project_type: string;
   share_token: string | null;
   share_enabled: boolean | null;
   created_at: string;
@@ -32,7 +33,8 @@ export interface CreateProjectData {
   advance_payment?: boolean;
   advance_percentage?: number;
   deadline?: string;
-  status?: 'active' | 'completed' | 'paused';
+  status?: 'active' | 'completed' | 'paused' | 'inactive';
+  project_type?: string;
 }
 
 export function useProjects() {

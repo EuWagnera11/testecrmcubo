@@ -44,6 +44,7 @@ export type Database = {
           id: string
           name: string
           phone: string | null
+          status: string
           updated_at: string
           user_id: string
         }
@@ -55,6 +56,7 @@ export type Database = {
           id?: string
           name: string
           phone?: string | null
+          status?: string
           updated_at?: string
           user_id: string
         }
@@ -66,6 +68,7 @@ export type Database = {
           id?: string
           name?: string
           phone?: string | null
+          status?: string
           updated_at?: string
           user_id?: string
         }
@@ -74,6 +77,7 @@ export type Database = {
       contracts: {
         Row: {
           client_id: string | null
+          contract_type: string
           created_at: string
           id: string
           project_id: string | null
@@ -85,6 +89,7 @@ export type Database = {
         }
         Insert: {
           client_id?: string | null
+          contract_type?: string
           created_at?: string
           id?: string
           project_id?: string | null
@@ -96,6 +101,7 @@ export type Database = {
         }
         Update: {
           client_id?: string | null
+          contract_type?: string
           created_at?: string
           id?: string
           project_id?: string | null
@@ -338,6 +344,7 @@ export type Database = {
           deadline: string | null
           id: string
           name: string
+          project_type: string
           share_enabled: boolean | null
           share_token: string | null
           status: string
@@ -354,6 +361,7 @@ export type Database = {
           deadline?: string | null
           id?: string
           name: string
+          project_type?: string
           share_enabled?: boolean | null
           share_token?: string | null
           status?: string
@@ -370,6 +378,7 @@ export type Database = {
           deadline?: string | null
           id?: string
           name?: string
+          project_type?: string
           share_enabled?: boolean | null
           share_token?: string | null
           status?: string

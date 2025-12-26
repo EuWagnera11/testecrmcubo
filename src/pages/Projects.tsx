@@ -1,13 +1,16 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Search, FolderKanban, ArrowRight, ExternalLink } from 'lucide-react';
+import { Plus, Search, FolderKanban, ArrowRight, ExternalLink, MoreVertical, Trash2, Power } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useProjects, CreateProjectData } from '@/hooks/useProjects';
 import { useClients } from '@/hooks/useClients';
 import { useUserRole } from '@/hooks/useUserRole';
@@ -19,21 +22,41 @@ const currencies = [
   { value: 'EUR', label: '€ (Euro)' },
 ];
 
-const statusConfig = {
+const projectTypes = [
+  { value: 'one_time', label: 'Pontual' },
+  { value: 'monthly', label: 'Mensal' },
+  { value: 'campaign', label: 'Campanha' },
+  { value: 'branding', label: 'Branding' },
+];
+
+const statusConfig: Record<string, { label: string; className: string }> = {
   active: { label: 'Ativo', className: 'bg-success/15 text-success border-success/30' },
   completed: { label: 'Concluído', className: 'bg-primary/15 text-primary border-primary/30' },
   paused: { label: 'Pausado', className: 'bg-warning/15 text-warning border-warning/30' },
+  inactive: { label: 'Inativo', className: 'bg-muted text-muted-foreground' },
+};
+
+const projectTypeLabels: Record<string, string> = {
+  one_time: 'Pontual',
+  monthly: 'Mensal',
+  campaign: 'Campanha',
+  branding: 'Branding',
 };
 
 export default function Projects() {
-  const { projects, isLoading, createProject } = useProjects();
+  const { projects, isLoading, createProject, updateProject, deleteProject } = useProjects();
   const { clients } = useClients();
   const { isAdmin, isDirector } = useUserRole();
   const canSeeFinancials = isAdmin || isDirector;
   const [search, setSearch] = useState('');
   const [isOpen, setIsOpen] = useState(false);
+  const [filter, setFilter] = useState('all');
 
-  const filteredProjects = projects.filter(p => p.name.toLowerCase().includes(search.toLowerCase()));
+  const filteredProjects = projects.filter(p => {
+    const matchSearch = p.name.toLowerCase().includes(search.toLowerCase());
+    const matchStatus = filter === 'all' || p.status === filter;
+    return matchSearch && matchStatus;
+  });
 
   const formatCurrency = (value: number, currency: string) => {
     const locales: Record<string, string> = { BRL: 'pt-BR', USD: 'en-US', EUR: 'de-DE' };
@@ -50,9 +73,19 @@ export default function Projects() {
       total_value: Number(formData.get('total_value')) || 0,
       deadline: formData.get('deadline') as string || undefined,
       advance_payment: formData.get('advance_payment') === 'on',
+      project_type: formData.get('project_type') as string || 'one_time',
     };
     await createProject.mutateAsync(data);
     setIsOpen(false);
+  };
+
+  const handleToggleStatus = async (project: any) => {
+    const newStatus = project.status === 'inactive' ? 'active' : 'inactive';
+    await updateProject.mutateAsync({ id: project.id, status: newStatus });
+  };
+
+  const handleDelete = async (id: string) => {
+    await deleteProject.mutateAsync(id);
   };
 
   return (
@@ -85,8 +118,21 @@ export default function Projects() {
                     <SelectValue placeholder="Selecione um cliente" />
                   </SelectTrigger>
                   <SelectContent>
-                    {clients.map(c => (
+                    {clients.filter(c => (c as any).status !== 'inactive').map(c => (
                       <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Tipo de Projeto</Label>
+                <Select name="project_type" defaultValue="one_time">
+                  <SelectTrigger className="h-11">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {projectTypes.map(t => (
+                      <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -129,15 +175,25 @@ export default function Projects() {
         </Dialog>
       </div>
 
-      {/* Search */}
-      <div className="relative max-w-md">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input 
-          placeholder="Buscar projetos..." 
-          value={search} 
-          onChange={(e) => setSearch(e.target.value)} 
-          className="pl-11 h-11" 
-        />
+      {/* Search & Filter */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input 
+            placeholder="Buscar projetos..." 
+            value={search} 
+            onChange={(e) => setSearch(e.target.value)} 
+            className="pl-11 h-11" 
+          />
+        </div>
+        <Tabs value={filter} onValueChange={setFilter}>
+          <TabsList className="h-11">
+            <TabsTrigger value="all" className="px-4">Todos</TabsTrigger>
+            <TabsTrigger value="active" className="px-4">Ativos</TabsTrigger>
+            <TabsTrigger value="completed" className="px-4">Concluídos</TabsTrigger>
+            <TabsTrigger value="inactive" className="px-4">Inativos</TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
 
       {/* Content */}
@@ -160,36 +216,77 @@ export default function Projects() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {filteredProjects.map((project, index) => (
-            <Link 
-              key={project.id} 
-              to={`/projetos/${project.id}`}
-              className="block"
+            <Card 
+              key={project.id}
+              className="card-hover border-border/50"
+              style={{ animationDelay: `${index * 50}ms` }}
             >
-              <Card 
-                className="card-hover border-border/50 cursor-pointer"
-                style={{ animationDelay: `${index * 50}ms` }}
-              >
-                <CardContent className="p-5">
-                  <div className="flex items-start justify-between mb-3">
-                    <h3 className="font-semibold text-lg">{project.name}</h3>
-                    <Badge variant="outline" className={statusConfig[project.status].className}>
-                      {statusConfig[project.status].label}
+              <CardContent className="p-5">
+                <div className="flex items-start justify-between mb-3">
+                  <Link to={`/projetos/${project.id}`} className="flex-1">
+                    <h3 className="font-semibold text-lg hover:text-primary transition-colors">{project.name}</h3>
+                  </Link>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className={statusConfig[project.status]?.className}>
+                      {statusConfig[project.status]?.label}
                     </Badge>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleToggleStatus(project)}>
+                          <Power className="h-4 w-4 mr-2" />
+                          {project.status === 'inactive' ? 'Ativar' : 'Desativar'}
+                        </DropdownMenuItem>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive">
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Remover
+                            </DropdownMenuItem>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Remover projeto?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Esta ação não pode ser desfeita. O projeto será removido permanentemente.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDelete(project.id)}>
+                                Remover
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
-                  <p className="text-sm text-muted-foreground mb-4">{project.clients?.name || 'Sem cliente'}</p>
-                  <div className="flex items-center justify-between">
-                    {canSeeFinancials ? (
-                      <p className="text-2xl font-bold text-primary">
-                        {formatCurrency(Number(project.total_value), project.currency)}
-                      </p>
-                    ) : (
-                      <Badge variant="secondary">Ver detalhes</Badge>
-                    )}
-                    <ExternalLink className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
+                </div>
+                <p className="text-sm text-muted-foreground mb-1">{project.clients?.name || 'Sem cliente'}</p>
+                {(project as any).project_type && (
+                  <p className="text-xs text-muted-foreground mb-4">
+                    Tipo: {projectTypeLabels[(project as any).project_type] || (project as any).project_type}
+                  </p>
+                )}
+                <div className="flex items-center justify-between">
+                  {canSeeFinancials ? (
+                    <p className="text-2xl font-bold text-primary">
+                      {formatCurrency(Number(project.total_value), project.currency)}
+                    </p>
+                  ) : (
+                    <Badge variant="secondary">Ver detalhes</Badge>
+                  )}
+                  <Link to={`/projetos/${project.id}`}>
+                    <ExternalLink className="h-4 w-4 text-muted-foreground hover:text-primary transition-colors" />
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
           ))}
         </div>
       )}

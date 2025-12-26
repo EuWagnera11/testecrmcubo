@@ -1,9 +1,9 @@
-import { useState } from 'react';
-import { format } from 'date-fns';
+import { useState, useMemo } from 'react';
+import { format, parseISO, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { 
-  Plus, TrendingUp, TrendingDown, DollarSign, Wallet, Trash2,
-  ArrowUpRight, ArrowDownRight, Calendar
+  Plus, TrendingUp, TrendingDown, Wallet, Trash2,
+  ArrowUpRight, ArrowDownRight, Calendar, Filter
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,7 +13,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
-import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useFinancial } from '@/hooks/useFinancial';
 import { useProjects } from '@/hooks/useProjects';
@@ -25,13 +24,33 @@ const categories = {
   expense: ['Ferramentas', 'Marketing', 'Equipe', 'Infraestrutura', 'Outros'],
 };
 
+const months = [
+  { value: '1', label: 'Janeiro' },
+  { value: '2', label: 'Fevereiro' },
+  { value: '3', label: 'Março' },
+  { value: '4', label: 'Abril' },
+  { value: '5', label: 'Maio' },
+  { value: '6', label: 'Junho' },
+  { value: '7', label: 'Julho' },
+  { value: '8', label: 'Agosto' },
+  { value: '9', label: 'Setembro' },
+  { value: '10', label: 'Outubro' },
+  { value: '11', label: 'Novembro' },
+  { value: '12', label: 'Dezembro' },
+];
+
+const currentYear = new Date().getFullYear();
+const years = Array.from({ length: 5 }, (_, i) => (currentYear - 2 + i).toString());
+
 export default function Financial() {
-  const { transactions, isLoading, addTransaction, deleteTransaction, totalIncome, totalExpenses, balance } = useFinancial();
+  const { transactions, isLoading, addTransaction, deleteTransaction } = useFinancial();
   const { projects } = useProjects();
   const { isAdmin, isDirector } = useUserRole();
   const [open, setOpen] = useState(false);
   const [type, setType] = useState<'income' | 'expense'>('income');
   const [date, setDate] = useState<Date>(new Date());
+  const [filterMonth, setFilterMonth] = useState<string>('');
+  const [filterYear, setFilterYear] = useState<string>(currentYear.toString());
 
   // Only directors and admins can access financial
   if (!isAdmin && !isDirector) {
@@ -45,6 +64,34 @@ export default function Financial() {
 
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+
+  // Filter transactions by month/year
+  const filteredTransactions = useMemo(() => {
+    if (!filterMonth) return transactions;
+    
+    const year = parseInt(filterYear);
+    const month = parseInt(filterMonth) - 1;
+    const start = startOfMonth(new Date(year, month));
+    const end = endOfMonth(new Date(year, month));
+    
+    return transactions.filter(t => {
+      const tDate = parseISO(t.date);
+      return isWithinInterval(tDate, { start, end });
+    });
+  }, [transactions, filterMonth, filterYear]);
+
+  // Compute totals based on filtered transactions
+  const filteredTotalIncome = useMemo(() => 
+    filteredTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + Number(t.amount), 0),
+    [filteredTransactions]
+  );
+  
+  const filteredTotalExpenses = useMemo(() => 
+    filteredTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + Number(t.amount), 0),
+    [filteredTransactions]
+  );
+  
+  const filteredBalance = filteredTotalIncome - filteredTotalExpenses;
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -166,6 +213,44 @@ export default function Financial() {
         </Dialog>
       </div>
 
+      {/* Filter by period */}
+      <Card className="border-border/50">
+        <CardContent className="p-4">
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium">Filtrar por período:</span>
+            </div>
+            <Select value={filterMonth} onValueChange={setFilterMonth}>
+              <SelectTrigger className="w-40 h-10">
+                <SelectValue placeholder="Mês" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Todos</SelectItem>
+                {months.map(m => (
+                  <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={filterYear} onValueChange={setFilterYear}>
+              <SelectTrigger className="w-28 h-10">
+                <SelectValue placeholder="Ano" />
+              </SelectTrigger>
+              <SelectContent>
+                {years.map(y => (
+                  <SelectItem key={y} value={y}>{y}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {filterMonth && (
+              <Button variant="ghost" size="sm" onClick={() => setFilterMonth('')}>
+                Limpar
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="border-border/50">
@@ -173,7 +258,7 @@ export default function Financial() {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Receitas</p>
-                <p className="text-2xl font-bold text-success mt-1">{formatCurrency(totalIncome)}</p>
+                <p className="text-2xl font-bold text-success mt-1">{formatCurrency(filteredTotalIncome)}</p>
               </div>
               <div className="h-10 w-10 rounded-lg bg-success/10 flex items-center justify-center">
                 <TrendingUp className="h-5 w-5 text-success" />
@@ -187,7 +272,7 @@ export default function Financial() {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Despesas</p>
-                <p className="text-2xl font-bold text-destructive mt-1">{formatCurrency(totalExpenses)}</p>
+                <p className="text-2xl font-bold text-destructive mt-1">{formatCurrency(filteredTotalExpenses)}</p>
               </div>
               <div className="h-10 w-10 rounded-lg bg-destructive/10 flex items-center justify-center">
                 <TrendingDown className="h-5 w-5 text-destructive" />
@@ -201,8 +286,8 @@ export default function Financial() {
             <div className="flex items-start justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Saldo</p>
-                <p className={cn("text-2xl font-bold mt-1", balance >= 0 ? "text-success" : "text-destructive")}>
-                  {formatCurrency(balance)}
+                <p className={cn("text-2xl font-bold mt-1", filteredBalance >= 0 ? "text-success" : "text-destructive")}>
+                  {formatCurrency(filteredBalance)}
                 </p>
               </div>
               <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -216,16 +301,18 @@ export default function Financial() {
       {/* Transactions List */}
       <Card className="border-border/50">
         <CardHeader>
-          <CardTitle className="text-lg">Transações Recentes</CardTitle>
+          <CardTitle className="text-lg">
+            Transações {filterMonth && `- ${months.find(m => m.value === filterMonth)?.label}/${filterYear}`}
+          </CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (
             <p className="text-muted-foreground text-center py-8">Carregando...</p>
-          ) : transactions.length === 0 ? (
-            <p className="text-muted-foreground text-center py-8">Nenhuma transação registrada.</p>
+          ) : filteredTransactions.length === 0 ? (
+            <p className="text-muted-foreground text-center py-8">Nenhuma transação encontrada para o período.</p>
           ) : (
             <div className="space-y-3">
-              {transactions.map((t) => (
+              {filteredTransactions.map((t) => (
                 <div key={t.id} className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
                   <div className="flex items-center gap-4">
                     <div className={cn(
