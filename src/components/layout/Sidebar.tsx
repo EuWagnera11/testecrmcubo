@@ -52,13 +52,13 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
           {/* Header */}
           <div className="flex items-center justify-between h-16 px-6 border-b border-sidebar-border">
             {!isCollapsed && (
-              <div className="flex items-center gap-2">
-                <span className="text-sidebar-primary font-medium italic">refine</span>
-                <span className="font-bold text-xl tracking-tight">CUBO</span>
+              <div className="flex items-center gap-1">
+                <span className="text-sidebar-primary font-medium italic text-xl">refine</span>
+                <span className="font-black text-2xl tracking-tighter">CUBO</span>
               </div>
             )}
             {isCollapsed && (
-              <span className="font-bold text-xl mx-auto">C</span>
+              <span className="font-black text-2xl mx-auto">C</span>
             )}
             
             {/* Mobile close */}
