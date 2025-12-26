@@ -1,4 +1,4 @@
-import { Users, FolderKanban, TrendingUp, DollarSign, Plus, Calendar, ArrowRight } from 'lucide-react';
+import { Users, FolderKanban, TrendingUp, DollarSign, Plus, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -7,7 +7,12 @@ import { useClients } from '@/hooks/useClients';
 import { useProjects } from '@/hooks/useProjects';
 import { useProfile } from '@/hooks/useProfile';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useFinancial } from '@/hooks/useFinancial';
 import { Link } from 'react-router-dom';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { useMemo } from 'react';
+import { format, parseISO, startOfMonth } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -15,6 +20,7 @@ export default function Dashboard() {
   const { projects } = useProjects();
   const { profile } = useProfile();
   const { isAdmin, isDirector } = useUserRole();
+  const { transactions } = useFinancial();
   
   const canSeeFinancials = isAdmin || isDirector;
 
@@ -22,6 +28,31 @@ export default function Dashboard() {
   const totalValue = projects.reduce((sum, p) => sum + Number(p.total_value), 0);
   const revenueGoal = profile?.revenue_goal || 10000;
   const progressPercent = Math.min((totalValue / revenueGoal) * 100, 100);
+
+  // Monthly chart data for revenue vs expenses
+  const monthlyData = useMemo(() => {
+    const grouped: Record<string, { month: string; receitas: number; despesas: number }> = {};
+    
+    transactions.forEach(t => {
+      const monthKey = format(startOfMonth(parseISO(t.date)), 'yyyy-MM');
+      const monthLabel = format(parseISO(t.date), 'MMM/yy', { locale: ptBR });
+      
+      if (!grouped[monthKey]) {
+        grouped[monthKey] = { month: monthLabel, receitas: 0, despesas: 0 };
+      }
+      
+      if (t.type === 'income') {
+        grouped[monthKey].receitas += Number(t.amount);
+      } else {
+        grouped[monthKey].despesas += Number(t.amount);
+      }
+    });
+    
+    return Object.entries(grouped)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .slice(-6)
+      .map(([, data]) => data);
+  }, [transactions]);
 
   const greeting = () => {
     const hour = new Date().getHours();
@@ -145,6 +176,44 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Monthly Revenue vs Expenses Chart - Only for directors+ */}
+      {canSeeFinancials && monthlyData.length > 0 && (
+        <Card className="border-border/50">
+          <CardHeader>
+            <CardTitle className="text-lg font-semibold">Receitas vs Despesas</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={monthlyData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                  <XAxis 
+                    dataKey="month" 
+                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                    axisLine={{ stroke: 'hsl(var(--border))' }}
+                  />
+                  <YAxis 
+                    tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
+                    axisLine={{ stroke: 'hsl(var(--border))' }}
+                    tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      background: 'hsl(var(--card))', 
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px'
+                    }}
+                    formatter={(value: number) => formatCurrency(value)}
+                  />
+                  <Legend />
+                  <Bar dataKey="receitas" name="Receitas" fill="hsl(142, 76%, 36%)" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="despesas" name="Despesas" fill="hsl(0, 72%, 51%)" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

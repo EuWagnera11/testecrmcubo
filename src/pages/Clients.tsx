@@ -1,21 +1,28 @@
 import { useState } from 'react';
-import { Plus, Search, Users, Mail, Phone, Building, ArrowRight } from 'lucide-react';
+import { Plus, Search, Users, Mail, Phone, Building, ArrowRight, Trash2, Power, MoreVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useClients, CreateClientData } from '@/hooks/useClients';
 
 export default function Clients() {
-  const { clients, isLoading, createClient } = useClients();
+  const { clients, isLoading, createClient, updateClient, deleteClient } = useClients();
   const [search, setSearch] = useState('');
   const [isOpen, setIsOpen] = useState(false);
+  const [filter, setFilter] = useState('all');
 
-  const filteredClients = clients.filter(c => 
-    c.name.toLowerCase().includes(search.toLowerCase()) ||
-    c.email?.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredClients = clients.filter(c => {
+    const matchSearch = c.name.toLowerCase().includes(search.toLowerCase()) ||
+      c.email?.toLowerCase().includes(search.toLowerCase());
+    const matchStatus = filter === 'all' || (c as any).status === filter;
+    return matchSearch && matchStatus;
+  });
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -28,6 +35,15 @@ export default function Clients() {
     };
     await createClient.mutateAsync(data);
     setIsOpen(false);
+  };
+
+  const handleToggleStatus = async (client: any) => {
+    const newStatus = client.status === 'active' ? 'inactive' : 'active';
+    await updateClient.mutateAsync({ id: client.id, status: newStatus } as any);
+  };
+
+  const handleDelete = async (id: string) => {
+    await deleteClient.mutateAsync(id);
   };
 
   return (
@@ -74,15 +90,24 @@ export default function Clients() {
         </Dialog>
       </div>
 
-      {/* Search */}
-      <div className="relative max-w-md">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input 
-          placeholder="Buscar clientes..." 
-          value={search} 
-          onChange={(e) => setSearch(e.target.value)} 
-          className="pl-11 h-11" 
-        />
+      {/* Search & Filter */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input 
+            placeholder="Buscar clientes..." 
+            value={search} 
+            onChange={(e) => setSearch(e.target.value)} 
+            className="pl-11 h-11" 
+          />
+        </div>
+        <Tabs value={filter} onValueChange={setFilter}>
+          <TabsList className="h-11">
+            <TabsTrigger value="all" className="px-4">Todos</TabsTrigger>
+            <TabsTrigger value="active" className="px-4">Ativos</TabsTrigger>
+            <TabsTrigger value="inactive" className="px-4">Inativos</TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
 
       {/* Content */}
@@ -111,7 +136,49 @@ export default function Clients() {
               style={{ animationDelay: `${index * 50}ms` }}
             >
               <CardContent className="p-5">
-                <h3 className="font-semibold text-lg mb-3">{client.name}</h3>
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-lg">{client.name}</h3>
+                    {(client as any).status === 'inactive' && (
+                      <Badge variant="outline" className="bg-muted text-muted-foreground mt-1">Inativo</Badge>
+                    )}
+                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handleToggleStatus(client)}>
+                        <Power className="h-4 w-4 mr-2" />
+                        {(client as any).status === 'inactive' ? 'Ativar' : 'Desativar'}
+                      </DropdownMenuItem>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive">
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Remover
+                          </DropdownMenuItem>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Remover cliente?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Esta ação não pode ser desfeita. O cliente será removido permanentemente.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleDelete(client.id)}>
+                              Remover
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
                 <div className="space-y-2 text-sm text-muted-foreground">
                   {client.email && (
                     <p className="flex items-center gap-2">

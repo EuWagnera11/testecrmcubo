@@ -1,9 +1,11 @@
 import { useState } from 'react';
-import { Plus, FileText, ArrowRight } from 'lucide-react';
+import { Plus, FileText, ArrowRight, MoreVertical, Trash2, Edit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -19,8 +21,13 @@ const statusConfig = {
   signed: { label: 'Assinado', className: 'bg-success/15 text-success border-success/30' },
 };
 
+const contractTypes = [
+  { value: 'one_time', label: 'Pontual' },
+  { value: 'monthly', label: 'Mensal' },
+];
+
 export default function Contracts() {
-  const { contracts, isLoading, createContract } = useContracts();
+  const { contracts, isLoading, createContract, deleteContract } = useContracts();
   const { clients } = useClients();
   const { projects } = useProjects();
   const [isOpen, setIsOpen] = useState(false);
@@ -42,6 +49,10 @@ export default function Contracts() {
     };
     await createContract.mutateAsync(data);
     setIsOpen(false);
+  };
+
+  const handleDelete = async (id: string) => {
+    await deleteContract.mutateAsync(id);
   };
 
   return (
@@ -66,6 +77,19 @@ export default function Contracts() {
               <div className="space-y-2">
                 <Label htmlFor="title">Título *</Label>
                 <Input id="title" name="title" required placeholder="Título do contrato" className="h-11" />
+              </div>
+              <div className="space-y-2">
+                <Label>Tipo de Contrato</Label>
+                <Select name="contract_type" defaultValue="one_time">
+                  <SelectTrigger className="h-11">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {contractTypes.map(t => (
+                      <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label>Cliente</Label>
@@ -141,15 +165,48 @@ export default function Contracts() {
           {filtered.map((contract, index) => (
             <Card 
               key={contract.id} 
-              className="card-hover border-border/50"
+              className="border-border/50"
               style={{ animationDelay: `${index * 50}ms` }}
             >
               <CardContent className="p-5">
                 <div className="flex items-start justify-between mb-3">
                   <h3 className="font-semibold text-lg">{contract.title}</h3>
-                  <Badge variant="outline" className={statusConfig[contract.status].className}>
-                    {statusConfig[contract.status].label}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline" className={statusConfig[contract.status].className}>
+                      {statusConfig[contract.status].label}
+                    </Badge>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive">
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Remover
+                            </DropdownMenuItem>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Remover contrato?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Esta ação não pode ser desfeita.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDelete(contract.id)}>
+                                Remover
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </div>
                 <p className="text-sm text-muted-foreground">{contract.clients?.name || 'Sem cliente'}</p>
                 {contract.projects && (
