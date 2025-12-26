@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { 
   ArrowLeft, Users, Plus, Trash2, Save, Share2, Copy, Check,
-  Palette, FileText, TrendingUp, MessageSquare, DollarSign, Image, Layers
+  Palette, FileText, TrendingUp, MessageSquare, DollarSign, Image, Layers, LayoutGrid
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,6 +26,7 @@ import { useRealtimeNotifications } from '@/hooks/useRealtimeNotifications';
 import { useProjectPresence } from '@/hooks/useProjectPresence';
 import { OnlineUsers } from '@/components/OnlineUsers';
 import { ProjectChat } from '@/components/ProjectChat';
+import { KanbanBoard } from '@/components/KanbanBoard';
 
 
 const fieldConfig = {
@@ -212,6 +213,7 @@ export default function ProjectDetails() {
       <Tabs defaultValue="fields">
         <TabsList className="h-11 mb-6">
           <TabsTrigger value="fields" className="px-4">Campos</TabsTrigger>
+          <TabsTrigger value="tasks" className="px-4">Tarefas</TabsTrigger>
           <TabsTrigger value="team" className="px-4">Equipe</TabsTrigger>
           {canSeeFinancials && <TabsTrigger value="financials" className="px-4">Financeiro</TabsTrigger>}
           <TabsTrigger value="metrics" className="px-4">Métricas</TabsTrigger>
@@ -270,6 +272,11 @@ export default function ProjectDetails() {
               );
             })}
           </div>
+        </TabsContent>
+
+        {/* Tasks Tab - Kanban */}
+        <TabsContent value="tasks" className="space-y-4">
+          <KanbanBoard projectId={id!} />
         </TabsContent>
 
         {/* Team Tab */}

@@ -115,6 +115,39 @@ export type Database = {
         }
         Relationships: []
       }
+      contract_templates: {
+        Row: {
+          contract_type: string | null
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          terms: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          contract_type?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          terms: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          contract_type?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          terms?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       contracts: {
         Row: {
           client_id: string | null
@@ -550,6 +583,59 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "project_payouts_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_tasks: {
+        Row: {
+          assigned_to: string | null
+          created_at: string
+          description: string | null
+          due_date: string | null
+          id: string
+          position: number
+          priority: string
+          project_id: string
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          position?: number
+          priority?: string
+          project_id: string
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assigned_to?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          position?: number
+          priority?: string
+          project_id?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_tasks_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
