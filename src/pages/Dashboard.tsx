@@ -1,18 +1,21 @@
 import { useState, useMemo } from 'react';
-import { Users, FolderKanban, TrendingUp, DollarSign, Plus, ArrowRight, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Users, FolderKanban, TrendingUp, DollarSign, Plus, ArrowRight, Calendar, ChevronLeft, ChevronRight, Target, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { useClients } from '@/hooks/useClients';
 import { useProjects } from '@/hooks/useProjects';
 import { useProfile } from '@/hooks/useProfile';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useFinancial } from '@/hooks/useFinancial';
+import { useMonthlyGoals } from '@/hooks/useMonthlyGoals';
 import { Link } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { format, parseISO, startOfMonth, endOfMonth, isWithinInterval, isBefore, isAfter, subMonths, addMonths } from 'date-fns';
+import { format, parseISO, startOfMonth, endOfMonth, isWithinInterval, isAfter, isBefore, subMonths, addMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 const projectTypeLabels: Record<string, string> = {
@@ -29,32 +32,51 @@ export default function Dashboard() {
   const { profile } = useProfile();
   const { isAdmin, isDirector } = useUserRole();
   const { transactions } = useFinancial();
+  const { getGoalForMonth, upsertGoal } = useMonthlyGoals();
   
   const canSeeFinancials = isAdmin || isDirector;
 
   // Month selection state
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [goalDialogOpen, setGoalDialogOpen] = useState(false);
+  const [newGoalValue, setNewGoalValue] = useState('');
+  
   const selectedMonthStart = startOfMonth(selectedDate);
   const selectedMonthEnd = endOfMonth(selectedDate);
-  const selectedMonthKey = format(selectedDate, 'yyyy-MM');
   const selectedMonthLabel = format(selectedDate, "MMMM 'de' yyyy", { locale: ptBR });
 
   const goToPreviousMonth = () => setSelectedDate(subMonths(selectedDate, 1));
   const goToNextMonth = () => setSelectedDate(addMonths(selectedDate, 1));
   const goToCurrentMonth = () => setSelectedDate(new Date());
 
+  // Get monthly goal (fallback to profile default)
+  const monthlyGoal = getGoalForMonth(selectedDate);
+  const revenueGoal = monthlyGoal?.revenue_goal || profile?.revenue_goal || 10000;
+
   // Filter projects for the selected month
-  // - Monthly projects: appear every month after creation until cancelled/inactive
+  // - Monthly projects: appear from creation until cancelled_at (or forever if not cancelled)
   // - One-time projects: appear only in the month they were created
   const filteredProjects = useMemo(() => {
     return projects.filter(project => {
       const projectCreated = parseISO(project.created_at);
       const projectType = project.project_type || 'one_time';
+      const createdMonth = startOfMonth(projectCreated);
       
       if (projectType === 'monthly') {
-        // Monthly projects appear from their creation month onwards (if still active)
-        const createdMonth = startOfMonth(projectCreated);
-        return !isAfter(createdMonth, selectedMonthEnd) && project.status === 'active';
+        // Monthly projects appear from creation until cancellation
+        const startedBefore = !isAfter(createdMonth, selectedMonthEnd);
+        
+        // Check if cancelled before this month
+        if (project.cancelled_at) {
+          const cancelledMonth = startOfMonth(parseISO(project.cancelled_at));
+          const cancelledBeforeThisMonth = isBefore(cancelledMonth, selectedMonthStart);
+          if (cancelledBeforeThisMonth) return false;
+        }
+        
+        // Also check status - inactive projects don't appear
+        if (project.status === 'inactive') return false;
+        
+        return startedBefore;
       } else {
         // One-time projects only appear in the month they were created
         return isWithinInterval(projectCreated, { start: selectedMonthStart, end: selectedMonthEnd });
@@ -82,14 +104,8 @@ export default function Dashboard() {
   const monthlyIncome = filteredTransactions
     .filter(t => t.type === 'income')
     .reduce((sum, t) => sum + Number(t.amount), 0);
-  
-  const monthlyExpenses = filteredTransactions
-    .filter(t => t.type === 'expense')
-    .reduce((sum, t) => sum + Number(t.amount), 0);
 
   const activeProjects = filteredProjects.filter(p => p.status === 'active');
-  const monthlyProjectValue = filteredProjects.reduce((sum, p) => sum + Number(p.total_value), 0);
-  const revenueGoal = profile?.revenue_goal || 10000;
   const progressPercent = Math.min((monthlyIncome / revenueGoal) * 100, 100);
 
   // Monthly chart data for revenue vs expenses (last 6 months from selected)
@@ -128,6 +144,15 @@ export default function Dashboard() {
 
   const formatCurrency = (value: number) => 
     new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+
+  const handleSaveGoal = async () => {
+    const value = parseFloat(newGoalValue.replace(/[^\d.,]/g, '').replace(',', '.'));
+    if (!isNaN(value) && value > 0) {
+      await upsertGoal.mutateAsync({ month: selectedDate, revenue_goal: value });
+      setGoalDialogOpen(false);
+      setNewGoalValue('');
+    }
+  };
 
   const baseMetrics = [
     { title: 'Clientes', value: filteredClients.length, icon: Users, description: 'Ativos no mês' },
@@ -216,8 +241,47 @@ export default function Dashboard() {
           <Card className="border-border/50 glass-card">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-lg font-semibold font-body">Meta de Receita</CardTitle>
-                <TrendingUp className="h-5 w-5 text-primary" />
+                <CardTitle className="text-lg font-semibold font-body flex items-center gap-2">
+                  <Target className="h-5 w-5 text-primary" />
+                  Meta de Receita
+                </CardTitle>
+                <Dialog open={goalDialogOpen} onOpenChange={setGoalDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-8">
+                      <Pencil className="h-4 w-4 mr-1" />
+                      Editar
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle className="font-display text-xl">
+                        Meta de {format(selectedDate, 'MMMM yyyy', { locale: ptBR })}
+                      </DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 mt-4">
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium font-body">Valor da meta</label>
+                        <Input
+                          type="text"
+                          placeholder="R$ 10.000,00"
+                          value={newGoalValue}
+                          onChange={(e) => setNewGoalValue(e.target.value)}
+                          className="h-11"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Meta atual: {formatCurrency(revenueGoal)}
+                        </p>
+                      </div>
+                      <Button 
+                        onClick={handleSaveGoal} 
+                        className="w-full h-11"
+                        disabled={upsertGoal.isPending}
+                      >
+                        {upsertGoal.isPending ? 'Salvando...' : 'Salvar Meta'}
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
               </div>
             </CardHeader>
             <CardContent className="pt-4">
@@ -230,6 +294,9 @@ export default function Dashboard() {
                 <span>{formatCurrency(monthlyIncome)}</span>
                 <span>Meta: {formatCurrency(revenueGoal)}</span>
               </div>
+              {monthlyGoal && (
+                <p className="text-xs text-primary mt-2 font-body">Meta personalizada para este mês</p>
+              )}
             </CardContent>
           </Card>
         )}

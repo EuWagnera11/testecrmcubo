@@ -17,6 +17,7 @@ export interface Project {
   project_type: string;
   share_token: string | null;
   share_enabled: boolean | null;
+  cancelled_at: string | null;
   created_at: string;
   updated_at: string;
   clients?: {
@@ -35,6 +36,7 @@ export interface CreateProjectData {
   deadline?: string;
   status?: 'active' | 'completed' | 'paused' | 'inactive';
   project_type?: string;
+  cancelled_at?: string | null;
 }
 
 export function useProjects() {
