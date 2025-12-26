@@ -2,27 +2,25 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { 
   ArrowLeft, Users, Plus, Trash2, Save, Share2, Copy, Check,
-  Palette, FileText, TrendingUp, MessageSquare, Eye, EyeOff,
-  BarChart3, MousePointer, ShoppingCart, DollarSign, Heart, Users2
+  Palette, FileText, TrendingUp, MessageSquare
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
 import { useProjects } from '@/hooks/useProjects';
 import { useProjectMembers, useProjectFields, ProjectRole } from '@/hooks/useProjectMembers';
-import { useProjectMetrics } from '@/hooks/useProjectMetrics';
 import { useUsers } from '@/hooks/useUsers';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { MetricsEditor } from '@/components/MetricsEditor';
+import { FileUpload } from '@/components/FileUpload';
 
 const fieldConfig = {
   design: { label: 'Design', icon: Palette, color: 'text-pink-500', role: 'designer' as ProjectRole },
@@ -47,11 +45,11 @@ export default function ProjectDetails() {
   const { projects, updateProject } = useProjects();
   const { members, addMember, removeMember, isLoading: membersLoading } = useProjectMembers(id);
   const { fields, updateField, createField, isLoading: fieldsLoading } = useProjectFields(id);
-  const { metrics } = useProjectMetrics(id);
   const { users } = useUsers();
   const { isAdmin, isDirector } = useUserRole();
   
   const [fieldContents, setFieldContents] = useState<Record<string, string>>({});
+  const [fieldAttachments, setFieldAttachments] = useState<Record<string, string[]>>({});
   const [copied, setCopied] = useState(false);
   const [addMemberOpen, setAddMemberOpen] = useState(false);
 
@@ -68,13 +66,16 @@ export default function ProjectDetails() {
     return fieldConfig[fieldType]?.role === userProjectRole;
   };
 
-  // Initialize field contents
+  // Initialize field contents and attachments
   useEffect(() => {
     const contents: Record<string, string> = {};
+    const attachments: Record<string, string[]> = {};
     fields.forEach(f => {
       contents[f.field_type] = f.content || '';
+      attachments[f.field_type] = f.attachments || [];
     });
     setFieldContents(contents);
+    setFieldAttachments(attachments);
   }, [fields]);
 
   // Ensure all field types exist
@@ -89,7 +90,11 @@ export default function ProjectDetails() {
   const handleSaveField = async (fieldType: string) => {
     const field = fields.find(f => f.field_type === fieldType);
     if (field) {
-      await updateField.mutateAsync({ fieldId: field.id, content: fieldContents[fieldType] || '' });
+      await updateField.mutateAsync({ 
+        fieldId: field.id, 
+        content: fieldContents[fieldType] || '',
+        attachments: fieldAttachments[fieldType] || []
+      });
     }
   };
 
@@ -204,14 +209,22 @@ export default function ProjectDetails() {
                       )}
                     </div>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="space-y-3">
                     <Textarea
                       value={fieldContents[type] || ''}
                       onChange={(e) => setFieldContents(prev => ({ ...prev, [type]: e.target.value }))}
                       placeholder={`Conteúdo de ${config.label}...`}
                       rows={4}
                       disabled={!canEdit}
-                      className="mb-3"
+                    />
+                    <FileUpload
+                      projectId={id!}
+                      fieldType={type}
+                      attachments={fieldAttachments[type] || []}
+                      onAttachmentsChange={(attachments) => 
+                        setFieldAttachments(prev => ({ ...prev, [type]: attachments }))
+                      }
+                      disabled={!canEdit}
                     />
                     {canEdit && (
                       <Button 
@@ -309,36 +322,7 @@ export default function ProjectDetails() {
 
         {/* Metrics Tab */}
         <TabsContent value="metrics" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {[
-              { type: 'impressions', label: 'Impressões', icon: Eye },
-              { type: 'clicks', label: 'Cliques', icon: MousePointer },
-              { type: 'conversions', label: 'Conversões', icon: ShoppingCart },
-              { type: 'spend', label: 'Investimento', icon: DollarSign },
-              { type: 'revenue', label: 'Receita', icon: TrendingUp },
-              { type: 'engagement', label: 'Engajamento', icon: Heart },
-              { type: 'followers', label: 'Seguidores', icon: Users2 },
-              { type: 'reach', label: 'Alcance', icon: BarChart3 },
-            ].map(({ type, label, icon: Icon }) => {
-              const metric = metrics.find(m => m.metric_type === type);
-              return (
-                <Card key={type} className="border-border/50">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Icon className="h-4 w-4 text-primary" />
-                      <span className="text-sm text-muted-foreground">{label}</span>
-                    </div>
-                    <p className="text-2xl font-bold">
-                      {type === 'spend' || type === 'revenue' 
-                        ? formatCurrency(Number(metric?.value || 0), project.currency)
-                        : (metric?.value || 0).toLocaleString('pt-BR')
-                      }
-                    </p>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
+          <MetricsEditor projectId={id!} currency={project.currency} />
         </TabsContent>
       </Tabs>
     </div>

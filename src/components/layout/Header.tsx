@@ -35,9 +35,9 @@ export function Header({ onMenuClick }: HeaderProps) {
             <Menu className="h-5 w-5" />
           </Button>
           
-          <div className="flex items-center gap-2 lg:hidden">
-            <span className="text-primary font-medium italic">refine</span>
-            <span className="font-bold text-lg tracking-tight">CUBO</span>
+          <div className="flex items-center gap-1 lg:hidden">
+            <span className="text-primary font-medium italic text-lg">refine</span>
+            <span className="font-black text-xl tracking-tighter">CUBO</span>
           </div>
         </div>
 

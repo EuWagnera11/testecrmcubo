@@ -1,7 +1,11 @@
+import { useMemo } from 'react';
 import { useParams } from 'react-router-dom';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { 
   Eye, MousePointer, ShoppingCart, DollarSign, TrendingUp, 
-  Heart, Users2, BarChart3, Palette, FileText, MessageSquare
+  Heart, Users2, BarChart3, Palette, FileText, MessageSquare,
+  FileIcon, Image as ImageIcon
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -61,20 +65,43 @@ export default function ClientDashboard() {
     return new Intl.NumberFormat(locales[currency] || 'pt-BR', { style: 'currency', currency }).format(value);
   };
 
-  const getMetricValue = (type: string) => {
-    const metric = project.project_metrics?.find((m: any) => m.metric_type === type);
-    return Number(metric?.value || 0);
+  // Group metrics by type and get latest value
+  const getLatestMetricValue = (type: string) => {
+    const typeMetrics = project.project_metrics?.filter((m: any) => m.metric_type === type) || [];
+    if (typeMetrics.length === 0) return 0;
+    const sorted = typeMetrics.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    return Number(sorted[0]?.value || 0);
   };
 
+  // Build chart data from real metrics history
+  const buildChartData = () => {
+    const metricsData = project.project_metrics || [];
+    const dateMap = new Map<string, any>();
+    
+    metricsData.forEach((m: any) => {
+      const dateKey = m.date;
+      if (!dateMap.has(dateKey)) {
+        dateMap.set(dateKey, { date: dateKey, name: format(new Date(dateKey), 'dd/MM', { locale: ptBR }) });
+      }
+      dateMap.get(dateKey)[m.metric_type] = Number(m.value);
+    });
+
+    return Array.from(dateMap.values())
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      .slice(-10);
+  };
+
+  const chartData = buildChartData();
+
   const metrics = [
-    { type: 'impressions', label: 'Impressões', icon: Eye, value: getMetricValue('impressions') },
-    { type: 'clicks', label: 'Cliques', icon: MousePointer, value: getMetricValue('clicks') },
-    { type: 'conversions', label: 'Conversões', icon: ShoppingCart, value: getMetricValue('conversions') },
-    { type: 'spend', label: 'Investimento', icon: DollarSign, value: getMetricValue('spend'), isCurrency: true },
-    { type: 'revenue', label: 'Receita', icon: TrendingUp, value: getMetricValue('revenue'), isCurrency: true },
-    { type: 'engagement', label: 'Engajamento', icon: Heart, value: getMetricValue('engagement') },
-    { type: 'followers', label: 'Seguidores', icon: Users2, value: getMetricValue('followers') },
-    { type: 'reach', label: 'Alcance', icon: BarChart3, value: getMetricValue('reach') },
+    { type: 'impressions', label: 'Impressões', icon: Eye, value: getLatestMetricValue('impressions') },
+    { type: 'clicks', label: 'Cliques', icon: MousePointer, value: getLatestMetricValue('clicks') },
+    { type: 'conversions', label: 'Conversões', icon: ShoppingCart, value: getLatestMetricValue('conversions') },
+    { type: 'spend', label: 'Investimento', icon: DollarSign, value: getLatestMetricValue('spend'), isCurrency: true },
+    { type: 'revenue', label: 'Receita', icon: TrendingUp, value: getLatestMetricValue('revenue'), isCurrency: true },
+    { type: 'engagement', label: 'Engajamento', icon: Heart, value: getLatestMetricValue('engagement') },
+    { type: 'followers', label: 'Seguidores', icon: Users2, value: getLatestMetricValue('followers') },
+    { type: 'reach', label: 'Alcance', icon: BarChart3, value: getLatestMetricValue('reach') },
   ];
 
   const fields = project.project_fields || [];
@@ -83,22 +110,19 @@ export default function ClientDashboard() {
   const trafficField = fields.find((f: any) => f.field_type === 'traffic');
   const socialField = fields.find((f: any) => f.field_type === 'social_media');
 
-  // Mock chart data (in real app, this would come from metrics history)
-  const chartData = [
-    { name: 'Sem 1', impressions: 4000, clicks: 240 },
-    { name: 'Sem 2', impressions: 5000, clicks: 350 },
-    { name: 'Sem 3', impressions: 6200, clicks: 420 },
-    { name: 'Sem 4', impressions: 8100, clicks: 580 },
-  ];
+  const isImage = (url: string) => {
+    const ext = url.split('.').pop()?.toLowerCase();
+    return ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext || '');
+  };
 
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="border-b border-border bg-card">
         <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center gap-3">
-            <span className="text-primary font-medium italic">refine</span>
-            <span className="font-bold text-xl tracking-tight">CUBO</span>
+          <div className="flex items-center gap-1">
+            <span className="text-primary font-medium italic text-xl">refine</span>
+            <span className="font-black text-2xl tracking-tighter">CUBO</span>
           </div>
         </div>
       </header>
@@ -202,61 +226,44 @@ export default function ClientDashboard() {
 
         {/* Content Fields */}
         <div className="grid md:grid-cols-2 gap-4">
-          {designField?.content && (
-            <Card className="border-border/50">
-              <CardHeader className="pb-3">
-                <div className="flex items-center gap-2">
-                  <Palette className="h-5 w-5 text-pink-500" />
-                  <CardTitle className="text-base">Design</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground whitespace-pre-wrap">{designField.content}</p>
-              </CardContent>
-            </Card>
-          )}
-
-          {copyField?.content && (
-            <Card className="border-border/50">
-              <CardHeader className="pb-3">
-                <div className="flex items-center gap-2">
-                  <FileText className="h-5 w-5 text-blue-500" />
-                  <CardTitle className="text-base">Copywriting</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground whitespace-pre-wrap">{copyField.content}</p>
-              </CardContent>
-            </Card>
-          )}
-
-          {trafficField?.content && (
-            <Card className="border-border/50">
-              <CardHeader className="pb-3">
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-green-500" />
-                  <CardTitle className="text-base">Tráfego Pago</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground whitespace-pre-wrap">{trafficField.content}</p>
-              </CardContent>
-            </Card>
-          )}
-
-          {socialField?.content && (
-            <Card className="border-border/50">
-              <CardHeader className="pb-3">
-                <div className="flex items-center gap-2">
-                  <MessageSquare className="h-5 w-5 text-purple-500" />
-                  <CardTitle className="text-base">Social Media</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground whitespace-pre-wrap">{socialField.content}</p>
-              </CardContent>
-            </Card>
-          )}
+          {[
+            { field: designField, icon: Palette, color: 'text-pink-500', label: 'Design' },
+            { field: copyField, icon: FileText, color: 'text-blue-500', label: 'Copywriting' },
+            { field: trafficField, icon: TrendingUp, color: 'text-green-500', label: 'Tráfego Pago' },
+            { field: socialField, icon: MessageSquare, color: 'text-purple-500', label: 'Social Media' },
+          ].map(({ field, icon: Icon, color, label }) => {
+            if (!field?.content && (!field?.attachments || field.attachments.length === 0)) return null;
+            return (
+              <Card key={label} className="border-border/50">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center gap-2">
+                    <Icon className={`h-5 w-5 ${color}`} />
+                    <CardTitle className="text-base">{label}</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {field.content && (
+                    <p className="text-muted-foreground whitespace-pre-wrap">{field.content}</p>
+                  )}
+                  {field.attachments && field.attachments.length > 0 && (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {field.attachments.map((url: string, i: number) => (
+                        <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="block">
+                          {isImage(url) ? (
+                            <img src={url} alt="" className="w-full h-20 object-cover rounded-lg border" />
+                          ) : (
+                            <div className="flex items-center justify-center h-20 bg-muted rounded-lg border">
+                              <FileIcon className="h-6 w-6 text-muted-foreground" />
+                            </div>
+                          )}
+                        </a>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
 
         {/* Footer */}

@@ -150,13 +150,17 @@ export function useProjectFields(projectId?: string) {
   });
 
   const updateField = useMutation({
-    mutationFn: async ({ fieldId, content }: { fieldId: string; content: string }) => {
+    mutationFn: async ({ fieldId, content, attachments }: { fieldId: string; content: string; attachments?: string[] }) => {
+      const updateData: Record<string, any> = { 
+        content, 
+        last_edited_by: user!.id 
+      };
+      if (attachments !== undefined) {
+        updateData.attachments = attachments;
+      }
       const { data, error } = await supabase
         .from('project_fields')
-        .update({ 
-          content, 
-          last_edited_by: user!.id 
-        })
+        .update(updateData)
         .eq('id', fieldId)
         .select()
         .single();
