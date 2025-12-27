@@ -23,6 +23,7 @@ import { MetricsEditor } from '@/components/MetricsEditor';
 import { CampaignMetricsManager } from '@/components/CampaignMetricsManager';
 import { FileUpload } from '@/components/FileUpload';
 import { ProjectFinancials } from '@/components/ProjectFinancials';
+import { ProjectChangeRequests } from '@/components/ProjectChangeRequests';
 import { useRealtimeNotifications } from '@/hooks/useRealtimeNotifications';
 import { useProjectPresence } from '@/hooks/useProjectPresence';
 import { OnlineUsers } from '@/components/OnlineUsers';
@@ -226,7 +227,7 @@ export default function ProjectDetails() {
         </TabsList>
 
         {/* Fields Tab */}
-        <TabsContent value="fields" className="space-y-4">
+        <TabsContent value="fields" className="space-y-6">
           <div className="grid gap-4 md:grid-cols-2">
             {Object.entries(fieldConfig).map(([type, config]) => {
               const Icon = config.icon;
@@ -302,6 +303,9 @@ export default function ProjectDetails() {
               );
             })}
           </div>
+          
+          {/* Change Requests Section */}
+          <ProjectChangeRequests projectId={id!} />
         </TabsContent>
 
         {/* Tasks Tab - Kanban */}
