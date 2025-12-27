@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, UserCheck, UserX, Shield, Settings as SettingsIcon, Target, Save } from 'lucide-react';
+import { Users, UserCheck, UserX, Shield, Target, Save, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -11,6 +11,7 @@ import { useUsers } from '@/hooks/useUsers';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useProfile } from '@/hooks/useProfile';
 import { useAuth } from '@/contexts/AuthContext';
+import { appRoleLabels, appRoleDescriptions, projectRoleLabels, projectRoleDescriptions } from '@/lib/roleConfig';
 
 const statusConfig = {
   pending: { label: 'Pendente', className: 'bg-warning/15 text-warning border-warning/30' },
@@ -18,16 +19,10 @@ const statusConfig = {
   rejected: { label: 'Rejeitado', className: 'bg-destructive/15 text-destructive border-destructive/30' },
 };
 
-const roleLabels: Record<string, string> = {
-  admin: 'Administrador',
-  director: 'Diretor',
-  user: 'Usuário',
-};
-
 export default function Settings() {
   const { user } = useAuth();
   const { users, isLoading, approveUser, rejectUser, setUserRole } = useUsers();
-  const { isAdmin } = useUserRole();
+  const { isAdmin, canSetRevenueGoal } = useUserRole();
   const { profile, updateProfile } = useProfile();
   const [revenueGoal, setRevenueGoal] = useState('10000');
 
@@ -144,7 +139,7 @@ export default function Settings() {
                               </Badge>
                               {u.roles.map(role => (
                                 <Badge key={role} variant="secondary" className="text-xs">
-                                  {roleLabels[role] || role}
+                                  {appRoleLabels[role] || role}
                                 </Badge>
                               ))}
                             </div>
@@ -197,7 +192,7 @@ export default function Settings() {
                         <div>
                           <p className="font-medium">{u.full_name || 'Sem nome'}</p>
                           <p className="text-sm text-muted-foreground">
-                            Cargo atual: {u.roles.map(r => roleLabels[r] || r).join(', ') || 'Nenhum'}
+                            Cargo atual: {u.roles.map(r => appRoleLabels[r] || r).join(', ') || 'Nenhum'}
                           </p>
                         </div>
                         <Select
@@ -208,7 +203,7 @@ export default function Settings() {
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="user">Usuário</SelectItem>
+                            <SelectItem value="user">Colaborador</SelectItem>
                             <SelectItem value="director">Diretor</SelectItem>
                             <SelectItem value="admin">Administrador</SelectItem>
                           </SelectContent>
@@ -219,42 +214,103 @@ export default function Settings() {
                 )}
               </CardContent>
             </Card>
+
+            {/* Role Descriptions */}
+            <Card className="border-border/50">
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">
+                    <Info className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg">Sobre os Cargos</CardTitle>
+                    <CardDescription>Entenda as diferenças entre cargos do sistema e de projeto</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div>
+                  <h4 className="font-semibold mb-3 text-sm uppercase tracking-wide text-muted-foreground">Cargos do Sistema (globais)</h4>
+                  <div className="space-y-3">
+                    {Object.entries(appRoleLabels).map(([key, label]) => (
+                      <div key={key} className="p-3 rounded-lg bg-muted/50">
+                        <p className="font-medium">{label}</p>
+                        <p className="text-sm text-muted-foreground">{appRoleDescriptions[key]}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <h4 className="font-semibold mb-3 text-sm uppercase tracking-wide text-muted-foreground">Cargos de Projeto (por projeto)</h4>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {Object.entries(projectRoleLabels).map(([key, label]) => (
+                      <div key={key} className="p-3 rounded-lg bg-muted/50">
+                        <p className="font-medium text-sm">{label}</p>
+                        <p className="text-xs text-muted-foreground">{projectRoleDescriptions[key]}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
         )}
 
         {/* Profile Tab */}
         <TabsContent value="profile" className="space-y-6">
-          <Card className="border-border/50">
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <Target className="h-5 w-5 text-primary" />
+          {canSetRevenueGoal ? (
+            <Card className="border-border/50">
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Target className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg">Meta de Receita</CardTitle>
+                    <CardDescription>Defina sua meta mensal de faturamento</CardDescription>
+                  </div>
                 </div>
-                <div>
-                  <CardTitle className="text-lg">Meta de Receita</CardTitle>
-                  <CardDescription>Defina sua meta mensal de faturamento</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-end gap-4 max-w-md">
+                  <div className="flex-1 space-y-2">
+                    <Label htmlFor="revenue_goal">Meta (R$)</Label>
+                    <Input
+                      id="revenue_goal"
+                      type="number"
+                      value={revenueGoal}
+                      onChange={(e) => setRevenueGoal(e.target.value)}
+                      className="h-11"
+                    />
+                  </div>
+                  <Button onClick={handleSaveGoal} disabled={updateProfile.isPending} className="h-11">
+                    <Save className="h-4 w-4 mr-2" />
+                    Salvar
+                  </Button>
                 </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-end gap-4 max-w-md">
-                <div className="flex-1 space-y-2">
-                  <Label htmlFor="revenue_goal">Meta (R$)</Label>
-                  <Input
-                    id="revenue_goal"
-                    type="number"
-                    value={revenueGoal}
-                    onChange={(e) => setRevenueGoal(e.target.value)}
-                    className="h-11"
-                  />
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="border-border/50">
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">
+                    <Info className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg">Meu Perfil</CardTitle>
+                    <CardDescription>Informações do seu perfil</CardDescription>
+                  </div>
                 </div>
-                <Button onClick={handleSaveGoal} disabled={updateProfile.isPending} className="h-11">
-                  <Save className="h-4 w-4 mr-2" />
-                  Salvar
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+              </CardHeader>
+              <CardContent>
+                <p className="text-muted-foreground">
+                  Você está logado como <span className="font-medium text-foreground">Colaborador</span>. 
+                  Você pode visualizar e trabalhar nos projetos em que é membro.
+                </p>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
       </Tabs>
     </div>

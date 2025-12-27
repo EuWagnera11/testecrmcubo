@@ -36,18 +36,30 @@ export function useUserRole() {
 
   const isAdmin = roleQuery.data?.includes('admin') ?? false;
   const isDirector = roleQuery.data?.includes('director') ?? false;
+  const isUser = !isAdmin && !isDirector;
   const isApproved = statusQuery.data === 'approved';
   const isPending = statusQuery.data === 'pending';
   const isRejected = statusQuery.data === 'rejected';
+
+  // Permissões baseadas no cargo
+  const canCreateProjects = isAdmin || isDirector;
+  const canManageClients = isAdmin || isDirector;
+  const canSetRevenueGoal = isAdmin || isDirector;
+  const canSeeFinancials = isAdmin || isDirector;
 
   return {
     roles: roleQuery.data ?? [],
     status: statusQuery.data,
     isAdmin,
     isDirector,
+    isUser,
     isApproved,
     isPending,
     isRejected,
+    canCreateProjects,
+    canManageClients,
+    canSetRevenueGoal,
+    canSeeFinancials,
     isLoading: roleQuery.isLoading || statusQuery.isLoading,
   };
 }

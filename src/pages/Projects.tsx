@@ -64,8 +64,7 @@ const projectTypeLabels: Record<string, string> = {
 export default function Projects() {
   const { projects, isLoading, createProject, updateProject, deleteProject } = useProjects();
   const { clients } = useClients();
-  const { isAdmin, isDirector } = useUserRole();
-  const canSeeFinancials = isAdmin || isDirector;
+  const { canCreateProjects, canSeeFinancials } = useUserRole();
   const [search, setSearch] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [filter, setFilter] = useState('all');
@@ -146,12 +145,13 @@ export default function Projects() {
           <p className="text-muted-foreground text-sm uppercase tracking-wider mb-1 font-body">Gestão</p>
           <h1 className="text-3xl font-display tracking-wide">Projetos</h1>
         </div>
-        <Dialog open={isOpen} onOpenChange={(open) => { setIsOpen(open); if (!open) setShowDesignFields(false); }}>
-          <DialogTrigger asChild>
-            <Button className="h-11">
-              <Plus className="h-4 w-4 mr-2" /> Novo Projeto
-            </Button>
-          </DialogTrigger>
+        {canCreateProjects && (
+          <Dialog open={isOpen} onOpenChange={(open) => { setIsOpen(open); if (!open) setShowDesignFields(false); }}>
+            <DialogTrigger asChild>
+              <Button className="h-11">
+                <Plus className="h-4 w-4 mr-2" /> Novo Projeto
+              </Button>
+            </DialogTrigger>
           <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="text-xl font-display">Novo Projeto</DialogTitle>
@@ -269,6 +269,7 @@ export default function Projects() {
             </form>
           </DialogContent>
         </Dialog>
+        )}
 
         {/* Edit Dialog */}
         <Dialog open={isEditOpen} onOpenChange={(open) => { setIsEditOpen(open); if (!open) setEditingProject(null); }}>

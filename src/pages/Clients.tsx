@@ -10,9 +10,11 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useClients, CreateClientData, Client } from '@/hooks/useClients';
+import { useUserRole } from '@/hooks/useUserRole';
 
 export default function Clients() {
   const { clients, isLoading, createClient, updateClient, deleteClient } = useClients();
+  const { canManageClients } = useUserRole();
   const [search, setSearch] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [editClient, setEditClient] = useState<Client | null>(null);
@@ -70,40 +72,42 @@ export default function Clients() {
           <p className="text-muted-foreground text-sm uppercase tracking-wider mb-1">Gestão</p>
           <h1 className="text-3xl font-bold tracking-tight">Clientes</h1>
         </div>
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
-          <DialogTrigger asChild>
-            <Button className="h-11">
-              <Plus className="h-4 w-4 mr-2" /> Novo Cliente
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle className="text-xl">Adicionar Cliente</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Nome *</Label>
-                <Input id="name" name="name" required placeholder="Nome do cliente" className="h-11" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" name="email" type="email" placeholder="email@exemplo.com" className="h-11" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="phone">Telefone</Label>
-                <Input id="phone" name="phone" placeholder="(11) 99999-9999" className="h-11" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="company">Empresa</Label>
-                <Input id="company" name="company" placeholder="Nome da empresa" className="h-11" />
-              </div>
-              <Button type="submit" className="w-full h-11 mt-2" disabled={createClient.isPending}>
-                {createClient.isPending ? 'Salvando...' : 'Salvar Cliente'}
-                <ArrowRight className="ml-2 h-4 w-4" />
+        {canManageClients && (
+          <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogTrigger asChild>
+              <Button className="h-11">
+                <Plus className="h-4 w-4 mr-2" /> Novo Cliente
               </Button>
-            </form>
-          </DialogContent>
-        </Dialog>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle className="text-xl">Adicionar Cliente</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Nome *</Label>
+                  <Input id="name" name="name" required placeholder="Nome do cliente" className="h-11" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input id="email" name="email" type="email" placeholder="email@exemplo.com" className="h-11" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Telefone</Label>
+                  <Input id="phone" name="phone" placeholder="(11) 99999-9999" className="h-11" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="company">Empresa</Label>
+                  <Input id="company" name="company" placeholder="Nome da empresa" className="h-11" />
+                </div>
+                <Button type="submit" className="w-full h-11 mt-2" disabled={createClient.isPending}>
+                  {createClient.isPending ? 'Salvando...' : 'Salvar Cliente'}
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </form>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
 
       {/* Edit Dialog */}
