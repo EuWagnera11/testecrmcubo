@@ -734,6 +734,7 @@ export type Database = {
           name: string
           project_type: string
           share_enabled: boolean | null
+          share_expires_at: string | null
           share_token: string | null
           static_creatives: number | null
           status: string
@@ -754,6 +755,7 @@ export type Database = {
           name: string
           project_type?: string
           share_enabled?: boolean | null
+          share_expires_at?: string | null
           share_token?: string | null
           static_creatives?: number | null
           status?: string
@@ -774,6 +776,7 @@ export type Database = {
           name?: string
           project_type?: string
           share_enabled?: boolean | null
+          share_expires_at?: string | null
           share_token?: string | null
           static_creatives?: number | null
           status?: string

@@ -5,6 +5,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
+// Signed URL expiration time in seconds (5 minutes for security)
+const SIGNED_URL_EXPIRATION = 300;
+
 // Helper to get signed URL from stored path
 const getSignedUrl = async (storedPath: string): Promise<string | null> => {
   // Handle legacy public URLs
@@ -14,7 +17,7 @@ const getSignedUrl = async (storedPath: string): Promise<string | null> => {
     if (match) {
       const { data } = await supabase.storage
         .from('project-attachments')
-        .createSignedUrl(match[1], 3600); // 1 hour expiration
+        .createSignedUrl(match[1], SIGNED_URL_EXPIRATION);
       return data?.signedUrl || storedPath;
     }
     return storedPath;
@@ -25,7 +28,7 @@ const getSignedUrl = async (storedPath: string): Promise<string | null> => {
     const filePath = storedPath.replace('project-attachments:', '');
     const { data } = await supabase.storage
       .from('project-attachments')
-      .createSignedUrl(filePath, 3600);
+      .createSignedUrl(filePath, SIGNED_URL_EXPIRATION);
     return data?.signedUrl || null;
   }
   
@@ -85,7 +88,7 @@ export function FileUpload({ projectId, fieldType, attachments = [], onAttachmen
 
   const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
 
-  // Generate signed URLs for all attachments
+  // Generate signed URLs for all attachments and refresh periodically
   useEffect(() => {
     const generateSignedUrls = async () => {
       const urls: Record<string, string> = {};
@@ -100,6 +103,10 @@ export function FileUpload({ projectId, fieldType, attachments = [], onAttachmen
     
     if (attachments.length > 0) {
       generateSignedUrls();
+      
+      // Refresh signed URLs every 4 minutes (before 5 min expiration)
+      const refreshInterval = setInterval(generateSignedUrls, 240000);
+      return () => clearInterval(refreshInterval);
     }
   }, [attachments]);
 
