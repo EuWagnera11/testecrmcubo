@@ -20,6 +20,7 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { MetricsEditor } from '@/components/MetricsEditor';
+import { CampaignMetricsManager } from '@/components/CampaignMetricsManager';
 import { FileUpload } from '@/components/FileUpload';
 import { ProjectFinancials } from '@/components/ProjectFinancials';
 import { useRealtimeNotifications } from '@/hooks/useRealtimeNotifications';
@@ -399,7 +400,7 @@ export default function ProjectDetails() {
 
         {/* Metrics Tab */}
         <TabsContent value="metrics" className="space-y-4">
-          <MetricsEditor projectId={id!} currency={project.currency} />
+          <CampaignMetricsManager projectId={id!} currency={project.currency} />
         </TabsContent>
       </Tabs>
 

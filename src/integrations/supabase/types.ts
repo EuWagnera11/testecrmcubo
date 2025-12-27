@@ -122,6 +122,131 @@ export type Database = {
         }
         Relationships: []
       }
+      campaign_metrics: {
+        Row: {
+          campaign_id: string
+          clicks: number | null
+          conversions: number | null
+          cost_per_conversion: number | null
+          cost_per_lead: number | null
+          cpc: number | null
+          cpm: number | null
+          created_at: string
+          ctr: number | null
+          date: string
+          id: string
+          impressions: number | null
+          leads: number | null
+          reach: number | null
+          revenue: number | null
+          roas: number | null
+          spend: number | null
+        }
+        Insert: {
+          campaign_id: string
+          clicks?: number | null
+          conversions?: number | null
+          cost_per_conversion?: number | null
+          cost_per_lead?: number | null
+          cpc?: number | null
+          cpm?: number | null
+          created_at?: string
+          ctr?: number | null
+          date?: string
+          id?: string
+          impressions?: number | null
+          leads?: number | null
+          reach?: number | null
+          revenue?: number | null
+          roas?: number | null
+          spend?: number | null
+        }
+        Update: {
+          campaign_id?: string
+          clicks?: number | null
+          conversions?: number | null
+          cost_per_conversion?: number | null
+          cost_per_lead?: number | null
+          cpc?: number | null
+          cpm?: number | null
+          created_at?: string
+          ctr?: number | null
+          date?: string
+          id?: string
+          impressions?: number | null
+          leads?: number | null
+          reach?: number | null
+          revenue?: number | null
+          roas?: number | null
+          spend?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaign_metrics_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      campaigns: {
+        Row: {
+          budget: number | null
+          created_at: string
+          end_date: string | null
+          id: string
+          name: string
+          objective: string | null
+          platform: string | null
+          project_id: string
+          start_date: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          budget?: number | null
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          name: string
+          objective?: string | null
+          platform?: string | null
+          project_id: string
+          start_date?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          budget?: number | null
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          name?: string
+          objective?: string | null
+          platform?: string | null
+          project_id?: string
+          start_date?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaigns_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaigns_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "shared_project_clients"
+            referencedColumns: ["project_id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           company: string | null
