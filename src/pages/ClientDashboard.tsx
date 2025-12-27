@@ -38,6 +38,7 @@ const logDashboardAccess = async (projectId: string, shareToken: string) => {
 
 export default function ClientDashboard() {
   const { token } = useParams<{ token: string }>();
+  const contentRef = useRef<HTMLDivElement>(null);
   
   // Check if token is valid UUID
   const isTokenValid = token && isValidUUID(token);
@@ -247,8 +248,6 @@ export default function ClientDashboard() {
     const ext = url.split('.').pop()?.toLowerCase();
     return ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext || '');
   };
-
-  const contentRef = useRef<HTMLDivElement>(null);
 
   const hasCampaignData = campaignsData?.campaigns && campaignsData.campaigns.length > 0;
   const hasLegacyMetrics = metrics.some(m => m.value > 0);
