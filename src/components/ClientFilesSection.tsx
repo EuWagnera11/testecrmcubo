@@ -23,14 +23,26 @@ interface ClientFilesSectionProps {
 const fileTypeIcons: Record<string, React.ReactNode> = {
   drive: <Folder className="h-4 w-4" />,
   docs: <FileText className="h-4 w-4" />,
+  sheets: <FileText className="h-4 w-4" />,
+  slides: <FileText className="h-4 w-4" />,
+  figma: <Image className="h-4 w-4" />,
+  canva: <Image className="h-4 w-4" />,
   image: <Image className="h-4 w-4" />,
+  video: <Image className="h-4 w-4" />,
+  pdf: <FileText className="h-4 w-4" />,
   link: <LinkIcon className="h-4 w-4" />,
 };
 
 const fileTypeLabels: Record<string, string> = {
   drive: 'Google Drive',
   docs: 'Google Docs',
+  sheets: 'Google Sheets',
+  slides: 'Google Slides',
+  figma: 'Figma',
+  canva: 'Canva',
   image: 'Imagem',
+  video: 'Vídeo',
+  pdf: 'PDF',
   link: 'Link',
 };
 
@@ -242,6 +254,11 @@ export function ClientFilesSection({ clientId, clientName }: ClientFilesSectionP
                             <Badge variant="secondary" className="text-xs">
                               {fileTypeLabels[file.file_type] || 'Link'}
                             </Badge>
+                            {file.source === 'project' && (
+                              <Badge variant="default" className="text-xs bg-blue-500/10 text-blue-600 hover:bg-blue-500/20">
+                                Do projeto
+                              </Badge>
+                            )}
                             {file.project && (
                               <Badge variant="outline" className="text-xs">
                                 {file.project.name}
@@ -257,34 +274,36 @@ export function ClientFilesSection({ clientId, clientName }: ClientFilesSectionP
                             </p>
                           )}
                         </div>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 text-destructive hover:text-destructive"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Excluir arquivo?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Tem certeza que deseja excluir "{file.title}"? Esta ação não pode ser desfeita.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => deleteFile.mutate(file.id)}
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        {file.source === 'manual' && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 text-destructive hover:text-destructive"
                               >
-                                Excluir
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Excluir arquivo?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Tem certeza que deseja excluir "{file.title}"? Esta ação não pode ser desfeita.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => deleteFile.mutate(file.id)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Excluir
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
                       </div>
                     ))}
                   </div>
