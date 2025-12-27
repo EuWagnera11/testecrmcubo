@@ -109,7 +109,7 @@ export default function Auth() {
         <div className="absolute bottom-32 left-16 w-48 h-48 border border-primary/20 -rotate-6 opacity-30" />
         
         <div className="relative z-10 max-w-md">
-          <img src={refineLogo} alt="Refine" className="h-16 w-auto mb-6" />
+          <img src={refineLogo} alt="Refine" className="h-32 w-auto mb-6" />
           <p className="text-sidebar-foreground/70 text-xl leading-relaxed">
             Design limpo. Propósito claro.
           </p>
@@ -124,7 +124,7 @@ export default function Auth() {
         <div className="w-full max-w-md space-y-8 animate-fade-in">
           {/* Mobile logo */}
           <div className="lg:hidden text-center mb-8">
-            <img src={refineLogo} alt="Refine" className="h-10 w-auto mx-auto" />
+            <img src={refineLogo} alt="Refine" className="h-20 w-auto mx-auto" />
           </div>
 
           <div>
