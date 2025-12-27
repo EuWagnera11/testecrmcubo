@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react';
+import { useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { format } from 'date-fns';
 import { PDFExport } from '@/components/PDFExport';
@@ -6,20 +6,32 @@ import { ptBR } from 'date-fns/locale';
 import { 
   Eye, MousePointer, ShoppingCart, DollarSign, TrendingUp, 
   Heart, Users2, BarChart3, Palette, FileText, MessageSquare,
-  FileIcon, Image as ImageIcon
+  FileIcon, AlertCircle, Loader2
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 
+// Validate UUID format
+const isValidUUID = (str: string) => {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(str);
+};
+
 export default function ClientDashboard() {
   const { token } = useParams<{ token: string }>();
+  
+  // Check if token is valid UUID
+  const isTokenValid = token && isValidUUID(token);
 
   const { data: project, isLoading, error } = useQuery({
     queryKey: ['public-project', token],
     queryFn: async () => {
+      if (!token) throw new Error('Token não fornecido');
+      
       const { data, error } = await supabase
         .from('projects')
         .select(`
@@ -28,33 +40,77 @@ export default function ClientDashboard() {
           project_fields (*),
           project_metrics (*)
         `)
-        .eq('share_token', token!)
+        .eq('share_token', token)
         .eq('share_enabled', true)
-        .single();
+        .maybeSingle();
       
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error:', error);
+        throw new Error(`Erro ao carregar dashboard: ${error.message}`);
+      }
+      
+      if (!data) {
+        throw new Error('Dashboard não encontrado ou compartilhamento desativado');
+      }
+      
       return data;
     },
-    enabled: !!token,
+    enabled: isTokenValid,
+    retry: 1,
+    staleTime: 30000,
   });
 
-  if (isLoading) {
+  // Invalid token format
+  if (!isTokenValid) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <Card className="max-w-md w-full">
+          <CardContent className="pt-8 pb-6 text-center space-y-4">
+            <AlertCircle className="h-12 w-12 text-destructive mx-auto" />
+            <h1 className="text-2xl font-bold">Link inválido</h1>
+            <p className="text-muted-foreground">
+              O link que você está tentando acessar não é válido.
+            </p>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
-  if (error || !project) {
+  // Loading state with text
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <Card className="max-w-md">
-          <CardContent className="pt-8 pb-6 text-center">
-            <h1 className="text-2xl font-bold mb-2">Dashboard não encontrado</h1>
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-10 w-10 text-primary animate-spin" />
+          <p className="text-muted-foreground text-lg">Carregando dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state with details
+  if (error || !project) {
+    const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <Card className="max-w-md w-full">
+          <CardContent className="pt-8 pb-6 text-center space-y-4">
+            <AlertCircle className="h-12 w-12 text-destructive mx-auto" />
+            <h1 className="text-2xl font-bold">Dashboard não encontrado</h1>
             <p className="text-muted-foreground">
               Este link pode ter expirado ou o compartilhamento foi desativado.
             </p>
+            {import.meta.env.DEV && (
+              <div className="bg-muted p-3 rounded-lg text-left">
+                <p className="text-xs font-mono text-destructive break-all">
+                  {errorMessage}
+                </p>
+              </div>
+            )}
+            <Button variant="outline" onClick={() => window.location.reload()}>
+              Tentar novamente
+            </Button>
           </CardContent>
         </Card>
       </div>
