@@ -1729,6 +1729,13 @@ export type Database = {
         }
         Returns: undefined
       }
+      set_user_roles: {
+        Args: {
+          _roles: Database["public"]["Enums"]["app_role"][]
+          _target_user: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role:
