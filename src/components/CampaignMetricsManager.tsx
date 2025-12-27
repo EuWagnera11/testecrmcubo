@@ -220,14 +220,15 @@ export function CampaignMetricsManager({ projectId, currency }: CampaignMetricsM
         </TabsContent>
       </Tabs>
 
-      {selectedCampaign && (
-        <MetricsDialog
-          campaign={selectedCampaign}
-          currency={currency}
-          open={isMetricsOpen}
-          onOpenChange={setIsMetricsOpen}
-        />
-      )}
+      <MetricsDialog
+        campaign={selectedCampaign}
+        currency={currency}
+        open={isMetricsOpen && !!selectedCampaign}
+        onOpenChange={(open) => {
+          setIsMetricsOpen(open);
+          if (!open) setSelectedCampaign(null);
+        }}
+      />
     </div>
   );
 }
@@ -344,14 +345,15 @@ function CampaignCard({ campaign, currency, onSelect, onDelete, onStatusChange }
 }
 
 interface MetricsDialogProps {
-  campaign: Campaign;
+  campaign: Campaign | null;
   currency: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
 function MetricsDialog({ campaign, currency, open, onOpenChange }: MetricsDialogProps) {
-  const { metrics, addMetric, deleteMetric } = useCampaignMetrics(campaign.id);
+  const campaignId = campaign?.id || '';
+  const { metrics, addMetric, deleteMetric } = useCampaignMetrics(campaignId || undefined);
   const [newMetric, setNewMetric] = useState<Partial<CampaignMetric>>({
     date: new Date().toISOString().split('T')[0],
     impressions: 0,
@@ -405,7 +407,7 @@ function MetricsDialog({ campaign, currency, open, onOpenChange }: MetricsDialog
     if (!roas && newMetric.revenue && newMetric.spend) {
       roas = newMetric.revenue / newMetric.spend;
     }
-
+    if (!campaign) return;
     await addMetric.mutateAsync({
       campaign_id: campaign.id,
       date: newMetric.date!,
@@ -455,8 +457,8 @@ function MetricsDialog({ campaign, currency, open, onOpenChange }: MetricsDialog
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            {campaign.platform && platformIcons[campaign.platform]}
-            {campaign.name} - Métricas
+            {campaign?.platform && platformIcons[campaign.platform]}
+            {campaign?.name} - Métricas
           </DialogTitle>
         </DialogHeader>
 
@@ -465,10 +467,12 @@ function MetricsDialog({ campaign, currency, open, onOpenChange }: MetricsDialog
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm">Adicionar Métricas</CardTitle>
-              <FacebookMetricsImport 
-                campaignId={campaign.id} 
-                onImportComplete={() => {}} 
-              />
+              {campaign && (
+                <FacebookMetricsImport 
+                  campaignId={campaign.id} 
+                  onImportComplete={() => {}} 
+                />
+              )}
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
