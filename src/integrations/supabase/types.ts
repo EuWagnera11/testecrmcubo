@@ -900,6 +900,57 @@ export type Database = {
           },
         ]
       }
+      project_change_requests: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string
+          id: string
+          notes: string | null
+          project_id: string
+          requested_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description: string
+          id?: string
+          notes?: string | null
+          project_id: string
+          requested_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string
+          id?: string
+          notes?: string | null
+          project_id?: string
+          requested_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_change_requests_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_change_requests_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "shared_project_clients"
+            referencedColumns: ["project_id"]
+          },
+        ]
+      }
       project_fields: {
         Row: {
           attachments: string[] | null
