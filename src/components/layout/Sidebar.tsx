@@ -66,14 +66,14 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
           {/* Header */}
           <div className={cn(
             "flex items-center border-b border-sidebar-border",
-            isCollapsed ? "h-20 flex-col justify-center py-3 px-2" : "h-20 justify-between px-6"
+            isCollapsed ? "h-20 justify-center px-2" : "h-20 justify-between px-6"
           )}>
             <img 
               src={refineLogo} 
               alt="Refine" 
               className={cn(
                 "w-auto",
-                isCollapsed ? "h-10" : "h-10"
+                isCollapsed ? "h-12" : "h-10"
               )} 
             />
             
@@ -103,7 +103,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
               variant="ghost" 
               size="icon"
               onClick={onToggleCollapse}
-              className="hidden lg:flex mx-auto mt-2 h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent"
+              className="hidden lg:flex mx-auto mt-3 h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent"
             >
               <ChevronLeft className="h-4 w-4 rotate-180" />
             </Button>
@@ -111,7 +111,10 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
 
           {/* Navigation */}
           <nav className="flex-1 overflow-y-auto py-6">
-            <ul className="space-y-1 px-3">
+            <ul className={cn(
+              "space-y-2",
+              isCollapsed ? "px-2" : "px-3"
+            )}>
               {filteredNavItems.map((item) => {
                 const isActive = location.pathname === item.path || 
                   (item.path === '/dashboard' && location.pathname === '/');
@@ -122,13 +125,17 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
                       to={item.path}
                       onClick={() => onClose()}
                       className={cn(
-                        "flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200",
+                        "flex items-center rounded-lg transition-all duration-200",
                         "hover:bg-sidebar-accent",
                         isActive && "bg-sidebar-primary text-sidebar-primary-foreground",
-                        !isActive && "text-sidebar-foreground/70 hover:text-sidebar-foreground"
+                        !isActive && "text-sidebar-foreground/70 hover:text-sidebar-foreground",
+                        isCollapsed ? "justify-center px-2 py-3" : "gap-3 px-4 py-3"
                       )}
                     >
-                      <item.icon className="h-5 w-5 flex-shrink-0" />
+                      <item.icon className={cn(
+                        "flex-shrink-0",
+                        isCollapsed ? "h-6 w-6" : "h-5 w-5"
+                      )} />
                       {!isCollapsed && (
                         <span className="font-medium">{item.label}</span>
                       )}
