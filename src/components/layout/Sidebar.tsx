@@ -29,7 +29,6 @@ const navItems = [
   { icon: FolderKanban, label: 'Projetos', path: '/projetos' },
   { icon: FileText, label: 'Contratos', path: '/contratos' },
   { icon: Wallet, label: 'Financeiro', path: '/financeiro', directorOnly: true },
-  { icon: Users, label: 'Pagamentos', path: '/pagamentos', directorOnly: true },
   { icon: Settings, label: 'Configurações', path: '/configuracoes' },
 ];
 
