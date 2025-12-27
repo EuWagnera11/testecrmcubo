@@ -32,10 +32,8 @@ export function useMonthlyGoals() {
     enabled: !!user,
   });
 
-  // Get goal for a billing month reference date
-  // The monthKey uses the first of the reference month
-  const getGoalForMonth = (referenceDate: Date) => {
-    const monthKey = format(startOfMonth(referenceDate), 'yyyy-MM-dd');
+  const getGoalForMonth = (date: Date) => {
+    const monthKey = format(startOfMonth(date), 'yyyy-MM-dd');
     return goalsQuery.data?.find(g => g.month === monthKey);
   };
 

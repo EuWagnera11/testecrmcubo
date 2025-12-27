@@ -10,9 +10,8 @@ import { useContracts } from '@/hooks/useContracts';
 import { useFinancial } from '@/hooks/useFinancial';
 import { useUsers } from '@/hooks/useUsers';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from 'recharts';
-import { format, parseISO, subMonths, isAfter } from 'date-fns';
+import { format, parseISO, startOfMonth, subMonths, isAfter } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { getBillingCycle, isWithinBillingCycle, getCurrentBillingMonth } from '@/lib/billingCycle';
 
 const COLORS = ['hsl(28, 85%, 52%)', 'hsl(142, 76%, 36%)', 'hsl(38, 92%, 50%)', 'hsl(0, 72%, 51%)'];
 
@@ -33,33 +32,23 @@ export default function AdminDashboard() {
   const signedContracts = contracts.filter(c => c.status === 'signed').length;
   const totalProjectValue = projects.reduce((sum, p) => sum + Number(p.total_value), 0);
 
-  // Monthly revenue data for line chart using billing cycles
+  // Monthly revenue data for line chart
   const monthlyRevenue = useMemo(() => {
-    const currentBillingMonth = getCurrentBillingMonth(new Date());
-    
-    const last6Cycles = Array.from({ length: 6 }, (_, i) => {
-      const monthRef = subMonths(currentBillingMonth, 5 - i);
-      const cycle = getBillingCycle(monthRef);
-      return {
-        cycle,
-        label: format(monthRef, 'MMM', { locale: ptBR }),
-      };
+    const last6Months = Array.from({ length: 6 }, (_, i) => {
+      const date = subMonths(new Date(), 5 - i);
+      return format(startOfMonth(date), 'yyyy-MM');
     });
 
-    return last6Cycles.map(({ cycle, label }) => {
-      const cycleTransactions = transactions.filter(t => {
-        const tDate = parseISO(t.date);
-        return isWithinBillingCycle(tDate, cycle);
-      });
-      
-      const income = cycleTransactions
-        .filter(t => t.type === 'income')
+    return last6Months.map(monthKey => {
+      const monthLabel = format(parseISO(`${monthKey}-01`), 'MMM', { locale: ptBR });
+      const income = transactions
+        .filter(t => t.type === 'income' && format(startOfMonth(parseISO(t.date)), 'yyyy-MM') === monthKey)
         .reduce((sum, t) => sum + Number(t.amount), 0);
-      const expenses = cycleTransactions
-        .filter(t => t.type === 'expense')
+      const expenses = transactions
+        .filter(t => t.type === 'expense' && format(startOfMonth(parseISO(t.date)), 'yyyy-MM') === monthKey)
         .reduce((sum, t) => sum + Number(t.amount), 0);
       
-      return { month: label, receitas: income, despesas: expenses, lucro: income - expenses };
+      return { month: monthLabel, receitas: income, despesas: expenses, lucro: income - expenses };
     });
   }, [transactions]);
 

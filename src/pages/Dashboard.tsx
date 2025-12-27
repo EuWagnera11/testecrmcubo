@@ -15,11 +15,10 @@ import { useFinancial } from '@/hooks/useFinancial';
 import { useMonthlyGoals } from '@/hooks/useMonthlyGoals';
 import { useProjectsProfitability } from '@/hooks/useProjectsProfitability';
 import { Link } from 'react-router-dom';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { format, parseISO, subMonths, addMonths, isAfter, startOfMonth } from 'date-fns';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, Cell } from 'recharts';
+import { format, parseISO, startOfMonth, endOfMonth, isWithinInterval, isAfter, isBefore, subMonths, addMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import { getBillingCycle, isWithinBillingCycle, getCurrentBillingMonth } from '@/lib/billingCycle';
 
 const projectTypeLabels: Record<string, string> = {
   one_time: 'Pontual',
@@ -36,45 +35,45 @@ export default function Dashboard() {
   const { isAdmin, isDirector } = useUserRole();
   const { transactions } = useFinancial();
   const { getGoalForMonth, upsertGoal } = useMonthlyGoals();
+  const { projects: profitProjects, totalProfit, totalRevenue, totalPayouts, averageMargin } = useProjectsProfitability();
   
   const canSeeFinancials = isAdmin || isDirector;
 
-  // Month selection state - starts with the current billing month
-  const [selectedDate, setSelectedDate] = useState(() => getCurrentBillingMonth(new Date()));
+  // Month selection state
+  const [selectedDate, setSelectedDate] = useState(new Date());
   const [goalDialogOpen, setGoalDialogOpen] = useState(false);
   const [newGoalValue, setNewGoalValue] = useState('');
   
-  // Use billing cycle (day 20 to day 19)
-  const billingCycle = useMemo(() => getBillingCycle(selectedDate), [selectedDate]);
-  const selectedMonthLabel = billingCycle.label;
-
-  // Pass billing cycle to profitability hook for filtering
-  const { projects: profitProjects, totalProfit, totalRevenue, totalPayouts, averageMargin } = useProjectsProfitability(billingCycle);
+  const selectedMonthStart = startOfMonth(selectedDate);
+  const selectedMonthEnd = endOfMonth(selectedDate);
+  const selectedMonthLabel = format(selectedDate, "MMMM 'de' yyyy", { locale: ptBR });
 
   const goToPreviousMonth = () => setSelectedDate(subMonths(selectedDate, 1));
   const goToNextMonth = () => setSelectedDate(addMonths(selectedDate, 1));
-  const goToCurrentMonth = () => setSelectedDate(getCurrentBillingMonth(new Date()));
+  const goToCurrentMonth = () => setSelectedDate(new Date());
 
   // Get monthly goal (fallback to profile default)
   const monthlyGoal = getGoalForMonth(selectedDate);
   const revenueGoal = monthlyGoal?.revenue_goal || profile?.revenue_goal || 10000;
 
-  // Filter projects for the selected billing cycle (day 20 to day 19)
+  // Filter projects for the selected month
   // - Monthly projects: appear from creation until cancelled_at (or forever if not cancelled)
-  // - One-time projects: appear only in the billing cycle they were created
+  // - One-time projects: appear only in the month they were created
   const filteredProjects = useMemo(() => {
     return projects.filter(project => {
       const projectCreated = parseISO(project.created_at);
       const projectType = project.project_type || 'one_time';
+      const createdMonth = startOfMonth(projectCreated);
       
       if (projectType === 'monthly') {
         // Monthly projects appear from creation until cancellation
-        const startedBefore = !isAfter(projectCreated, billingCycle.end);
+        const startedBefore = !isAfter(createdMonth, selectedMonthEnd);
         
-        // Check if cancelled before this billing cycle
+        // Check if cancelled before this month
         if (project.cancelled_at) {
-          const cancelledDate = parseISO(project.cancelled_at);
-          if (!isAfter(cancelledDate, billingCycle.start)) return false;
+          const cancelledMonth = startOfMonth(parseISO(project.cancelled_at));
+          const cancelledBeforeThisMonth = isBefore(cancelledMonth, selectedMonthStart);
+          if (cancelledBeforeThisMonth) return false;
         }
         
         // Also check status - inactive projects don't appear
@@ -82,27 +81,27 @@ export default function Dashboard() {
         
         return startedBefore;
       } else {
-        // One-time projects only appear in the billing cycle they were created
-        return isWithinBillingCycle(projectCreated, billingCycle);
+        // One-time projects only appear in the month they were created
+        return isWithinInterval(projectCreated, { start: selectedMonthStart, end: selectedMonthEnd });
       }
     });
-  }, [projects, billingCycle]);
+  }, [projects, selectedMonthStart, selectedMonthEnd]);
 
-  // Filter clients that were created up to and including this billing cycle
+  // Filter clients that were created up to and including this month
   const filteredClients = useMemo(() => {
     return clients.filter(client => {
       const clientCreated = parseISO(client.created_at);
-      return !isAfter(clientCreated, billingCycle.end);
+      return !isAfter(startOfMonth(clientCreated), selectedMonthEnd);
     });
-  }, [clients, billingCycle]);
+  }, [clients, selectedMonthEnd]);
 
-  // Filter transactions for the selected billing cycle
+  // Filter transactions for the selected month
   const filteredTransactions = useMemo(() => {
     return transactions.filter(t => {
       const tDate = parseISO(t.date);
-      return isWithinBillingCycle(tDate, billingCycle);
+      return isWithinInterval(tDate, { start: selectedMonthStart, end: selectedMonthEnd });
     });
-  }, [transactions, billingCycle]);
+  }, [transactions, selectedMonthStart, selectedMonthEnd]);
 
   // Calculate metrics for the selected month
   const monthlyIncome = filteredTransactions
@@ -112,28 +111,26 @@ export default function Dashboard() {
   const activeProjects = filteredProjects.filter(p => p.status === 'active');
   const progressPercent = Math.min((monthlyIncome / revenueGoal) * 100, 100);
 
-  // Monthly chart data for revenue vs expenses (last 6 billing cycles from selected)
+  // Monthly chart data for revenue vs expenses (last 6 months from selected)
   const monthlyChartData = useMemo(() => {
-    const cycles = Array.from({ length: 6 }, (_, i) => {
-      const monthRef = subMonths(selectedDate, 5 - i);
-      const cycle = getBillingCycle(monthRef);
+    const months = Array.from({ length: 6 }, (_, i) => {
+      const date = subMonths(selectedDate, 5 - i);
       return {
-        cycle,
-        label: format(monthRef, 'MMM/yy', { locale: ptBR }),
+        key: format(date, 'yyyy-MM'),
+        label: format(date, 'MMM/yy', { locale: ptBR }),
       };
     });
 
-    return cycles.map(({ cycle, label }) => {
-      const cycleTransactions = transactions.filter(t => {
-        const tDate = parseISO(t.date);
-        return isWithinBillingCycle(tDate, cycle);
-      });
+    return months.map(({ key, label }) => {
+      const monthTransactions = transactions.filter(t => 
+        format(parseISO(t.date), 'yyyy-MM') === key
+      );
       
-      const receitas = cycleTransactions
+      const receitas = monthTransactions
         .filter(t => t.type === 'income')
         .reduce((sum, t) => sum + Number(t.amount), 0);
       
-      const despesas = cycleTransactions
+      const despesas = monthTransactions
         .filter(t => t.type === 'expense')
         .reduce((sum, t) => sum + Number(t.amount), 0);
       
@@ -198,15 +195,10 @@ export default function Dashboard() {
       {/* Month Selector */}
       <Card className="border-border/50 glass-card">
         <CardContent className="p-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Calendar className="h-5 w-5 text-primary" />
-              <div>
-                <span className="text-sm text-muted-foreground font-body">Visualizando:</span>
-                <p className="text-xs text-muted-foreground/70 font-body">
-                  Ciclo: {format(billingCycle.start, 'dd/MM')} a {format(billingCycle.end, 'dd/MM/yyyy')}
-                </p>
-              </div>
+              <span className="text-sm text-muted-foreground font-body">Visualizando:</span>
             </div>
             <div className="flex items-center gap-2">
               <Button variant="ghost" size="icon" onClick={goToPreviousMonth} className="h-8 w-8">
