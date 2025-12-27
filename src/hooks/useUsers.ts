@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { AppRole } from '@/lib/roleConfig';
 
 export interface UserWithProfile {
   id: string;
@@ -9,7 +10,7 @@ export interface UserWithProfile {
   full_name: string | null;
   status: 'pending' | 'approved' | 'rejected';
   created_at: string;
-  roles: string[];
+  roles: AppRole[];
 }
 
 export function useUsers() {
@@ -38,13 +39,13 @@ export function useUsers() {
       // Combine data
       return profiles.map(profile => ({
         id: profile.user_id,
-        email: '', // Will be filled by admin view
+        email: '',
         full_name: profile.full_name,
         status: profile.status as 'pending' | 'approved' | 'rejected',
         created_at: profile.created_at,
         roles: roles
           .filter(r => r.user_id === profile.user_id)
-          .map(r => r.role),
+          .map(r => r.role as AppRole),
       })) as UserWithProfile[];
     },
     enabled: !!user,
@@ -101,7 +102,7 @@ export function useUsers() {
   });
 
   const setUserRole = useMutation({
-    mutationFn: async ({ userId, role }: { userId: string; role: 'admin' | 'director' | 'user' }) => {
+    mutationFn: async ({ userId, role }: { userId: string; role: AppRole }) => {
       // Remove existing roles
       await supabase
         .from('user_roles')

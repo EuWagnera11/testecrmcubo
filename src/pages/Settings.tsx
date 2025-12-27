@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, UserCheck, UserX, Shield, Target, Save, Info } from 'lucide-react';
+import { Users, UserCheck, UserX, Shield, Target, Save, Info, Palette, PenTool, TrendingUp, Share2, Crown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -11,12 +11,28 @@ import { useUsers } from '@/hooks/useUsers';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useProfile } from '@/hooks/useProfile';
 import { useAuth } from '@/contexts/AuthContext';
-import { appRoleLabels, appRoleDescriptions, projectRoleLabels, projectRoleDescriptions } from '@/lib/roleConfig';
+import { 
+  appRoleLabels, 
+  appRoleDescriptions, 
+  appRoleColors,
+  managementRoles,
+  functionalRoles,
+  AppRole 
+} from '@/lib/roleConfig';
 
 const statusConfig = {
   pending: { label: 'Pendente', className: 'bg-warning/15 text-warning border-warning/30' },
   approved: { label: 'Aprovado', className: 'bg-success/15 text-success border-success/30' },
   rejected: { label: 'Rejeitado', className: 'bg-destructive/15 text-destructive border-destructive/30' },
+};
+
+const roleIcons: Record<string, React.ReactNode> = {
+  admin: <Shield className="h-4 w-4" />,
+  director: <Crown className="h-4 w-4" />,
+  designer: <Palette className="h-4 w-4" />,
+  copywriter: <PenTool className="h-4 w-4" />,
+  traffic_manager: <TrendingUp className="h-4 w-4" />,
+  social_media: <Share2 className="h-4 w-4" />,
 };
 
 export default function Settings() {
@@ -26,7 +42,6 @@ export default function Settings() {
   const { profile, updateProfile } = useProfile();
   const [revenueGoal, setRevenueGoal] = useState('10000');
 
-  // Sync revenueGoal with profile when it loads
   useEffect(() => {
     if (profile?.revenue_goal !== undefined) {
       setRevenueGoal(profile.revenue_goal?.toString() || '10000');
@@ -138,8 +153,11 @@ export default function Settings() {
                                 {statusConfig[u.status].label}
                               </Badge>
                               {u.roles.map(role => (
-                                <Badge key={role} variant="secondary" className="text-xs">
-                                  {appRoleLabels[role] || role}
+                                <Badge key={role} variant="outline" className={appRoleColors[role] || ''}>
+                                  <span className="flex items-center gap-1">
+                                    {roleIcons[role]}
+                                    {appRoleLabels[role] || role}
+                                  </span>
                                 </Badge>
                               ))}
                             </div>
@@ -176,7 +194,7 @@ export default function Settings() {
                   </div>
                   <div>
                     <CardTitle className="text-lg">Gerenciar Cargos</CardTitle>
-                    <CardDescription>Defina cargos globais para os usuários</CardDescription>
+                    <CardDescription>Defina o cargo global de cada usuário</CardDescription>
                   </div>
                 </div>
               </CardHeader>
@@ -191,21 +209,70 @@ export default function Settings() {
                       <div key={u.id} className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
                         <div>
                           <p className="font-medium">{u.full_name || 'Sem nome'}</p>
-                          <p className="text-sm text-muted-foreground">
-                            Cargo atual: {u.roles.map(r => appRoleLabels[r] || r).join(', ') || 'Nenhum'}
-                          </p>
+                          <div className="flex items-center gap-2 mt-1">
+                            {u.roles.map(role => (
+                              <Badge key={role} variant="outline" className={appRoleColors[role] || ''}>
+                                <span className="flex items-center gap-1">
+                                  {roleIcons[role]}
+                                  {appRoleLabels[role] || role}
+                                </span>
+                              </Badge>
+                            ))}
+                            {u.roles.length === 0 && (
+                              <span className="text-sm text-muted-foreground">Sem cargo definido</span>
+                            )}
+                          </div>
                         </div>
                         <Select
                           defaultValue={u.roles[0] || 'user'}
-                          onValueChange={(value) => setUserRole.mutate({ userId: u.id, role: value as 'admin' | 'director' | 'user' })}
+                          onValueChange={(value) => setUserRole.mutate({ userId: u.id, role: value as AppRole })}
                         >
-                          <SelectTrigger className="w-40">
+                          <SelectTrigger className="w-48">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="user">Colaborador</SelectItem>
-                            <SelectItem value="director">Diretor</SelectItem>
-                            <SelectItem value="admin">Administrador</SelectItem>
+                            <SelectItem value="admin" className="flex items-center gap-2">
+                              <span className="flex items-center gap-2">
+                                <Shield className="h-4 w-4 text-red-500" />
+                                Administrador
+                              </span>
+                            </SelectItem>
+                            <SelectItem value="director">
+                              <span className="flex items-center gap-2">
+                                <Crown className="h-4 w-4 text-amber-500" />
+                                Diretor
+                              </span>
+                            </SelectItem>
+                            <SelectItem value="designer">
+                              <span className="flex items-center gap-2">
+                                <Palette className="h-4 w-4 text-purple-500" />
+                                Designer
+                              </span>
+                            </SelectItem>
+                            <SelectItem value="copywriter">
+                              <span className="flex items-center gap-2">
+                                <PenTool className="h-4 w-4 text-blue-500" />
+                                Copywriter
+                              </span>
+                            </SelectItem>
+                            <SelectItem value="traffic_manager">
+                              <span className="flex items-center gap-2">
+                                <TrendingUp className="h-4 w-4 text-green-500" />
+                                Gestor de Tráfego
+                              </span>
+                            </SelectItem>
+                            <SelectItem value="social_media">
+                              <span className="flex items-center gap-2">
+                                <Share2 className="h-4 w-4 text-pink-500" />
+                                Social Media
+                              </span>
+                            </SelectItem>
+                            <SelectItem value="user">
+                              <span className="flex items-center gap-2">
+                                <Users className="h-4 w-4 text-slate-500" />
+                                Colaborador
+                              </span>
+                            </SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -224,29 +291,39 @@ export default function Settings() {
                   </div>
                   <div>
                     <CardTitle className="text-lg">Sobre os Cargos</CardTitle>
-                    <CardDescription>Entenda as diferenças entre cargos do sistema e de projeto</CardDescription>
+                    <CardDescription>Cada usuário possui um cargo fixo global que define suas permissões</CardDescription>
                   </div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div>
-                  <h4 className="font-semibold mb-3 text-sm uppercase tracking-wide text-muted-foreground">Cargos do Sistema (globais)</h4>
+                  <h4 className="font-semibold mb-3 text-sm uppercase tracking-wide text-muted-foreground">Cargos de Gestão</h4>
                   <div className="space-y-3">
-                    {Object.entries(appRoleLabels).map(([key, label]) => (
-                      <div key={key} className="p-3 rounded-lg bg-muted/50">
-                        <p className="font-medium">{label}</p>
-                        <p className="text-sm text-muted-foreground">{appRoleDescriptions[key]}</p>
+                    {managementRoles.map((role) => (
+                      <div key={role} className="p-3 rounded-lg bg-muted/50 flex items-start gap-3">
+                        <div className={`p-2 rounded-lg ${role === 'admin' ? 'bg-red-500/10' : 'bg-amber-500/10'}`}>
+                          {roleIcons[role]}
+                        </div>
+                        <div>
+                          <p className="font-medium">{appRoleLabels[role]}</p>
+                          <p className="text-sm text-muted-foreground">{appRoleDescriptions[role]}</p>
+                        </div>
                       </div>
                     ))}
                   </div>
                 </div>
                 <div>
-                  <h4 className="font-semibold mb-3 text-sm uppercase tracking-wide text-muted-foreground">Cargos de Projeto (por projeto)</h4>
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    {Object.entries(projectRoleLabels).map(([key, label]) => (
-                      <div key={key} className="p-3 rounded-lg bg-muted/50">
-                        <p className="font-medium text-sm">{label}</p>
-                        <p className="text-xs text-muted-foreground">{projectRoleDescriptions[key]}</p>
+                  <h4 className="font-semibold mb-3 text-sm uppercase tracking-wide text-muted-foreground">Cargos Funcionais</h4>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {functionalRoles.map((role) => (
+                      <div key={role} className="p-3 rounded-lg bg-muted/50 flex items-start gap-3">
+                        <div className="p-2 rounded-lg bg-primary/10">
+                          {roleIcons[role]}
+                        </div>
+                        <div>
+                          <p className="font-medium text-sm">{appRoleLabels[role]}</p>
+                          <p className="text-xs text-muted-foreground">{appRoleDescriptions[role]}</p>
+                        </div>
                       </div>
                     ))}
                   </div>
