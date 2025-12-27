@@ -17,7 +17,7 @@ export const appRoleLabels: Record<AppRole, string> = {
 export const appRoleDescriptions: Record<AppRole, string> = {
   admin: 'Acesso total: gerencia usuários, cargos, projetos, clientes e metas',
   director: 'Pode criar projetos, clientes, definir metas e ver financeiro',
-  team_leader: 'Pode criar projetos e clientes, sem acesso ao financeiro',
+  team_leader: 'Pode criar projetos, clientes e definir metas, sem acesso ao financeiro',
   user: 'Visualiza e trabalha em projetos onde é membro',
   designer: 'Responsável pela criação visual dos projetos',
   copywriter: 'Responsável pelos textos e conteúdo',
@@ -88,7 +88,7 @@ export const rolePermissions: Record<AppRole, {
     canCreateClients: true,
     canManageUsers: false,
     canViewFinancials: false,
-    canSetGoals: false,
+    canSetGoals: true,
     canEditDesign: true,
     canEditCopy: true,
     canEditTraffic: true,
