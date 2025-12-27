@@ -1,10 +1,10 @@
-import { useRef } from 'react';
+import { useRef, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { format } from 'date-fns';
 import { PDFExport } from '@/components/PDFExport';
 import { ptBR } from 'date-fns/locale';
 import { 
-  Eye, MousePointer, ShoppingCart, DollarSign, TrendingUp, 
+  Eye, MousePointer, ShoppingCart, TrendingUp, 
   Heart, Users2, BarChart3, Palette, FileText, MessageSquare,
   FileIcon, AlertCircle, Loader2
 } from 'lucide-react';
@@ -21,6 +21,20 @@ const isValidUUID = (str: string) => {
   return uuidRegex.test(str);
 };
 
+// Log dashboard access for audit trail
+const logDashboardAccess = async (projectId: string, shareToken: string) => {
+  try {
+    await supabase.from('dashboard_access_logs').insert({
+      project_id: projectId,
+      share_token: shareToken,
+      user_agent: navigator.userAgent,
+    });
+  } catch (error) {
+    // Silently fail - don't block user experience for logging
+    console.error('Failed to log dashboard access:', error);
+  }
+};
+
 export default function ClientDashboard() {
   const { token } = useParams<{ token: string }>();
   
@@ -32,13 +46,19 @@ export default function ClientDashboard() {
     queryFn: async () => {
       if (!token) throw new Error('Token não fornecido');
       
+      // Only fetch necessary data - exclude sensitive financial details
+      // Only fetch client name (not email/phone)
       const { data, error } = await supabase
         .from('projects')
         .select(`
-          *,
+          id,
+          name,
+          currency,
+          status,
+          share_token,
           clients (name),
-          project_fields (*),
-          project_metrics (*)
+          project_fields (field_type, content, attachments, link_url),
+          project_metrics (metric_type, value, date)
         `)
         .eq('share_token', token)
         .eq('share_enabled', true)
@@ -59,6 +79,13 @@ export default function ClientDashboard() {
     retry: 1,
     staleTime: 30000,
   });
+
+  // Log access when dashboard is loaded successfully
+  useEffect(() => {
+    if (project && token) {
+      logDashboardAccess(project.id, token);
+    }
+  }, [project, token]);
 
   // Invalid token format
   if (!isTokenValid) {
@@ -117,11 +144,6 @@ export default function ClientDashboard() {
     );
   }
 
-  const formatCurrency = (value: number, currency: string) => {
-    const locales: Record<string, string> = { BRL: 'pt-BR', USD: 'en-US', EUR: 'de-DE' };
-    return new Intl.NumberFormat(locales[currency] || 'pt-BR', { style: 'currency', currency }).format(value);
-  };
-
   // Group metrics by type and get latest value
   const getLatestMetricValue = (type: string) => {
     const typeMetrics = project.project_metrics?.filter((m: any) => m.metric_type === type) || [];
@@ -150,12 +172,11 @@ export default function ClientDashboard() {
 
   const chartData = buildChartData();
 
+  // Only show non-sensitive performance metrics (no financial data like spend/revenue)
   const metrics = [
     { type: 'impressions', label: 'Impressões', icon: Eye, value: getLatestMetricValue('impressions') },
     { type: 'clicks', label: 'Cliques', icon: MousePointer, value: getLatestMetricValue('clicks') },
     { type: 'conversions', label: 'Conversões', icon: ShoppingCart, value: getLatestMetricValue('conversions') },
-    { type: 'spend', label: 'Investimento', icon: DollarSign, value: getLatestMetricValue('spend'), isCurrency: true },
-    { type: 'revenue', label: 'Receita', icon: TrendingUp, value: getLatestMetricValue('revenue'), isCurrency: true },
     { type: 'engagement', label: 'Engajamento', icon: Heart, value: getLatestMetricValue('engagement') },
     { type: 'followers', label: 'Seguidores', icon: Users2, value: getLatestMetricValue('followers') },
     { type: 'reach', label: 'Alcance', icon: BarChart3, value: getLatestMetricValue('reach') },
@@ -193,13 +214,13 @@ export default function ClientDashboard() {
           <Badge variant="secondary" className="mb-2">Dashboard do Cliente</Badge>
           <h1 className="text-3xl font-bold tracking-tight">{project.name}</h1>
           <p className="text-muted-foreground mt-1">
-            {project.clients?.name} • {formatCurrency(Number(project.total_value), project.currency)}
+            {project.clients?.name}
           </p>
         </div>
 
         {/* Metrics Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {metrics.map(({ type, label, icon: Icon, value, isCurrency }) => (
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          {metrics.map(({ type, label, icon: Icon, value }) => (
             <Card key={type} className="border-border/50">
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-2">
@@ -207,10 +228,7 @@ export default function ClientDashboard() {
                   <span className="text-sm text-muted-foreground">{label}</span>
                 </div>
                 <p className="text-2xl font-bold">
-                  {isCurrency 
-                    ? formatCurrency(value, project.currency)
-                    : value.toLocaleString('pt-BR')
-                  }
+                  {value.toLocaleString('pt-BR')}
                 </p>
               </CardContent>
             </Card>

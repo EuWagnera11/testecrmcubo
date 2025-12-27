@@ -241,6 +241,41 @@ export type Database = {
           },
         ]
       }
+      dashboard_access_logs: {
+        Row: {
+          accessed_at: string
+          id: string
+          ip_address: string | null
+          project_id: string
+          share_token: string
+          user_agent: string | null
+        }
+        Insert: {
+          accessed_at?: string
+          id?: string
+          ip_address?: string | null
+          project_id: string
+          share_token: string
+          user_agent?: string | null
+        }
+        Update: {
+          accessed_at?: string
+          id?: string
+          ip_address?: string | null
+          project_id?: string
+          share_token?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dashboard_access_logs_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       financial_transactions: {
         Row: {
           amount: number
