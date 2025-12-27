@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Plus, Search, Users, Mail, Phone, Building, ArrowRight, Trash2, Power, MoreVertical, Pencil } from 'lucide-react';
+import { useState } from 'react';
+import { Plus, Search, Users, Mail, Phone, Building, ArrowRight, Trash2, Power, MoreVertical, Pencil, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useClients, CreateClientData, Client } from '@/hooks/useClients';
 import { useUserRole } from '@/hooks/useUserRole';
+import { ClientFilesSection } from '@/components/ClientFilesSection';
 
 export default function Clients() {
   const { clients, isLoading, createClient, updateClient, deleteClient } = useClients();
@@ -18,6 +19,7 @@ export default function Clients() {
   const [search, setSearch] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [editClient, setEditClient] = useState<Client | null>(null);
+  const [viewClient, setViewClient] = useState<Client | null>(null);
   const [filter, setFilter] = useState('all');
 
   const filteredClients = clients.filter(c => {
@@ -167,6 +169,49 @@ export default function Clients() {
         </DialogContent>
       </Dialog>
 
+      {/* View Client Details Dialog */}
+      <Dialog open={!!viewClient} onOpenChange={(open) => !open && setViewClient(null)}>
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              {viewClient?.name}
+              {viewClient?.status === 'inactive' && (
+                <Badge variant="outline" className="bg-muted text-muted-foreground ml-2">Inativo</Badge>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+          {viewClient && (
+            <div className="space-y-6 mt-4">
+              {/* Client Info */}
+              <div className="grid gap-3 text-sm">
+                {viewClient.email && (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Mail className="h-4 w-4" />
+                    <span>{viewClient.email}</span>
+                  </div>
+                )}
+                {viewClient.phone && (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Phone className="h-4 w-4" />
+                    <span>{viewClient.phone}</span>
+                  </div>
+                )}
+                {viewClient.company && (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Building className="h-4 w-4" />
+                    <span>{viewClient.company}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Client Files Section */}
+              <ClientFilesSection clientId={viewClient.id} clientName={viewClient.name} />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* Search & Filter */}
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1 max-w-md">
@@ -227,6 +272,10 @@ export default function Clients() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => setViewClient(client)}>
+                        <Eye className="h-4 w-4 mr-2" />
+                        Ver Detalhes
+                      </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => setEditClient(client)}>
                         <Pencil className="h-4 w-4 mr-2" />
                         Editar
