@@ -57,7 +57,7 @@ export function useUserRole() {
 
   const canCreateProjects = isAdmin || isDirector || isTeamLeader || hasPermission('canCreateProjects');
   const canManageClients = isAdmin || isDirector || isTeamLeader || hasPermission('canCreateClients');
-  const canSetRevenueGoal = isAdmin || isDirector;
+  const canSetRevenueGoal = isAdmin || isDirector || isTeamLeader;
   const canSeeFinancials = isAdmin || isDirector;
   const canManageUsers = isAdmin;
 
