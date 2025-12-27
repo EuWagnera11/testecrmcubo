@@ -1,15 +1,15 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Trash2, CheckCircle, Clock, XCircle, Edit2 } from 'lucide-react';
+import { Plus, Trash2, CheckCircle, Clock, XCircle, Edit2, Paperclip, Image, X, ExternalLink } from 'lucide-react';
 import { useProjectChangeRequests, ProjectChangeRequest } from '@/hooks/useProjectChangeRequests';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { toast } from 'sonner';
 
 interface ProjectChangeRequestsProps {
   projectId: string;
@@ -22,12 +22,40 @@ const statusConfig = {
 };
 
 export function ProjectChangeRequests({ projectId }: ProjectChangeRequestsProps) {
-  const { changeRequests, isLoading, createChangeRequest, updateChangeRequest, deleteChangeRequest } = useProjectChangeRequests(projectId);
+  const { changeRequests, isLoading, createChangeRequest, updateChangeRequest, deleteChangeRequest, uploadAttachment } = useProjectChangeRequests(projectId);
   const [open, setOpen] = useState(false);
   const [editingRequest, setEditingRequest] = useState<ProjectChangeRequest | null>(null);
   const [description, setDescription] = useState('');
   const [requestedAt, setRequestedAt] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [notes, setNotes] = useState('');
+  const [attachments, setAttachments] = useState<string[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploading(true);
+    try {
+      const uploadPromises = Array.from(files).map(file => uploadAttachment(file));
+      const urls = await Promise.all(uploadPromises);
+      setAttachments(prev => [...prev, ...urls]);
+      toast.success(`${files.length} arquivo(s) anexado(s)`);
+    } catch (error) {
+      console.error('Error uploading files:', error);
+      toast.error('Erro ao anexar arquivo(s)');
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const removeAttachment = (index: number) => {
+    setAttachments(prev => prev.filter((_, i) => i !== index));
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,6 +67,7 @@ export function ProjectChangeRequests({ projectId }: ProjectChangeRequestsProps)
         description,
         requested_at: requestedAt,
         notes: notes || null,
+        attachments,
       });
     } else {
       createChangeRequest.mutate({
@@ -46,6 +75,7 @@ export function ProjectChangeRequests({ projectId }: ProjectChangeRequestsProps)
         description,
         requested_at: requestedAt,
         notes: notes || undefined,
+        attachments,
       });
     }
 
@@ -56,6 +86,7 @@ export function ProjectChangeRequests({ projectId }: ProjectChangeRequestsProps)
     setDescription('');
     setRequestedAt(format(new Date(), 'yyyy-MM-dd'));
     setNotes('');
+    setAttachments([]);
     setEditingRequest(null);
     setOpen(false);
   };
@@ -65,11 +96,16 @@ export function ProjectChangeRequests({ projectId }: ProjectChangeRequestsProps)
     setDescription(request.description);
     setRequestedAt(request.requested_at);
     setNotes(request.notes || '');
+    setAttachments(request.attachments || []);
     setOpen(true);
   };
 
   const handleStatusChange = (id: string, status: string) => {
     updateChangeRequest.mutate({ id, status: status as 'pending' | 'completed' | 'rejected' });
+  };
+
+  const isImageUrl = (url: string) => {
+    return /\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(url);
   };
 
   if (isLoading) {
@@ -87,7 +123,7 @@ export function ProjectChangeRequests({ projectId }: ProjectChangeRequestsProps)
               Nova Alteração
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-lg">
             <DialogHeader>
               <DialogTitle>{editingRequest ? 'Editar Alteração' : 'Registrar Alteração'}</DialogTitle>
             </DialogHeader>
@@ -122,11 +158,72 @@ export function ProjectChangeRequests({ projectId }: ProjectChangeRequestsProps)
                   rows={2}
                 />
               </div>
+              <div>
+                <label className="text-sm font-medium">Anexos</label>
+                <div className="mt-1 space-y-2">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    accept="image/*,.pdf,.doc,.docx"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                    className="gap-2"
+                  >
+                    <Paperclip className="h-4 w-4" />
+                    {uploading ? 'Enviando...' : 'Anexar arquivo'}
+                  </Button>
+                  
+                  {attachments.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {attachments.map((url, index) => (
+                        <div key={index} className="relative group">
+                          {isImageUrl(url) ? (
+                            <div className="relative">
+                              <img
+                                src={url}
+                                alt={`Anexo ${index + 1}`}
+                                className="h-16 w-16 object-cover rounded border"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => removeAttachment(index)}
+                                className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="relative flex items-center gap-1 px-2 py-1 bg-muted rounded text-xs">
+                              <Paperclip className="h-3 w-3" />
+                              <span className="max-w-[80px] truncate">Arquivo</span>
+                              <button
+                                type="button"
+                                onClick={() => removeAttachment(index)}
+                                className="text-destructive hover:text-destructive/80"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
               <div className="flex justify-end gap-2">
                 <Button type="button" variant="outline" onClick={resetForm}>
                   Cancelar
                 </Button>
-                <Button type="submit" disabled={createChangeRequest.isPending || updateChangeRequest.isPending}>
+                <Button type="submit" disabled={createChangeRequest.isPending || updateChangeRequest.isPending || uploading}>
                   {editingRequest ? 'Salvar' : 'Registrar'}
                 </Button>
               </div>
@@ -144,6 +241,7 @@ export function ProjectChangeRequests({ projectId }: ProjectChangeRequestsProps)
             {changeRequests.map((request) => {
               const status = statusConfig[request.status as keyof typeof statusConfig] || statusConfig.pending;
               const StatusIcon = status.icon;
+              const requestAttachments = request.attachments || [];
 
               return (
                 <div
@@ -176,6 +274,39 @@ export function ProjectChangeRequests({ projectId }: ProjectChangeRequestsProps)
                       </Button>
                     </div>
                   </div>
+                  
+                  {requestAttachments.length > 0 && (
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      {requestAttachments.map((url, index) => (
+                        <a
+                          key={index}
+                          href={url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="group"
+                        >
+                          {isImageUrl(url) ? (
+                            <div className="relative">
+                              <img
+                                src={url}
+                                alt={`Anexo ${index + 1}`}
+                                className="h-12 w-12 object-cover rounded border hover:opacity-80 transition-opacity"
+                              />
+                              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/30 rounded">
+                                <ExternalLink className="h-4 w-4 text-white" />
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1 px-2 py-1 bg-muted rounded text-xs hover:bg-muted/80 transition-colors">
+                              <Paperclip className="h-3 w-3" />
+                              <span>Ver arquivo</span>
+                            </div>
+                          )}
+                        </a>
+                      ))}
+                    </div>
+                  )}
+                  
                   <div className="flex items-center justify-between gap-2 text-xs">
                     <span className="text-muted-foreground">
                       {format(new Date(request.requested_at), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}

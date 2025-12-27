@@ -902,6 +902,7 @@ export type Database = {
       }
       project_change_requests: {
         Row: {
+          attachments: string[] | null
           created_at: string
           created_by: string
           description: string
@@ -913,6 +914,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          attachments?: string[] | null
           created_at?: string
           created_by: string
           description: string
@@ -924,6 +926,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          attachments?: string[] | null
           created_at?: string
           created_by?: string
           description?: string
