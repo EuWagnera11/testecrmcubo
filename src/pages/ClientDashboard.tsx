@@ -46,8 +46,7 @@ export default function ClientDashboard() {
     queryFn: async () => {
       if (!token) throw new Error('Token não fornecido');
       
-      // Only fetch necessary data - exclude sensitive financial details
-      // Only fetch client name (not email/phone)
+      // Fetch project data - client info comes from secure view
       const { data, error } = await supabase
         .from('projects')
         .select(`
@@ -56,13 +55,23 @@ export default function ClientDashboard() {
           currency,
           status,
           share_token,
-          clients (name),
           project_fields (field_type, content, attachments, link_url),
           project_metrics (metric_type, value, date)
         `)
         .eq('share_token', token)
         .eq('share_enabled', true)
         .maybeSingle();
+      
+      // If project found, get client name from secure view
+      let clientName = null;
+      if (data) {
+        const { data: clientData } = await supabase
+          .from('shared_project_clients')
+          .select('name, company')
+          .eq('project_id', data.id)
+          .maybeSingle();
+        clientName = clientData?.name || clientData?.company;
+      }
       
       if (error) {
         console.error('Supabase error:', error);
@@ -73,7 +82,7 @@ export default function ClientDashboard() {
         throw new Error('Dashboard não encontrado ou compartilhamento desativado');
       }
       
-      return data;
+      return { ...data, clientName };
     },
     enabled: isTokenValid,
     retry: 1,
@@ -214,7 +223,7 @@ export default function ClientDashboard() {
           <Badge variant="secondary" className="mb-2">Dashboard do Cliente</Badge>
           <h1 className="text-3xl font-bold tracking-tight">{project.name}</h1>
           <p className="text-muted-foreground mt-1">
-            {project.clients?.name}
+            {project.clientName}
           </p>
         </div>
 
