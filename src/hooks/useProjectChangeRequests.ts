@@ -10,6 +10,7 @@ export interface ProjectChangeRequest {
   requested_at: string;
   status: 'pending' | 'completed' | 'rejected';
   notes: string | null;
+  attachments: string[];
   created_by: string;
   created_at: string;
   updated_at: string;
@@ -20,6 +21,7 @@ export interface CreateChangeRequestData {
   description: string;
   requested_at?: string;
   notes?: string;
+  attachments?: string[];
 }
 
 export function useProjectChangeRequests(projectId: string) {
@@ -41,12 +43,30 @@ export function useProjectChangeRequests(projectId: string) {
     enabled: !!projectId && !!user,
   });
 
+  const uploadAttachment = async (file: File): Promise<string> => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${projectId}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('change-request-attachments')
+      .upload(fileName, file);
+
+    if (uploadError) throw uploadError;
+
+    const { data } = supabase.storage
+      .from('change-request-attachments')
+      .getPublicUrl(fileName);
+
+    return data.publicUrl;
+  };
+
   const createChangeRequest = useMutation({
     mutationFn: async (data: CreateChangeRequestData) => {
       const { error } = await supabase
         .from('project_change_requests')
         .insert({
           ...data,
+          attachments: data.attachments || [],
           created_by: user?.id,
         });
 
@@ -106,5 +126,6 @@ export function useProjectChangeRequests(projectId: string) {
     createChangeRequest,
     updateChangeRequest,
     deleteChangeRequest,
+    uploadAttachment,
   };
 }
