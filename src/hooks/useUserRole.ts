@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { AppRole, rolePermissions } from '@/lib/roleConfig';
 
 export function useUserRole() {
   const { user } = useAuth();
@@ -14,7 +15,7 @@ export function useUserRole() {
         .eq('user_id', user!.id);
       
       if (error) throw error;
-      return data.map(r => r.role);
+      return data.map(r => r.role as AppRole);
     },
     enabled: !!user,
   });
@@ -34,24 +35,42 @@ export function useUserRole() {
     enabled: !!user,
   });
 
-  const isAdmin = roleQuery.data?.includes('admin') ?? false;
-  const isDirector = roleQuery.data?.includes('director') ?? false;
-  const isUser = !isAdmin && !isDirector;
+  const roles = roleQuery.data ?? [];
+  
+  const isAdmin = roles.includes('admin');
+  const isDirector = roles.includes('director');
+  const isTeamLeader = roles.includes('team_leader');
+  const isDesigner = roles.includes('designer');
+  const isCopywriter = roles.includes('copywriter');
+  const isTrafficManager = roles.includes('traffic_manager');
+  const isSocialMedia = roles.includes('social_media');
+  const isUser = roles.length === 0 || (roles.length === 1 && roles.includes('user'));
+  
   const isApproved = statusQuery.data === 'approved';
   const isPending = statusQuery.data === 'pending';
   const isRejected = statusQuery.data === 'rejected';
 
-  // Permissões baseadas no cargo
-  const canCreateProjects = isAdmin || isDirector;
-  const canManageClients = isAdmin || isDirector;
+  // Calcular permissões baseadas em todos os cargos do usuário
+  const hasPermission = (permission: keyof typeof rolePermissions.admin) => {
+    return roles.some(role => rolePermissions[role]?.[permission] ?? false);
+  };
+
+  const canCreateProjects = isAdmin || isDirector || isTeamLeader || hasPermission('canCreateProjects');
+  const canManageClients = isAdmin || isDirector || isTeamLeader || hasPermission('canCreateClients');
   const canSetRevenueGoal = isAdmin || isDirector;
   const canSeeFinancials = isAdmin || isDirector;
+  const canManageUsers = isAdmin;
 
   return {
-    roles: roleQuery.data ?? [],
+    roles,
     status: statusQuery.data,
     isAdmin,
     isDirector,
+    isTeamLeader,
+    isDesigner,
+    isCopywriter,
+    isTrafficManager,
+    isSocialMedia,
     isUser,
     isApproved,
     isPending,
@@ -60,6 +79,8 @@ export function useUserRole() {
     canManageClients,
     canSetRevenueGoal,
     canSeeFinancials,
+    canManageUsers,
+    hasPermission,
     isLoading: roleQuery.isLoading || statusQuery.isLoading,
   };
 }
