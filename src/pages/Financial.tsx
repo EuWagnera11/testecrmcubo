@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
-import { format, parseISO, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
+import { format, parseISO } from 'date-fns';
+import { isWithinFiscalMonth } from '@/lib/fiscalMonth';
 import { ptBR } from 'date-fns/locale';
 import { 
   Plus, TrendingUp, TrendingDown, Wallet, Trash2,
@@ -65,19 +66,15 @@ export default function Financial() {
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 
-  // Filter transactions by month/year
+  // Filter transactions by fiscal month (20th to 19th)
   const filteredTransactions = useMemo(() => {
     if (!filterMonth) return transactions;
     
     const year = parseInt(filterYear);
     const month = parseInt(filterMonth) - 1;
-    const start = startOfMonth(new Date(year, month));
-    const end = endOfMonth(new Date(year, month));
+    const referenceDate = new Date(year, month, 1);
     
-    return transactions.filter(t => {
-      const tDate = parseISO(t.date);
-      return isWithinInterval(tDate, { start, end });
-    });
+    return transactions.filter(t => isWithinFiscalMonth(t.date, referenceDate));
   }, [transactions, filterMonth, filterYear]);
 
   // Compute totals based on filtered transactions
