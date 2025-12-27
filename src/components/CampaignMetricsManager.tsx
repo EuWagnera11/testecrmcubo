@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useCampaigns, useCampaignMetrics, Campaign, CampaignMetric } from '@/hooks/useCampaigns';
 import { CampaignCharts } from './CampaignCharts';
+import { FacebookMetricsImport } from './FacebookMetricsImport';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -462,8 +463,12 @@ function MetricsDialog({ campaign, currency, open, onOpenChange }: MetricsDialog
         <div className="space-y-6">
           {/* New Metric Form */}
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm">Adicionar Métricas</CardTitle>
+              <FacebookMetricsImport 
+                campaignId={campaign.id} 
+                onImportComplete={() => {}} 
+              />
             </CardHeader>
             <CardContent>
               <div className="space-y-4">

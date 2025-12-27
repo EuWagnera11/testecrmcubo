@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { format } from 'date-fns';
 import { PDFExport } from '@/components/PDFExport';
@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
+import { ClientCampaignCharts } from '@/components/ClientCampaignCharts';
 
 // Validate UUID format
 const isValidUUID = (str: string) => {
@@ -86,6 +87,51 @@ export default function ClientDashboard() {
     },
     enabled: isTokenValid,
     retry: 1,
+    staleTime: 30000,
+  });
+
+  // Fetch campaigns and their metrics
+  const { data: campaignsData } = useQuery({
+    queryKey: ['public-campaigns', project?.id],
+    queryFn: async () => {
+      if (!project?.id) return { campaigns: [], metrics: {} };
+
+      // Fetch campaigns
+      const { data: campaigns, error: campaignsError } = await supabase
+        .from('campaigns')
+        .select('id, name, platform, status')
+        .eq('project_id', project.id)
+        .eq('status', 'active');
+
+      if (campaignsError) {
+        console.error('Campaigns error:', campaignsError);
+        return { campaigns: [], metrics: {} };
+      }
+
+      if (!campaigns?.length) return { campaigns: [], metrics: {} };
+
+      // Fetch metrics for all campaigns
+      const campaignIds = campaigns.map(c => c.id);
+      const { data: metrics, error: metricsError } = await supabase
+        .from('campaign_metrics')
+        .select('*')
+        .in('campaign_id', campaignIds)
+        .order('date', { ascending: false });
+
+      if (metricsError) {
+        console.error('Metrics error:', metricsError);
+        return { campaigns, metrics: {} };
+      }
+
+      // Group metrics by campaign
+      const metricsMap: Record<string, any[]> = {};
+      campaigns.forEach(c => {
+        metricsMap[c.id] = metrics?.filter(m => m.campaign_id === c.id) || [];
+      });
+
+      return { campaigns, metrics: metricsMap };
+    },
+    enabled: !!project?.id,
     staleTime: 30000,
   });
 
@@ -204,6 +250,9 @@ export default function ClientDashboard() {
 
   const contentRef = useRef<HTMLDivElement>(null);
 
+  const hasCampaignData = campaignsData?.campaigns && campaignsData.campaigns.length > 0;
+  const hasLegacyMetrics = metrics.some(m => m.value > 0);
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -227,89 +276,103 @@ export default function ClientDashboard() {
           </p>
         </div>
 
-        {/* Metrics Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          {metrics.map(({ type, label, icon: Icon, value }) => (
-            <Card key={type} className="border-border/50">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <Icon className="h-4 w-4 text-primary" />
-                  <span className="text-sm text-muted-foreground">{label}</span>
-                </div>
-                <p className="text-2xl font-bold">
-                  {value.toLocaleString('pt-BR')}
-                </p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        {/* Campaign Metrics Section */}
+        {hasCampaignData && (
+          <ClientCampaignCharts 
+            campaigns={campaignsData.campaigns} 
+            campaignMetrics={campaignsData.metrics} 
+          />
+        )}
 
-        {/* Charts */}
-        <div className="grid lg:grid-cols-2 gap-6">
-          <Card className="border-border/50">
-            <CardHeader>
-              <CardTitle className="text-lg">Performance Semanal</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={250}>
-                <AreaChart data={chartData}>
-                  <defs>
-                    <linearGradient id="colorImpressions" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'hsl(var(--card))', 
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px'
-                    }} 
-                  />
-                  <Area 
-                    type="monotone" 
-                    dataKey="impressions" 
-                    stroke="hsl(var(--primary))" 
-                    fillOpacity={1} 
-                    fill="url(#colorImpressions)" 
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
+        {/* Legacy Metrics Grid - only show if no campaign data or has legacy metrics */}
+        {(!hasCampaignData || hasLegacyMetrics) && (
+          <>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              {metrics.map(({ type, label, icon: Icon, value }) => (
+                <Card key={type} className="border-border/50">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Icon className="h-4 w-4 text-primary" />
+                      <span className="text-sm text-muted-foreground">{label}</span>
+                    </div>
+                    <p className="text-2xl font-bold">
+                      {value.toLocaleString('pt-BR')}
+                    </p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
 
-          <Card className="border-border/50">
-            <CardHeader>
-              <CardTitle className="text-lg">Cliques por Semana</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={250}>
-                <LineChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'hsl(var(--card))', 
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px'
-                    }} 
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="clicks" 
-                    stroke="hsl(var(--primary))" 
-                    strokeWidth={2}
-                    dot={{ fill: 'hsl(var(--primary))' }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </div>
+            {/* Legacy Charts */}
+            {chartData.length > 0 && (
+              <div className="grid lg:grid-cols-2 gap-6">
+                <Card className="border-border/50">
+                  <CardHeader>
+                    <CardTitle className="text-lg">Performance Semanal</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={250}>
+                      <AreaChart data={chartData}>
+                        <defs>
+                          <linearGradient id="colorImpressions" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
+                            <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                        <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                        <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                        <Tooltip 
+                          contentStyle={{ 
+                            backgroundColor: 'hsl(var(--card))', 
+                            border: '1px solid hsl(var(--border))',
+                            borderRadius: '8px'
+                          }} 
+                        />
+                        <Area 
+                          type="monotone" 
+                          dataKey="impressions" 
+                          stroke="hsl(var(--primary))" 
+                          fillOpacity={1} 
+                          fill="url(#colorImpressions)" 
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-border/50">
+                  <CardHeader>
+                    <CardTitle className="text-lg">Cliques por Semana</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={250}>
+                      <LineChart data={chartData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                        <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                        <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                        <Tooltip 
+                          contentStyle={{ 
+                            backgroundColor: 'hsl(var(--card))', 
+                            border: '1px solid hsl(var(--border))',
+                            borderRadius: '8px'
+                          }} 
+                        />
+                        <Line 
+                          type="monotone" 
+                          dataKey="clicks" 
+                          stroke="hsl(var(--primary))" 
+                          strokeWidth={2}
+                          dot={{ fill: 'hsl(var(--primary))' }}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+          </>
+        )}
 
         {/* Content Fields */}
         <div className="grid md:grid-cols-2 gap-4">
