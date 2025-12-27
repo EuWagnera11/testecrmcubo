@@ -16,7 +16,8 @@ import { useMonthlyGoals } from '@/hooks/useMonthlyGoals';
 import { useProjectsProfitability } from '@/hooks/useProjectsProfitability';
 import { Link } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, Cell } from 'recharts';
-import { format, parseISO, startOfMonth, endOfMonth, isWithinInterval, isAfter, isBefore, subMonths, addMonths } from 'date-fns';
+import { format, parseISO, startOfMonth, isAfter, isBefore, subMonths, addMonths } from 'date-fns';
+import { isWithinFiscalMonth, getFiscalMonthRange, getFiscalMonthKey } from '@/lib/fiscalMonth';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 
@@ -44,8 +45,7 @@ export default function Dashboard() {
   const [goalDialogOpen, setGoalDialogOpen] = useState(false);
   const [newGoalValue, setNewGoalValue] = useState('');
   
-  const selectedMonthStart = startOfMonth(selectedDate);
-  const selectedMonthEnd = endOfMonth(selectedDate);
+  const { start: fiscalMonthStart, end: fiscalMonthEnd } = getFiscalMonthRange(selectedDate);
   const selectedMonthLabel = format(selectedDate, "MMMM 'de' yyyy", { locale: ptBR });
 
   const goToPreviousMonth = () => setSelectedDate(subMonths(selectedDate, 1));
@@ -57,22 +57,22 @@ export default function Dashboard() {
   const revenueGoal = monthlyGoal?.revenue_goal || profile?.revenue_goal || 10000;
 
   // Filter projects for the selected month
+  // Filter projects for the selected fiscal month (20th to 19th)
   // - Monthly projects: appear from creation until cancelled_at (or forever if not cancelled)
-  // - One-time projects: appear only in the month they were created
+  // - One-time projects: appear only in the fiscal month they were created
   const filteredProjects = useMemo(() => {
     return projects.filter(project => {
       const projectCreated = parseISO(project.created_at);
       const projectType = project.project_type || 'one_time';
-      const createdMonth = startOfMonth(projectCreated);
       
       if (projectType === 'monthly') {
         // Monthly projects appear from creation until cancellation
-        const startedBefore = !isAfter(createdMonth, selectedMonthEnd);
+        const startedBefore = !isAfter(projectCreated, fiscalMonthEnd);
         
-        // Check if cancelled before this month
+        // Check if cancelled before this fiscal month
         if (project.cancelled_at) {
-          const cancelledMonth = startOfMonth(parseISO(project.cancelled_at));
-          const cancelledBeforeThisMonth = isBefore(cancelledMonth, selectedMonthStart);
+          const cancelledDate = parseISO(project.cancelled_at);
+          const cancelledBeforeThisMonth = isBefore(cancelledDate, fiscalMonthStart);
           if (cancelledBeforeThisMonth) return false;
         }
         
@@ -81,27 +81,24 @@ export default function Dashboard() {
         
         return startedBefore;
       } else {
-        // One-time projects only appear in the month they were created
-        return isWithinInterval(projectCreated, { start: selectedMonthStart, end: selectedMonthEnd });
+        // One-time projects only appear in the fiscal month they were created
+        return isWithinFiscalMonth(projectCreated, selectedDate);
       }
     });
-  }, [projects, selectedMonthStart, selectedMonthEnd]);
+  }, [projects, fiscalMonthStart, fiscalMonthEnd, selectedDate]);
 
-  // Filter clients that were created up to and including this month
+  // Filter clients that were created up to and including this fiscal month
   const filteredClients = useMemo(() => {
     return clients.filter(client => {
       const clientCreated = parseISO(client.created_at);
-      return !isAfter(startOfMonth(clientCreated), selectedMonthEnd);
+      return !isAfter(clientCreated, fiscalMonthEnd);
     });
-  }, [clients, selectedMonthEnd]);
+  }, [clients, fiscalMonthEnd]);
 
-  // Filter transactions for the selected month
+  // Filter transactions for the selected fiscal month (20th to 19th)
   const filteredTransactions = useMemo(() => {
-    return transactions.filter(t => {
-      const tDate = parseISO(t.date);
-      return isWithinInterval(tDate, { start: selectedMonthStart, end: selectedMonthEnd });
-    });
-  }, [transactions, selectedMonthStart, selectedMonthEnd]);
+    return transactions.filter(t => isWithinFiscalMonth(t.date, selectedDate));
+  }, [transactions, selectedDate]);
 
   // Calculate metrics for the selected month
   const monthlyIncome = filteredTransactions
@@ -111,19 +108,20 @@ export default function Dashboard() {
   const activeProjects = filteredProjects.filter(p => p.status === 'active');
   const progressPercent = Math.min((monthlyIncome / revenueGoal) * 100, 100);
 
-  // Monthly chart data for revenue vs expenses (last 6 months from selected)
+  // Monthly chart data for revenue vs expenses (last 6 fiscal months from selected)
   const monthlyChartData = useMemo(() => {
     const months = Array.from({ length: 6 }, (_, i) => {
       const date = subMonths(selectedDate, 5 - i);
       return {
-        key: format(date, 'yyyy-MM'),
+        date,
+        key: getFiscalMonthKey(date),
         label: format(date, 'MMM/yy', { locale: ptBR }),
       };
     });
 
-    return months.map(({ key, label }) => {
+    return months.map(({ date, label }) => {
       const monthTransactions = transactions.filter(t => 
-        format(parseISO(t.date), 'yyyy-MM') === key
+        isWithinFiscalMonth(t.date, date)
       );
       
       const receitas = monthTransactions
