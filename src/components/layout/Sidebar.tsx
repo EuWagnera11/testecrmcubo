@@ -13,6 +13,7 @@ import {
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useUserRole } from '@/hooks/useUserRole';
+import refineLogo from '@/assets/refine-logo.png';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -65,13 +66,10 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
           {/* Header */}
           <div className="flex items-center justify-between h-16 px-6 border-b border-sidebar-border">
             {!isCollapsed && (
-              <div className="flex items-center gap-1">
-                <span className="text-sidebar-primary font-medium italic text-xl">refine</span>
-                <span className="font-black text-2xl tracking-tighter">CUBO</span>
-              </div>
+              <img src={refineLogo} alt="Refine" className="h-6 w-auto" />
             )}
             {isCollapsed && (
-              <span className="font-black text-2xl mx-auto">C</span>
+              <img src={refineLogo} alt="Refine" className="h-5 w-auto mx-auto" />
             )}
             
             {/* Mobile close */}
@@ -127,7 +125,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
           {!isCollapsed && (
             <div className="p-4 border-t border-sidebar-border">
               <p className="text-xs text-sidebar-foreground/50 text-center">
-                Refine Cubo v1.0
+                v1.0
               </p>
             </div>
           )}
