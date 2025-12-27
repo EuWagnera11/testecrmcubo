@@ -58,18 +58,21 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
         className={cn(
           "fixed lg:sticky top-0 left-0 z-50 lg:z-30 h-screen bg-sidebar text-sidebar-foreground transition-all duration-300",
           isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
-          isCollapsed ? "lg:w-20" : "lg:w-72",
+          isCollapsed ? "lg:w-16" : "lg:w-72",
           "w-72"
         )}
       >
         <div className="flex flex-col h-full">
           {/* Header */}
-          <div className="flex items-center justify-between h-16 px-6 border-b border-sidebar-border">
+          <div className={cn(
+            "flex items-center border-b border-sidebar-border",
+            isCollapsed ? "h-14 justify-center px-2" : "h-20 justify-between px-6"
+          )}>
             {!isCollapsed && (
               <img src={refineLogo} alt="Refine" className="h-10 w-auto" />
             )}
             {isCollapsed && (
-              <img src={refineLogo} alt="Refine" className="h-8 w-auto mx-auto" />
+              <span className="font-bold text-lg text-sidebar-primary">R</span>
             )}
             
             {/* Mobile close */}
@@ -78,18 +81,29 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
             </Button>
             
             {/* Desktop collapse */}
+            {!isCollapsed && (
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={onToggleCollapse}
+                className="hidden lg:flex h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+          
+          {/* Expand button when collapsed */}
+          {isCollapsed && (
             <Button 
               variant="ghost" 
               size="icon"
               onClick={onToggleCollapse}
-              className="hidden lg:flex h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent"
+              className="hidden lg:flex mx-auto mt-2 h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent"
             >
-              <ChevronLeft className={cn(
-                "h-4 w-4 transition-transform",
-                isCollapsed && "rotate-180"
-              )} />
+              <ChevronLeft className="h-4 w-4 rotate-180" />
             </Button>
-          </div>
+          )}
 
           {/* Navigation */}
           <nav className="flex-1 overflow-y-auto py-6">
