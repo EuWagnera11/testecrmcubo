@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { 
   Plus, Search, FolderKanban, ArrowRight, ExternalLink, MoreVertical, 
   Trash2, Power, CheckCircle, Image, Layers, Pencil,
@@ -65,6 +65,7 @@ export default function Projects() {
   const { projects, isLoading, createProject, updateProject, deleteProject } = useProjects();
   const { clients } = useClients();
   const { canCreateProjects, canSeeFinancials } = useUserRole();
+  const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [filter, setFilter] = useState('all');
@@ -397,15 +398,16 @@ export default function Projects() {
           {filteredProjects.map((project, index) => (
             <Card 
               key={project.id}
-              className="card-hover border-border/50 glass-card"
+              className="card-hover border-border/50 glass-card cursor-pointer"
               style={{ animationDelay: `${index * 50}ms` }}
+              onClick={() => navigate(`/projetos/${project.id}`)}
             >
               <CardContent className="p-5">
                 <div className="flex items-start justify-between mb-3">
-                  <Link to={`/projetos/${project.id}`} className="flex-1">
+                  <div className="flex-1">
                     <h3 className="font-semibold text-lg hover:text-primary transition-colors font-body">{project.name}</h3>
-                  </Link>
-                  <div className="flex items-center gap-2">
+                  </div>
+                  <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                     <Badge variant="outline" className={statusConfig[project.status]?.className}>
                       {statusConfig[project.status]?.label}
                     </Badge>
@@ -477,9 +479,7 @@ export default function Projects() {
                   ) : (
                     <Badge variant="secondary">Ver detalhes</Badge>
                   )}
-                  <Link to={`/projetos/${project.id}`}>
-                    <ExternalLink className="h-4 w-4 text-muted-foreground hover:text-primary transition-colors" />
-                  </Link>
+                  <ExternalLink className="h-4 w-4 text-muted-foreground" />
                 </div>
               </CardContent>
             </Card>
