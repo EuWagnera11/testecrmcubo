@@ -10,8 +10,9 @@ import { useContracts } from '@/hooks/useContracts';
 import { useFinancial } from '@/hooks/useFinancial';
 import { useUsers } from '@/hooks/useUsers';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from 'recharts';
-import { format, parseISO, startOfMonth, subMonths, isAfter } from 'date-fns';
+import { format, parseISO, subMonths, addMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { getFiscalMonthKey, getFiscalMonthFromDate, isWithinFiscalMonth } from '@/lib/fiscalMonth';
 
 const COLORS = ['hsl(28, 85%, 52%)', 'hsl(142, 76%, 36%)', 'hsl(38, 92%, 50%)', 'hsl(0, 72%, 51%)'];
 
@@ -32,20 +33,21 @@ export default function AdminDashboard() {
   const signedContracts = contracts.filter(c => c.status === 'signed').length;
   const totalProjectValue = projects.reduce((sum, p) => sum + Number(p.total_value), 0);
 
-  // Monthly revenue data for line chart
+  // Monthly revenue data for line chart - using fiscal month logic
   const monthlyRevenue = useMemo(() => {
-    const last6Months = Array.from({ length: 6 }, (_, i) => {
-      const date = subMonths(new Date(), 5 - i);
-      return format(startOfMonth(date), 'yyyy-MM');
+    const currentFiscalMonth = getFiscalMonthFromDate(new Date());
+    const last6FiscalMonths = Array.from({ length: 6 }, (_, i) => {
+      const date = subMonths(currentFiscalMonth, 5 - i);
+      return { date, key: getFiscalMonthKey(date) };
     });
 
-    return last6Months.map(monthKey => {
-      const monthLabel = format(parseISO(`${monthKey}-01`), 'MMM', { locale: ptBR });
+    return last6FiscalMonths.map(({ date, key }) => {
+      const monthLabel = format(date, 'MMM', { locale: ptBR });
       const income = transactions
-        .filter(t => t.type === 'income' && format(startOfMonth(parseISO(t.date)), 'yyyy-MM') === monthKey)
+        .filter(t => t.type === 'income' && isWithinFiscalMonth(t.date, date))
         .reduce((sum, t) => sum + Number(t.amount), 0);
       const expenses = transactions
-        .filter(t => t.type === 'expense' && format(startOfMonth(parseISO(t.date)), 'yyyy-MM') === monthKey)
+        .filter(t => t.type === 'expense' && isWithinFiscalMonth(t.date, date))
         .reduce((sum, t) => sum + Number(t.amount), 0);
       
       return { month: monthLabel, receitas: income, despesas: expenses, lucro: income - expenses };
@@ -75,9 +77,10 @@ export default function AdminDashboard() {
     return Object.entries(types).map(([key, value]) => ({ name: labels[key] || key, value }));
   }, [projects]);
 
-  // Recent growth
+  // Recent growth - projects created in the current fiscal month
+  const currentFiscalMonth = getFiscalMonthFromDate(new Date());
   const lastMonthProjects = projects.filter(p => 
-    isAfter(parseISO(p.created_at), subMonths(new Date(), 1))
+    isWithinFiscalMonth(p.created_at, currentFiscalMonth)
   ).length;
 
   // Calculate real growth percentages
