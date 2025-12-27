@@ -72,6 +72,7 @@ export default function Projects() {
   const [showDesignFields, setShowDesignFields] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [selectedProjectTypes, setSelectedProjectTypes] = useState<string[]>(['one_time']);
 
   const filteredProjects = projects.filter(p => {
     const matchSearch = p.name.toLowerCase().includes(search.toLowerCase());
@@ -84,6 +85,14 @@ export default function Projects() {
     return new Intl.NumberFormat(locales[currency] || 'pt-BR', { style: 'currency', currency }).format(value);
   };
 
+  const handleToggleProjectType = (type: string) => {
+    setSelectedProjectTypes(prev =>
+      prev.includes(type)
+        ? prev.filter(t => t !== type)
+        : [...prev, type]
+    );
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -94,13 +103,14 @@ export default function Projects() {
       total_value: Number(formData.get('total_value')) || 0,
       deadline: formData.get('deadline') as string || undefined,
       advance_payment: formData.get('advance_payment') === 'on',
-      project_type: formData.get('project_type') as string || 'one_time',
+      project_type: selectedProjectTypes.join(','),
       static_creatives: Number(formData.get('static_creatives')) || 0,
       carousel_creatives: Number(formData.get('carousel_creatives')) || 0,
     };
     await createProject.mutateAsync(data);
     setIsOpen(false);
     setShowDesignFields(false);
+    setSelectedProjectTypes(['one_time']);
   };
 
   const handleEdit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -108,11 +118,15 @@ export default function Projects() {
     if (!editingProject) return;
     
     const formData = new FormData(e.currentTarget);
+    const selectedTypes = projectTypes
+      .filter(t => formData.get(`edit_type_${t.value}`) === 'on')
+      .map(t => t.value);
+    
     await updateProject.mutateAsync({
       id: editingProject.id,
       name: formData.get('name') as string,
       total_value: Number(formData.get('total_value')) || 0,
-      project_type: formData.get('project_type') as string || 'one_time',
+      project_type: selectedTypes.length > 0 ? selectedTypes.join(',') : 'one_time',
       static_creatives: Number(formData.get('static_creatives')) || 0,
       carousel_creatives: Number(formData.get('carousel_creatives')) || 0,
     });
@@ -176,17 +190,29 @@ export default function Projects() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Tipo de Projeto</Label>
-                <Select name="project_type" defaultValue="one_time">
-                  <SelectTrigger className="h-11">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {projectTypes.map(t => (
-                      <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label>Tipos de Projeto (selecione um ou mais)</Label>
+                <div className="grid grid-cols-2 gap-2 p-3 rounded-lg border border-border/50 bg-muted/30">
+                  {projectTypes.map(t => {
+                    const IconComponent = t.icon;
+                    return (
+                      <label
+                        key={t.value}
+                        className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${
+                          selectedProjectTypes.includes(t.value)
+                            ? 'bg-primary/10 border border-primary/30'
+                            : 'bg-background border border-border/50 hover:bg-muted/50'
+                        }`}
+                      >
+                        <Checkbox
+                          checked={selectedProjectTypes.includes(t.value)}
+                          onCheckedChange={() => handleToggleProjectType(t.value)}
+                        />
+                        <IconComponent className={`h-4 w-4 ${t.color}`} />
+                        <span className="text-sm">{t.label}</span>
+                      </label>
+                    );
+                  })}
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -291,17 +317,30 @@ export default function Projects() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Tipo de Projeto</Label>
-                <Select name="project_type" defaultValue={editingProject?.project_type || 'one_time'}>
-                  <SelectTrigger className="h-11">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {projectTypes.map(t => (
-                      <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label>Tipos de Projeto</Label>
+                <div className="grid grid-cols-2 gap-2 p-3 rounded-lg border border-border/50 bg-muted/30">
+                  {projectTypes.map(t => {
+                    const IconComponent = t.icon;
+                    const currentTypes = editingProject?.project_type?.split(',') || [];
+                    return (
+                      <label
+                        key={t.value}
+                        className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${
+                          currentTypes.includes(t.value)
+                            ? 'bg-primary/10 border border-primary/30'
+                            : 'bg-background border border-border/50 hover:bg-muted/50'
+                        }`}
+                      >
+                        <Checkbox
+                          name={`edit_type_${t.value}`}
+                          defaultChecked={currentTypes.includes(t.value)}
+                        />
+                        <IconComponent className={`h-4 w-4 ${t.color}`} />
+                        <span className="text-sm">{t.label}</span>
+                      </label>
+                    );
+                  })}
+                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit_total_value">Valor Total (Cliente)</Label>
@@ -460,10 +499,12 @@ export default function Projects() {
                   </div>
                 </div>
                 <p className="text-sm text-muted-foreground mb-1 font-body">{project.clients?.name || 'Sem cliente'}</p>
-                <div className="flex items-center gap-2 mb-4">
-                  <Badge variant="secondary" className="text-xs">
-                    {projectTypeLabels[project.project_type] || project.project_type}
-                  </Badge>
+                <div className="flex flex-wrap items-center gap-2 mb-4">
+                  {project.project_type.split(',').map((type) => (
+                    <Badge key={type} variant="secondary" className="text-xs">
+                      {projectTypeLabels[type] || type}
+                    </Badge>
+                  ))}
                   {(project.static_creatives || project.carousel_creatives) ? (
                     <Badge variant="outline" className="text-xs">
                       <Image className="h-3 w-3 mr-1" />

@@ -1717,6 +1717,7 @@ export type Database = {
         Returns: boolean
       }
       is_social_media: { Args: { _user_id: string }; Returns: boolean }
+      is_team_leader: { Args: { _user_id: string }; Returns: boolean }
       is_traffic_manager: { Args: { _user_id: string }; Returns: boolean }
       log_audit_event: {
         Args: {
@@ -1738,6 +1739,7 @@ export type Database = {
         | "copywriter"
         | "traffic_manager"
         | "social_media"
+        | "team_leader"
       project_role:
         | "director"
         | "designer"
@@ -1879,6 +1881,7 @@ export const Constants = {
         "copywriter",
         "traffic_manager",
         "social_media",
+        "team_leader",
       ],
       project_role: [
         "director",

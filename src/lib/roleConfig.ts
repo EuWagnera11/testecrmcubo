@@ -1,11 +1,12 @@
 // Cargos do Sistema (globais unificados)
 // Cada usuário tem um cargo fixo que define suas permissões e função
 
-export type AppRole = 'admin' | 'director' | 'user' | 'designer' | 'copywriter' | 'traffic_manager' | 'social_media';
+export type AppRole = 'admin' | 'director' | 'team_leader' | 'user' | 'designer' | 'copywriter' | 'traffic_manager' | 'social_media';
 
 export const appRoleLabels: Record<AppRole, string> = {
   admin: 'Administrador',
   director: 'Diretor',
+  team_leader: 'Líder de Equipe',
   user: 'Colaborador',
   designer: 'Designer',
   copywriter: 'Copywriter',
@@ -16,6 +17,7 @@ export const appRoleLabels: Record<AppRole, string> = {
 export const appRoleDescriptions: Record<AppRole, string> = {
   admin: 'Acesso total: gerencia usuários, cargos, projetos, clientes e metas',
   director: 'Pode criar projetos, clientes, definir metas e ver financeiro',
+  team_leader: 'Pode criar projetos e clientes, sem acesso ao financeiro',
   user: 'Visualiza e trabalha em projetos onde é membro',
   designer: 'Responsável pela criação visual dos projetos',
   copywriter: 'Responsável pelos textos e conteúdo',
@@ -27,6 +29,7 @@ export const appRoleDescriptions: Record<AppRole, string> = {
 export const appRoleIcons: Record<AppRole, string> = {
   admin: 'Shield',
   director: 'Crown',
+  team_leader: 'Users',
   user: 'User',
   designer: 'Palette',
   copywriter: 'PenTool',
@@ -38,6 +41,7 @@ export const appRoleIcons: Record<AppRole, string> = {
 export const appRoleColors: Record<AppRole, string> = {
   admin: 'bg-red-500/15 text-red-500 border-red-500/30',
   director: 'bg-amber-500/15 text-amber-500 border-amber-500/30',
+  team_leader: 'bg-cyan-500/15 text-cyan-500 border-cyan-500/30',
   user: 'bg-slate-500/15 text-slate-500 border-slate-500/30',
   designer: 'bg-purple-500/15 text-purple-500 border-purple-500/30',
   copywriter: 'bg-blue-500/15 text-blue-500 border-blue-500/30',
@@ -74,6 +78,17 @@ export const rolePermissions: Record<AppRole, {
     canManageUsers: false,
     canViewFinancials: true,
     canSetGoals: true,
+    canEditDesign: true,
+    canEditCopy: true,
+    canEditTraffic: true,
+    canEditSocialMedia: true,
+  },
+  team_leader: {
+    canCreateProjects: true,
+    canCreateClients: true,
+    canManageUsers: false,
+    canViewFinancials: false,
+    canSetGoals: false,
     canEditDesign: true,
     canEditCopy: true,
     canEditTraffic: true,
@@ -142,6 +157,6 @@ export function getRolePermissions(role: AppRole) {
 }
 
 // Agrupar cargos por tipo
-export const managementRoles: AppRole[] = ['admin', 'director'];
+export const managementRoles: AppRole[] = ['admin', 'director', 'team_leader'];
 export const functionalRoles: AppRole[] = ['designer', 'copywriter', 'traffic_manager', 'social_media'];
 export const allRoles: AppRole[] = [...managementRoles, ...functionalRoles, 'user'];

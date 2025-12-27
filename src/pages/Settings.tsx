@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Users, UserCheck, UserX, Shield, Target, Save, Info, Palette, PenTool, TrendingUp, Share2, Crown } from 'lucide-react';
+import { Users, UserCheck, UserX, Shield, Target, Save, Info, Palette, PenTool, TrendingUp, Share2, Crown, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useUsers } from '@/hooks/useUsers';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useProfile } from '@/hooks/useProfile';
@@ -17,6 +17,7 @@ import {
   appRoleColors,
   managementRoles,
   functionalRoles,
+  allRoles,
   AppRole 
 } from '@/lib/roleConfig';
 
@@ -29,6 +30,8 @@ const statusConfig = {
 const roleIcons: Record<string, React.ReactNode> = {
   admin: <Shield className="h-4 w-4" />,
   director: <Crown className="h-4 w-4" />,
+  team_leader: <Users className="h-4 w-4" />,
+  user: <User className="h-4 w-4" />,
   designer: <Palette className="h-4 w-4" />,
   copywriter: <PenTool className="h-4 w-4" />,
   traffic_manager: <TrendingUp className="h-4 w-4" />,
@@ -37,10 +40,12 @@ const roleIcons: Record<string, React.ReactNode> = {
 
 export default function Settings() {
   const { user } = useAuth();
-  const { users, isLoading, approveUser, rejectUser, setUserRole } = useUsers();
-  const { isAdmin, canSetRevenueGoal } = useUserRole();
+  const { users, isLoading, approveUser, rejectUser, setUserRoles } = useUsers();
+  const { isAdmin, canSetRevenueGoal, roles: currentUserRoles } = useUserRole();
   const { profile, updateProfile } = useProfile();
   const [revenueGoal, setRevenueGoal] = useState('10000');
+  const [editingUserId, setEditingUserId] = useState<string | null>(null);
+  const [selectedRoles, setSelectedRoles] = useState<AppRole[]>([]);
 
   useEffect(() => {
     if (profile?.revenue_goal !== undefined) {
@@ -49,10 +54,32 @@ export default function Settings() {
   }, [profile?.revenue_goal]);
 
   const pendingUsers = users.filter(u => u.status === 'pending');
-  const allUsers = users.filter(u => u.id !== user?.id);
+  // Incluir o próprio usuário logado na lista
+  const allUsers = users;
 
   const handleSaveGoal = () => {
     updateProfile.mutate({ revenue_goal: Number(revenueGoal) });
+  };
+
+  const handleEditRoles = (userId: string, currentRoles: AppRole[]) => {
+    setEditingUserId(userId);
+    setSelectedRoles(currentRoles);
+  };
+
+  const handleToggleRole = (role: AppRole) => {
+    setSelectedRoles(prev => 
+      prev.includes(role) 
+        ? prev.filter(r => r !== role)
+        : [...prev, role]
+    );
+  };
+
+  const handleSaveRoles = async () => {
+    if (editingUserId) {
+      await setUserRoles.mutateAsync({ userId: editingUserId, roles: selectedRoles });
+      setEditingUserId(null);
+      setSelectedRoles([]);
+    }
   };
 
   return (
@@ -194,7 +221,7 @@ export default function Settings() {
                   </div>
                   <div>
                     <CardTitle className="text-lg">Gerenciar Cargos</CardTitle>
-                    <CardDescription>Defina o cargo global de cada usuário</CardDescription>
+                    <CardDescription>Defina os cargos de cada usuário (múltiplos cargos permitidos)</CardDescription>
                   </div>
                 </div>
               </CardHeader>
@@ -206,75 +233,76 @@ export default function Settings() {
                 ) : (
                   <div className="space-y-4">
                     {allUsers.filter(u => u.status === 'approved').map((u) => (
-                      <div key={u.id} className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
-                        <div>
-                          <p className="font-medium">{u.full_name || 'Sem nome'}</p>
-                          <div className="flex items-center gap-2 mt-1">
-                            {u.roles.map(role => (
-                              <Badge key={role} variant="outline" className={appRoleColors[role] || ''}>
-                                <span className="flex items-center gap-1">
-                                  {roleIcons[role]}
-                                  {appRoleLabels[role] || role}
-                                </span>
-                              </Badge>
-                            ))}
-                            {u.roles.length === 0 && (
-                              <span className="text-sm text-muted-foreground">Sem cargo definido</span>
-                            )}
+                      <div key={u.id} className="p-4 rounded-lg bg-muted/50">
+                        <div className="flex items-center justify-between mb-3">
+                          <div>
+                            <p className="font-medium">{u.full_name || 'Sem nome'}</p>
+                            <div className="flex flex-wrap items-center gap-2 mt-1">
+                              {u.roles.map(role => (
+                                <Badge key={role} variant="outline" className={appRoleColors[role] || ''}>
+                                  <span className="flex items-center gap-1">
+                                    {roleIcons[role]}
+                                    {appRoleLabels[role] || role}
+                                  </span>
+                                </Badge>
+                              ))}
+                              {u.roles.length === 0 && (
+                                <span className="text-sm text-muted-foreground">Sem cargo definido</span>
+                              )}
+                            </div>
                           </div>
+                          {editingUserId !== u.id ? (
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => handleEditRoles(u.id, u.roles)}
+                            >
+                              Editar Cargos
+                            </Button>
+                          ) : (
+                            <div className="flex gap-2">
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => setEditingUserId(null)}
+                              >
+                                Cancelar
+                              </Button>
+                              <Button 
+                                size="sm"
+                                onClick={handleSaveRoles}
+                                disabled={setUserRoles.isPending}
+                              >
+                                <Save className="h-4 w-4 mr-1" />
+                                Salvar
+                              </Button>
+                            </div>
+                          )}
                         </div>
-                        <Select
-                          defaultValue={u.roles[0] || 'user'}
-                          onValueChange={(value) => setUserRole.mutate({ userId: u.id, role: value as AppRole })}
-                        >
-                          <SelectTrigger className="w-48">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="admin" className="flex items-center gap-2">
-                              <span className="flex items-center gap-2">
-                                <Shield className="h-4 w-4 text-red-500" />
-                                Administrador
-                              </span>
-                            </SelectItem>
-                            <SelectItem value="director">
-                              <span className="flex items-center gap-2">
-                                <Crown className="h-4 w-4 text-amber-500" />
-                                Diretor
-                              </span>
-                            </SelectItem>
-                            <SelectItem value="designer">
-                              <span className="flex items-center gap-2">
-                                <Palette className="h-4 w-4 text-purple-500" />
-                                Designer
-                              </span>
-                            </SelectItem>
-                            <SelectItem value="copywriter">
-                              <span className="flex items-center gap-2">
-                                <PenTool className="h-4 w-4 text-blue-500" />
-                                Copywriter
-                              </span>
-                            </SelectItem>
-                            <SelectItem value="traffic_manager">
-                              <span className="flex items-center gap-2">
-                                <TrendingUp className="h-4 w-4 text-green-500" />
-                                Gestor de Tráfego
-                              </span>
-                            </SelectItem>
-                            <SelectItem value="social_media">
-                              <span className="flex items-center gap-2">
-                                <Share2 className="h-4 w-4 text-pink-500" />
-                                Social Media
-                              </span>
-                            </SelectItem>
-                            <SelectItem value="user">
-                              <span className="flex items-center gap-2">
-                                <Users className="h-4 w-4 text-slate-500" />
-                                Colaborador
-                              </span>
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
+                        
+                        {editingUserId === u.id && (
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-border/50">
+                            {allRoles.map((role) => (
+                              <label
+                                key={role}
+                                className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${
+                                  selectedRoles.includes(role) 
+                                    ? 'bg-primary/10 border border-primary/30' 
+                                    : 'bg-background border border-border/50 hover:bg-muted/50'
+                                }`}
+                              >
+                                <Checkbox
+                                  checked={selectedRoles.includes(role)}
+                                  onCheckedChange={() => handleToggleRole(role)}
+                                />
+                                <span className="flex items-center gap-1.5 text-sm">
+                                  {roleIcons[role]}
+                                  {appRoleLabels[role]}
+                                </span>
+                              </label>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>

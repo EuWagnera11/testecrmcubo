@@ -132,6 +132,39 @@ export function useUsers() {
     },
   });
 
+  const setUserRoles = useMutation({
+    mutationFn: async ({ userId, roles }: { userId: string; roles: AppRole[] }) => {
+      // Remove existing roles
+      await supabase
+        .from('user_roles')
+        .delete()
+        .eq('user_id', userId);
+
+      // Add new roles
+      if (roles.length > 0) {
+        const { error } = await supabase
+          .from('user_roles')
+          .insert(roles.map(role => ({ user_id: userId, role })));
+        
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      toast({
+        title: 'Cargos atualizados!',
+        description: 'Os cargos do usuário foram alterados.',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Erro ao atualizar cargos',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
   return {
     users: usersQuery.data ?? [],
     isLoading: usersQuery.isLoading,
@@ -139,5 +172,6 @@ export function useUsers() {
     approveUser,
     rejectUser,
     setUserRole,
+    setUserRoles,
   };
 }
