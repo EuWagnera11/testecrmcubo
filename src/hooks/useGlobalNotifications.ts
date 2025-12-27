@@ -112,6 +112,85 @@ export function useGlobalNotifications() {
           queryClient.invalidateQueries({ queryKey: ['clients'] });
         }
       )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'project_change_requests',
+        },
+        async (payload) => {
+          console.log('[GlobalNotifications] New change request:', payload);
+          
+          // Don't notify if the current user created it
+          if (payload.new?.created_by === user.id) {
+            console.log('[GlobalNotifications] Skipping - same user');
+            return;
+          }
+
+          // Check if user is a participant in this project
+          const { data: membership } = await supabase
+            .from('project_members')
+            .select('id')
+            .eq('project_id', payload.new?.project_id)
+            .eq('user_id', user.id)
+            .single();
+
+          const { data: isOwner } = await supabase
+            .from('projects')
+            .select('id')
+            .eq('id', payload.new?.project_id)
+            .eq('user_id', user.id)
+            .single();
+
+          if (!membership && !isOwner) {
+            console.log('[GlobalNotifications] Skipping - not a participant');
+            return;
+          }
+
+          // Get the creator's name
+          let creatorName = 'Alguém';
+          if (payload.new?.created_by) {
+            try {
+              const { data: profile } = await supabase
+                .from('profiles')
+                .select('full_name')
+                .eq('user_id', payload.new.created_by)
+                .single();
+              
+              if (profile?.full_name) {
+                creatorName = profile.full_name.split(' ')[0];
+              }
+            } catch (err) {
+              console.error('[GlobalNotifications] Error fetching profile:', err);
+            }
+          }
+
+          // Get project name
+          let projectName = 'Projeto';
+          try {
+            const { data: project } = await supabase
+              .from('projects')
+              .select('name')
+              .eq('id', payload.new?.project_id)
+              .single();
+            
+            if (project?.name) {
+              projectName = project.name;
+            }
+          } catch (err) {
+            console.error('[GlobalNotifications] Error fetching project:', err);
+          }
+
+          toast({
+            title: `Nova alteração registrada`,
+            description: `${creatorName} registrou uma alteração em "${projectName}"`,
+          });
+
+          // Invalidate change requests query
+          queryClient.invalidateQueries({ queryKey: ['project-change-requests'] });
+        }
+      )
       .subscribe((status, err) => {
         console.log('[GlobalNotifications] Subscription status:', status);
         if (err) {

@@ -6,7 +6,7 @@ import { RealtimeChannel } from '@supabase/supabase-js';
 
 export interface Notification {
   id: string;
-  type: 'project_created' | 'client_created' | 'task_assigned' | 'message_received' | 'project_updated';
+  type: 'project_created' | 'client_created' | 'task_assigned' | 'message_received' | 'project_updated' | 'change_request_created';
   title: string;
   description: string;
   read: boolean;
@@ -212,6 +212,62 @@ export function useNotifications() {
             });
 
             queryClient.invalidateQueries({ queryKey: ['project-messages'] });
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'project_change_requests',
+          },
+          async (payload) => {
+            if (payload.new?.created_by === user.id) return;
+
+            // Check if user is a participant in this project
+            const { data: membership } = await supabase
+              .from('project_members')
+              .select('id')
+              .eq('project_id', payload.new?.project_id)
+              .eq('user_id', user.id)
+              .single();
+
+            const { data: isOwner } = await supabase
+              .from('projects')
+              .select('id')
+              .eq('id', payload.new?.project_id)
+              .eq('user_id', user.id)
+              .single();
+
+            if (!membership && !isOwner) return;
+
+            let creatorName = 'Alguém';
+            if (payload.new?.created_by) {
+              const { data: profile } = await supabase
+                .from('profiles')
+                .select('full_name')
+                .eq('user_id', payload.new.created_by)
+                .single();
+              
+              if (profile?.full_name) {
+                creatorName = profile.full_name.split(' ')[0];
+              }
+            }
+
+            const { data: project } = await supabase
+              .from('projects')
+              .select('name')
+              .eq('id', payload.new?.project_id)
+              .single();
+
+            addNotification({
+              type: 'change_request_created',
+              title: 'Nova alteração registrada',
+              description: `${creatorName} registrou uma alteração em "${project?.name || 'Projeto'}"`,
+              data: { projectId: payload.new?.project_id, changeRequestId: payload.new?.id },
+            });
+
+            queryClient.invalidateQueries({ queryKey: ['project-change-requests'] });
           }
         )
         .subscribe();
