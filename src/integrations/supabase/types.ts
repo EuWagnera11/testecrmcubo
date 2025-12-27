@@ -956,21 +956,21 @@ export type Database = {
           created_at: string
           id: string
           project_id: string
-          role: Database["public"]["Enums"]["project_role"]
+          role: Database["public"]["Enums"]["project_role"] | null
           user_id: string
         }
         Insert: {
           created_at?: string
           id?: string
           project_id: string
-          role: Database["public"]["Enums"]["project_role"]
+          role?: Database["public"]["Enums"]["project_role"] | null
           user_id: string
         }
         Update: {
           created_at?: string
           id?: string
           project_id?: string
-          role?: Database["public"]["Enums"]["project_role"]
+          role?: Database["public"]["Enums"]["project_role"] | null
           user_id?: string
         }
         Relationships: [
@@ -1684,6 +1684,10 @@ export type Database = {
       }
     }
     Functions: {
+      get_user_role: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
       has_project_role: {
         Args: {
           _project_id: string
@@ -1701,6 +1705,9 @@ export type Database = {
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_approved: { Args: { _user_id: string }; Returns: boolean }
+      is_copywriter: { Args: { _user_id: string }; Returns: boolean }
+      is_designer: { Args: { _user_id: string }; Returns: boolean }
+      is_director: { Args: { _user_id: string }; Returns: boolean }
       is_project_director: {
         Args: { _project_id: string; _user_id: string }
         Returns: boolean
@@ -1709,6 +1716,8 @@ export type Database = {
         Args: { _project_id: string; _user_id: string }
         Returns: boolean
       }
+      is_social_media: { Args: { _user_id: string }; Returns: boolean }
+      is_traffic_manager: { Args: { _user_id: string }; Returns: boolean }
       log_audit_event: {
         Args: {
           _action: string
@@ -1721,7 +1730,14 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "director" | "user"
+      app_role:
+        | "admin"
+        | "director"
+        | "user"
+        | "designer"
+        | "copywriter"
+        | "traffic_manager"
+        | "social_media"
       project_role:
         | "director"
         | "designer"
@@ -1855,7 +1871,15 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "director", "user"],
+      app_role: [
+        "admin",
+        "director",
+        "user",
+        "designer",
+        "copywriter",
+        "traffic_manager",
+        "social_media",
+      ],
       project_role: [
         "director",
         "designer",
