@@ -134,20 +134,11 @@ export function useUsers() {
 
   const setUserRoles = useMutation({
     mutationFn: async ({ userId, roles }: { userId: string; roles: AppRole[] }) => {
-      // Remove existing roles
-      await supabase
-        .from('user_roles')
-        .delete()
-        .eq('user_id', userId);
-
-      // Add new roles
-      if (roles.length > 0) {
-        const { error } = await supabase
-          .from('user_roles')
-          .insert(roles.map(role => ({ user_id: userId, role })));
-        
-        if (error) throw error;
-      }
+      const { error } = await supabase.rpc('set_user_roles', {
+        _target_user: userId,
+        _roles: roles,
+      });
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
