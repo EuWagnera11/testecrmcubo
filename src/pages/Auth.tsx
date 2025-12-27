@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, ArrowRight } from 'lucide-react';
 import { signInSchema, signUpSchema } from '@/lib/validation';
 import { logAuditEvent } from '@/hooks/useAuditLog';
+import refineLogo from '@/assets/refine-logo.png';
 
 export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
@@ -108,10 +109,7 @@ export default function Auth() {
         <div className="absolute bottom-32 left-16 w-48 h-48 border border-primary/20 -rotate-6 opacity-30" />
         
         <div className="relative z-10 max-w-md">
-          <p className="text-primary font-medium italic text-xl mb-2">refine</p>
-          <h1 className="text-7xl font-bold text-sidebar-foreground tracking-tight mb-6">
-            CUBO
-          </h1>
+          <img src={refineLogo} alt="Refine" className="h-16 w-auto mb-6" />
           <p className="text-sidebar-foreground/70 text-xl leading-relaxed">
             Design limpo. Propósito claro.
           </p>
@@ -126,8 +124,7 @@ export default function Auth() {
         <div className="w-full max-w-md space-y-8 animate-fade-in">
           {/* Mobile logo */}
           <div className="lg:hidden text-center mb-8">
-            <p className="text-primary font-medium italic text-lg">refine</p>
-            <h1 className="text-4xl font-bold tracking-tight">CUBO</h1>
+            <img src={refineLogo} alt="Refine" className="h-10 w-auto mx-auto" />
           </div>
 
           <div>
