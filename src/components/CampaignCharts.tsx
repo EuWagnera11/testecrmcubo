@@ -3,7 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { Area, AreaChart, Bar, BarChart, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Cell, Pie, PieChart, Legend } from 'recharts';
 import { TrendingUp, MousePointer, DollarSign, Target, Users, Eye, ArrowUpRight, ArrowDownRight } from 'lucide-react';
-import { useCampaigns, useCampaignMetrics } from '@/hooks/useCampaigns';
+import { useCampaigns } from '@/hooks/useCampaigns';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
@@ -17,12 +19,40 @@ const COLORS = ['hsl(var(--primary))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3
 export function CampaignCharts({ projectId, currency }: CampaignChartsProps) {
   const { campaigns } = useCampaigns(projectId);
 
+  // Fetch all metrics for all campaigns at once
+  const { data: allMetrics = [] } = useQuery({
+    queryKey: ['all-campaign-metrics-charts', projectId],
+    queryFn: async () => {
+      if (!campaigns?.length) return [];
+      
+      const campaignIds = campaigns.map(c => c.id);
+      const { data, error } = await supabase
+        .from('campaign_metrics')
+        .select('*')
+        .in('campaign_id', campaignIds)
+        .order('date', { ascending: false });
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!campaigns?.length,
+  });
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: currency || 'BRL',
     }).format(value);
   };
+
+  // Group metrics by campaign
+  const metricsByCampaign = useMemo(() => {
+    const map: Record<string, typeof allMetrics> = {};
+    campaigns.forEach(c => {
+      map[c.id] = allMetrics.filter(m => m.campaign_id === c.id);
+    });
+    return map;
+  }, [campaigns, allMetrics]);
 
   if (campaigns.length === 0) {
     return (
@@ -40,44 +70,45 @@ export function CampaignCharts({ projectId, currency }: CampaignChartsProps) {
   return (
     <div className="space-y-6">
       {/* KPIs Summary */}
-      <KPISummary campaigns={campaigns} currency={currency} />
+      <KPISummary campaigns={campaigns} metricsByCampaign={metricsByCampaign} currency={currency} />
 
       {/* Performance Over Time */}
-      <PerformanceChart campaigns={campaigns} />
+      <PerformanceChart campaigns={campaigns} metricsByCampaign={metricsByCampaign} />
 
       {/* Campaign Comparison */}
       <div className="grid gap-6 md:grid-cols-2">
-        <SpendDistribution campaigns={campaigns} formatCurrency={formatCurrency} />
-        <CampaignComparison campaigns={campaigns} formatCurrency={formatCurrency} />
+        <SpendDistribution campaigns={campaigns} metricsByCampaign={metricsByCampaign} formatCurrency={formatCurrency} />
+        <CampaignComparison campaigns={campaigns} metricsByCampaign={metricsByCampaign} />
       </div>
     </div>
   );
 }
 
-function KPISummary({ campaigns, currency }: { campaigns: any[]; currency: string }) {
-  const allMetrics = campaigns.flatMap(c => {
-    const { metrics } = useCampaignMetrics(c.id);
-    return metrics;
-  });
+interface MetricsByCampaign {
+  [campaignId: string]: any[];
+}
 
+function KPISummary({ campaigns, metricsByCampaign, currency }: { campaigns: any[]; metricsByCampaign: MetricsByCampaign; currency: string }) {
   const totals = useMemo(() => {
-    return allMetrics.reduce(
-      (acc, m) => ({
-        impressions: acc.impressions + (m?.impressions || 0),
-        clicks: acc.clicks + (m?.clicks || 0),
-        spend: acc.spend + (m?.spend || 0),
-        conversions: acc.conversions + (m?.conversions || 0),
-        leads: acc.leads + (m?.leads || 0),
-        revenue: acc.revenue + (m?.revenue || 0),
-      }),
-      { impressions: 0, clicks: 0, spend: 0, conversions: 0, leads: 0, revenue: 0 }
-    );
-  }, [allMetrics]);
+    let impressions = 0, clicks = 0, spend = 0, conversions = 0, leads = 0, revenue = 0;
+    
+    Object.values(metricsByCampaign).forEach(metrics => {
+      metrics.forEach(m => {
+        impressions += m?.impressions || 0;
+        clicks += m?.clicks || 0;
+        spend += m?.spend || 0;
+        conversions += m?.conversions || 0;
+        leads += m?.leads || 0;
+        revenue += m?.revenue || 0;
+      });
+    });
+    
+    return { impressions, clicks, spend, conversions, leads, revenue };
+  }, [metricsByCampaign]);
 
   const avgCtr = totals.impressions > 0 ? (totals.clicks / totals.impressions) * 100 : 0;
   const avgCpc = totals.clicks > 0 ? totals.spend / totals.clicks : 0;
   const roas = totals.spend > 0 ? totals.revenue / totals.spend : 0;
-  const cpl = totals.leads > 0 ? totals.spend / totals.leads : 0;
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -87,62 +118,14 @@ function KPISummary({ campaigns, currency }: { campaigns: any[]; currency: strin
   };
 
   const kpis = [
-    {
-      title: 'Impressões',
-      value: totals.impressions.toLocaleString('pt-BR'),
-      icon: Eye,
-      color: 'text-blue-500',
-      bgColor: 'bg-blue-500/10',
-    },
-    {
-      title: 'Cliques',
-      value: totals.clicks.toLocaleString('pt-BR'),
-      icon: MousePointer,
-      color: 'text-green-500',
-      bgColor: 'bg-green-500/10',
-    },
-    {
-      title: 'CTR Médio',
-      value: `${avgCtr.toFixed(2)}%`,
-      icon: TrendingUp,
-      color: 'text-purple-500',
-      bgColor: 'bg-purple-500/10',
-    },
-    {
-      title: 'Total Gasto',
-      value: formatCurrency(totals.spend),
-      icon: DollarSign,
-      color: 'text-orange-500',
-      bgColor: 'bg-orange-500/10',
-    },
-    {
-      title: 'CPC Médio',
-      value: formatCurrency(avgCpc),
-      icon: MousePointer,
-      color: 'text-cyan-500',
-      bgColor: 'bg-cyan-500/10',
-    },
-    {
-      title: 'Conversões',
-      value: totals.conversions.toLocaleString('pt-BR'),
-      icon: Target,
-      color: 'text-emerald-500',
-      bgColor: 'bg-emerald-500/10',
-    },
-    {
-      title: 'Leads',
-      value: totals.leads.toLocaleString('pt-BR'),
-      icon: Users,
-      color: 'text-pink-500',
-      bgColor: 'bg-pink-500/10',
-    },
-    {
-      title: 'ROAS',
-      value: `${roas.toFixed(2)}x`,
-      icon: roas >= 1 ? ArrowUpRight : ArrowDownRight,
-      color: roas >= 1 ? 'text-green-500' : 'text-red-500',
-      bgColor: roas >= 1 ? 'bg-green-500/10' : 'bg-red-500/10',
-    },
+    { title: 'Impressões', value: totals.impressions.toLocaleString('pt-BR'), icon: Eye, color: 'text-blue-500', bgColor: 'bg-blue-500/10' },
+    { title: 'Cliques', value: totals.clicks.toLocaleString('pt-BR'), icon: MousePointer, color: 'text-green-500', bgColor: 'bg-green-500/10' },
+    { title: 'CTR Médio', value: `${avgCtr.toFixed(2)}%`, icon: TrendingUp, color: 'text-purple-500', bgColor: 'bg-purple-500/10' },
+    { title: 'Total Gasto', value: formatCurrency(totals.spend), icon: DollarSign, color: 'text-orange-500', bgColor: 'bg-orange-500/10' },
+    { title: 'CPC Médio', value: formatCurrency(avgCpc), icon: MousePointer, color: 'text-cyan-500', bgColor: 'bg-cyan-500/10' },
+    { title: 'Conversões', value: totals.conversions.toLocaleString('pt-BR'), icon: Target, color: 'text-emerald-500', bgColor: 'bg-emerald-500/10' },
+    { title: 'Leads', value: totals.leads.toLocaleString('pt-BR'), icon: Users, color: 'text-pink-500', bgColor: 'bg-pink-500/10' },
+    { title: 'ROAS', value: `${roas.toFixed(2)}x`, icon: roas >= 1 ? ArrowUpRight : ArrowDownRight, color: roas >= 1 ? 'text-green-500' : 'text-red-500', bgColor: roas >= 1 ? 'bg-green-500/10' : 'bg-red-500/10' },
   ];
 
   return (
@@ -166,12 +149,11 @@ function KPISummary({ campaigns, currency }: { campaigns: any[]; currency: strin
   );
 }
 
-function PerformanceChart({ campaigns }: { campaigns: any[] }) {
+function PerformanceChart({ campaigns, metricsByCampaign }: { campaigns: any[]; metricsByCampaign: MetricsByCampaign }) {
   const chartData = useMemo(() => {
     const allDates = new Map<string, { impressions: number; clicks: number; spend: number }>();
 
-    campaigns.forEach((campaign) => {
-      const { metrics } = useCampaignMetrics(campaign.id);
+    Object.values(metricsByCampaign).forEach(metrics => {
       metrics.forEach((m: any) => {
         const existing = allDates.get(m.date) || { impressions: 0, clicks: 0, spend: 0 };
         allDates.set(m.date, {
@@ -190,21 +172,15 @@ function PerformanceChart({ campaigns }: { campaigns: any[] }) {
       }))
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
       .slice(-30);
-  }, [campaigns]);
+  }, [metricsByCampaign]);
 
   if (chartData.length === 0) {
     return null;
   }
 
   const chartConfig = {
-    impressions: {
-      label: "Impressões",
-      color: "hsl(var(--primary))",
-    },
-    clicks: {
-      label: "Cliques",
-      color: "hsl(var(--chart-2))",
-    },
+    impressions: { label: "Impressões", color: "hsl(var(--primary))" },
+    clicks: { label: "Cliques", color: "hsl(var(--chart-2))" },
   };
 
   return (
@@ -229,20 +205,8 @@ function PerformanceChart({ campaigns }: { campaigns: any[] }) {
             <XAxis dataKey="dateFormatted" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
             <YAxis tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
             <ChartTooltip content={<ChartTooltipContent />} />
-            <Area
-              type="monotone"
-              dataKey="impressions"
-              stroke="hsl(var(--primary))"
-              fill="url(#impressionsGradient)"
-              strokeWidth={2}
-            />
-            <Area
-              type="monotone"
-              dataKey="clicks"
-              stroke="hsl(var(--chart-2))"
-              fill="url(#clicksGradient)"
-              strokeWidth={2}
-            />
+            <Area type="monotone" dataKey="impressions" stroke="hsl(var(--primary))" fill="url(#impressionsGradient)" strokeWidth={2} />
+            <Area type="monotone" dataKey="clicks" stroke="hsl(var(--chart-2))" fill="url(#clicksGradient)" strokeWidth={2} />
           </AreaChart>
         </ChartContainer>
       </CardContent>
@@ -250,10 +214,10 @@ function PerformanceChart({ campaigns }: { campaigns: any[] }) {
   );
 }
 
-function SpendDistribution({ campaigns, formatCurrency }: { campaigns: any[]; formatCurrency: (v: number) => string }) {
+function SpendDistribution({ campaigns, metricsByCampaign, formatCurrency }: { campaigns: any[]; metricsByCampaign: MetricsByCampaign; formatCurrency: (v: number) => string }) {
   const chartData = useMemo(() => {
     return campaigns.map((campaign, index) => {
-      const { metrics } = useCampaignMetrics(campaign.id);
+      const metrics = metricsByCampaign[campaign.id] || [];
       const totalSpend = metrics.reduce((acc: number, m: any) => acc + (m.spend || 0), 0);
       return {
         name: campaign.name,
@@ -261,7 +225,7 @@ function SpendDistribution({ campaigns, formatCurrency }: { campaigns: any[]; fo
         fill: COLORS[index % COLORS.length],
       };
     }).filter(d => d.value > 0);
-  }, [campaigns]);
+  }, [campaigns, metricsByCampaign]);
 
   if (chartData.length === 0) {
     return null;
@@ -304,17 +268,16 @@ function SpendDistribution({ campaigns, formatCurrency }: { campaigns: any[]; fo
   );
 }
 
-function CampaignComparison({ campaigns, formatCurrency }: { campaigns: any[]; formatCurrency: (v: number) => string }) {
+function CampaignComparison({ campaigns, metricsByCampaign }: { campaigns: any[]; metricsByCampaign: MetricsByCampaign }) {
   const chartData = useMemo(() => {
     return campaigns.map((campaign) => {
-      const { metrics } = useCampaignMetrics(campaign.id);
+      const metrics = metricsByCampaign[campaign.id] || [];
       const totals = metrics.reduce(
         (acc: any, m: any) => ({
           clicks: acc.clicks + (m.clicks || 0),
           conversions: acc.conversions + (m.conversions || 0),
-          spend: acc.spend + (m.spend || 0),
         }),
-        { clicks: 0, conversions: 0, spend: 0 }
+        { clicks: 0, conversions: 0 }
       );
       return {
         name: campaign.name.length > 15 ? campaign.name.substring(0, 15) + '...' : campaign.name,
@@ -322,21 +285,15 @@ function CampaignComparison({ campaigns, formatCurrency }: { campaigns: any[]; f
         conversões: totals.conversions,
       };
     });
-  }, [campaigns]);
+  }, [campaigns, metricsByCampaign]);
 
   if (chartData.every(d => d.cliques === 0 && d.conversões === 0)) {
     return null;
   }
 
   const chartConfig = {
-    cliques: {
-      label: "Cliques",
-      color: "hsl(var(--primary))",
-    },
-    conversões: {
-      label: "Conversões",
-      color: "hsl(var(--chart-3))",
-    },
+    cliques: { label: "Cliques", color: "hsl(var(--primary))" },
+    conversões: { label: "Conversões", color: "hsl(var(--chart-3))" },
   };
 
   return (
