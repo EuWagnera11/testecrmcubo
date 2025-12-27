@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import refineLogo from '@/assets/refine-logo.png';
 
 interface LogoProps {
   size?: 'sm' | 'md' | 'lg';
@@ -7,17 +8,17 @@ interface LogoProps {
 
 export function Logo({ size = 'md', linkTo = '/dashboard' }: LogoProps) {
   const sizeClasses = {
-    sm: 'text-lg',
-    md: 'text-xl sm:text-2xl',
-    lg: 'text-2xl sm:text-3xl',
+    sm: 'h-6',
+    md: 'h-8',
+    lg: 'h-10',
   };
 
   const content = (
-    <span 
-      className={`font-display ${sizeClasses[size]} tracking-[0.15em] transition-colors duration-300 text-foreground hover:text-accent`}
-    >
-      CUBO
-    </span>
+    <img 
+      src={refineLogo}
+      alt="Refine"
+      className={`${sizeClasses[size]} w-auto transition-opacity duration-300 hover:opacity-80`}
+    />
   );
 
   if (linkTo) {

@@ -1671,6 +1671,33 @@ export type Database = {
         }
         Relationships: []
       }
+      team_goals: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          month: string
+          revenue_goal: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          month: string
+          revenue_goal?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          month?: string
+          revenue_goal?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       transaction_categories: {
         Row: {
           color: string | null

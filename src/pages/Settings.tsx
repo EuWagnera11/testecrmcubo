@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, UserCheck, UserX, Shield, Target, Save, Info, Palette, PenTool, TrendingUp, Share2, Crown, User } from 'lucide-react';
+import { Users, UserCheck, UserX, Shield, Target, Save, Info, Palette, PenTool, TrendingUp, Share2, Crown, User, Camera } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -7,10 +7,15 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useUsers } from '@/hooks/useUsers';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useProfile } from '@/hooks/useProfile';
+import { useTeamGoals } from '@/hooks/useTeamGoals';
 import { useAuth } from '@/contexts/AuthContext';
+import { format } from 'date-fns';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 import { 
   appRoleLabels, 
   appRoleDescriptions, 
@@ -40,25 +45,74 @@ const roleIcons: Record<string, React.ReactNode> = {
 
 export default function Settings() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const { users, isLoading, approveUser, rejectUser, setUserRoles } = useUsers();
-  const { isAdmin, canSetRevenueGoal, roles: currentUserRoles } = useUserRole();
+  const { isAdmin, isDirector, canSetRevenueGoal, roles: currentUserRoles } = useUserRole();
   const { profile, updateProfile } = useProfile();
-  const [revenueGoal, setRevenueGoal] = useState('10000');
+  const { getCurrentMonthGoal, upsertGoal } = useTeamGoals();
+  
+  const [teamRevenueGoal, setTeamRevenueGoal] = useState('');
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [selectedRoles, setSelectedRoles] = useState<AppRole[]>([]);
+  const [fullName, setFullName] = useState('');
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
+  const currentMonthGoal = getCurrentMonthGoal();
+  const canEditTeamGoal = isAdmin || isDirector;
 
   useEffect(() => {
-    if (profile?.revenue_goal !== undefined) {
-      setRevenueGoal(profile.revenue_goal?.toString() || '10000');
+    if (currentMonthGoal) {
+      setTeamRevenueGoal(currentMonthGoal.revenue_goal?.toString() || '');
     }
-  }, [profile?.revenue_goal]);
+  }, [currentMonthGoal]);
+
+  useEffect(() => {
+    if (profile?.full_name) {
+      setFullName(profile.full_name);
+    }
+  }, [profile?.full_name]);
 
   const pendingUsers = users.filter(u => u.status === 'pending');
-  // Incluir o próprio usuário logado na lista
   const allUsers = users;
 
-  const handleSaveGoal = () => {
-    updateProfile.mutate({ revenue_goal: Number(revenueGoal) });
+  const handleSaveTeamGoal = () => {
+    const currentMonth = format(new Date(), 'yyyy-MM');
+    upsertGoal.mutate({ month: currentMonth, revenue_goal: Number(teamRevenueGoal) });
+  };
+
+  const handleSaveProfile = () => {
+    updateProfile.mutate({ full_name: fullName });
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    setUploadingAvatar(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${user.id}/avatar.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      await updateProfile.mutateAsync({ avatar_url: publicUrl });
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao fazer upload',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setUploadingAvatar(false);
+    }
   };
 
   const handleEditRoles = (userId: string, currentRoles: AppRole[]) => {
@@ -94,6 +148,7 @@ export default function Settings() {
         <TabsList className="h-11 mb-6">
           {isAdmin && <TabsTrigger value="users" className="px-4">Usuários</TabsTrigger>}
           {isAdmin && <TabsTrigger value="roles" className="px-4">Cargos</TabsTrigger>}
+          {canEditTeamGoal && <TabsTrigger value="team" className="px-4">Meta da Equipe</TabsTrigger>}
           <TabsTrigger value="profile" className="px-4">Meu Perfil</TabsTrigger>
         </TabsList>
 
@@ -361,9 +416,9 @@ export default function Settings() {
           </TabsContent>
         )}
 
-        {/* Profile Tab */}
-        <TabsContent value="profile" className="space-y-6">
-          {canSetRevenueGoal ? (
+        {/* Team Goal Tab - Admins and Directors Only */}
+        {canEditTeamGoal && (
+          <TabsContent value="team" className="space-y-6">
             <Card className="border-border/50">
               <CardHeader>
                 <div className="flex items-center gap-2">
@@ -371,51 +426,159 @@ export default function Settings() {
                     <Target className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <CardTitle className="text-lg">Meta de Receita</CardTitle>
-                    <CardDescription>Defina sua meta mensal de faturamento</CardDescription>
+                    <CardTitle className="text-lg">Meta Global da Equipe</CardTitle>
+                    <CardDescription>
+                      Defina a meta mensal de faturamento da equipe. Todos os membros poderão visualizar.
+                    </CardDescription>
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
                 <div className="flex items-end gap-4 max-w-md">
                   <div className="flex-1 space-y-2">
-                    <Label htmlFor="revenue_goal">Meta (R$)</Label>
+                    <Label htmlFor="team_revenue_goal">Meta de {format(new Date(), 'MMMM yyyy')}</Label>
                     <Input
-                      id="revenue_goal"
+                      id="team_revenue_goal"
                       type="number"
-                      value={revenueGoal}
-                      onChange={(e) => setRevenueGoal(e.target.value)}
+                      value={teamRevenueGoal}
+                      onChange={(e) => setTeamRevenueGoal(e.target.value)}
+                      placeholder="Ex: 50000"
                       className="h-11"
                     />
                   </div>
-                  <Button onClick={handleSaveGoal} disabled={updateProfile.isPending} className="h-11">
+                  <Button onClick={handleSaveTeamGoal} disabled={upsertGoal.isPending} className="h-11">
+                    <Save className="h-4 w-4 mr-2" />
+                    Salvar Meta
+                  </Button>
+                </div>
+                <p className="text-sm text-muted-foreground mt-4">
+                  Esta meta será visível para todos os membros da equipe no dashboard.
+                </p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
+
+        {/* Profile Tab */}
+        <TabsContent value="profile" className="space-y-6">
+          {/* Avatar and Name Card */}
+          <Card className="border-border/50">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <User className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg">Meu Perfil</CardTitle>
+                  <CardDescription>Personalize suas informações de perfil</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Avatar Upload */}
+              <div className="flex items-center gap-6">
+                <div className="relative">
+                  <Avatar className="h-20 w-20">
+                    <AvatarImage src={profile?.avatar_url || undefined} />
+                    <AvatarFallback className="text-lg">
+                      {profile?.full_name?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || 'U'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <label 
+                    htmlFor="avatar-upload"
+                    className="absolute bottom-0 right-0 p-1.5 rounded-full bg-primary text-primary-foreground cursor-pointer hover:bg-primary/90 transition-colors"
+                  >
+                    <Camera className="h-3.5 w-3.5" />
+                    <input
+                      id="avatar-upload"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleAvatarUpload}
+                      disabled={uploadingAvatar}
+                    />
+                  </label>
+                </div>
+                <div>
+                  <p className="font-medium">{profile?.full_name || 'Sem nome'}</p>
+                  <p className="text-sm text-muted-foreground">{user?.email}</p>
+                  {currentUserRoles.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {currentUserRoles.map(role => (
+                        <Badge key={role} variant="outline" className={appRoleColors[role] || ''}>
+                          {appRoleLabels[role] || role}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Name Field */}
+              <div className="max-w-md space-y-2">
+                <Label htmlFor="full_name">Nome Completo</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="full_name"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    placeholder="Seu nome completo"
+                    className="h-11"
+                  />
+                  <Button 
+                    onClick={handleSaveProfile} 
+                    disabled={updateProfile.isPending}
+                    className="h-11"
+                  >
                     <Save className="h-4 w-4 mr-2" />
                     Salvar
                   </Button>
                 </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card className="border-border/50">
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">
-                    <Info className="h-5 w-5 text-muted-foreground" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-lg">Meu Perfil</CardTitle>
-                    <CardDescription>Informações do seu perfil</CardDescription>
-                  </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* User Info Card */}
+          <Card className="border-border/50">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">
+                  <Info className="h-5 w-5 text-muted-foreground" />
                 </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">
-                  Você está logado como <span className="font-medium text-foreground">Colaborador</span>. 
-                  Você pode visualizar e trabalhar nos projetos em que é membro.
-                </p>
-              </CardContent>
-            </Card>
-          )}
+                <div>
+                  <CardTitle className="text-lg">Informações da Conta</CardTitle>
+                  <CardDescription>Detalhes da sua conta</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="p-4 rounded-lg bg-muted/50">
+                  <p className="text-sm text-muted-foreground">Email</p>
+                  <p className="font-medium">{user?.email}</p>
+                </div>
+                <div className="p-4 rounded-lg bg-muted/50">
+                  <p className="text-sm text-muted-foreground">Função</p>
+                  <p className="font-medium">
+                    {currentUserRoles.length > 0 
+                      ? currentUserRoles.map(r => appRoleLabels[r]).join(', ') 
+                      : 'Colaborador'}
+                  </p>
+                </div>
+              </div>
+              {currentMonthGoal && (
+                <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Target className="h-4 w-4 text-primary" />
+                    <p className="text-sm font-medium text-primary">Meta da Equipe - {format(new Date(), 'MMMM yyyy')}</p>
+                  </div>
+                  <p className="text-2xl font-bold">
+                    R$ {currentMonthGoal.revenue_goal?.toLocaleString('pt-BR')}
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
