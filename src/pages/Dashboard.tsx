@@ -17,7 +17,7 @@ import { useProjectsProfitability } from '@/hooks/useProjectsProfitability';
 import { Link } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, Cell } from 'recharts';
 import { format, parseISO, startOfMonth, isAfter, isBefore, subMonths, addMonths } from 'date-fns';
-import { isWithinFiscalMonth, getFiscalMonthRange, getFiscalMonthKey } from '@/lib/fiscalMonth';
+import { isWithinFiscalMonth, getFiscalMonthRange, getFiscalMonthKey, getFiscalMonthFromDate } from '@/lib/fiscalMonth';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 
@@ -40,8 +40,8 @@ export default function Dashboard() {
   
   const canSeeFinancials = isAdmin || isDirector;
 
-  // Month selection state
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  // Month selection state - initialize with current fiscal month (day 20-19 logic)
+  const [selectedDate, setSelectedDate] = useState(() => getFiscalMonthFromDate(new Date()));
   const [goalDialogOpen, setGoalDialogOpen] = useState(false);
   const [newGoalValue, setNewGoalValue] = useState('');
   
@@ -50,7 +50,7 @@ export default function Dashboard() {
 
   const goToPreviousMonth = () => setSelectedDate(subMonths(selectedDate, 1));
   const goToNextMonth = () => setSelectedDate(addMonths(selectedDate, 1));
-  const goToCurrentMonth = () => setSelectedDate(new Date());
+  const goToCurrentMonth = () => setSelectedDate(getFiscalMonthFromDate(new Date()));
 
   // Get monthly goal (fallback to profile default)
   const monthlyGoal = getGoalForMonth(selectedDate);
