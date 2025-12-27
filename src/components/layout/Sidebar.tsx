@@ -66,10 +66,10 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
           {/* Header */}
           <div className="flex items-center justify-between h-16 px-6 border-b border-sidebar-border">
             {!isCollapsed && (
-              <img src={refineLogo} alt="Refine" className="h-6 w-auto" />
+              <img src={refineLogo} alt="Refine" className="h-10 w-auto" />
             )}
             {isCollapsed && (
-              <img src={refineLogo} alt="Refine" className="h-5 w-auto mx-auto" />
+              <img src={refineLogo} alt="Refine" className="h-8 w-auto mx-auto" />
             )}
             
             {/* Mobile close */}
