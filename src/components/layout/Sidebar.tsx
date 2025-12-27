@@ -58,7 +58,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
         className={cn(
           "fixed lg:sticky top-0 left-0 z-50 lg:z-30 h-screen bg-sidebar text-sidebar-foreground transition-all duration-300",
           isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
-          isCollapsed ? "lg:w-16" : "lg:w-72",
+          isCollapsed ? "lg:w-24" : "lg:w-72",
           "w-72"
         )}
       >
@@ -66,19 +66,23 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
           {/* Header */}
           <div className={cn(
             "flex items-center border-b border-sidebar-border",
-            isCollapsed ? "h-14 justify-center px-2" : "h-20 justify-between px-6"
+            isCollapsed ? "h-20 flex-col justify-center py-3 px-2" : "h-20 justify-between px-6"
           )}>
-            {!isCollapsed && (
-              <img src={refineLogo} alt="Refine" className="h-10 w-auto" />
-            )}
-            {isCollapsed && (
-              <span className="font-bold text-lg text-sidebar-primary">R</span>
-            )}
+            <img 
+              src={refineLogo} 
+              alt="Refine" 
+              className={cn(
+                "w-auto",
+                isCollapsed ? "h-10" : "h-10"
+              )} 
+            />
             
             {/* Mobile close */}
-            <Button variant="ghost" size="icon" onClick={onClose} className="lg:hidden text-sidebar-foreground hover:bg-sidebar-accent">
-              <X className="h-5 w-5" />
-            </Button>
+            {!isCollapsed && (
+              <Button variant="ghost" size="icon" onClick={onClose} className="lg:hidden text-sidebar-foreground hover:bg-sidebar-accent">
+                <X className="h-5 w-5" />
+              </Button>
+            )}
             
             {/* Desktop collapse */}
             {!isCollapsed && (
