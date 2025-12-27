@@ -36,7 +36,6 @@ export default function Dashboard() {
   const { isAdmin, isDirector } = useUserRole();
   const { transactions } = useFinancial();
   const { getGoalForMonth, upsertGoal } = useMonthlyGoals();
-  const { projects: profitProjects, totalProfit, totalRevenue, totalPayouts, averageMargin } = useProjectsProfitability();
   
   const canSeeFinancials = isAdmin || isDirector;
 
@@ -46,8 +45,11 @@ export default function Dashboard() {
   const [newGoalValue, setNewGoalValue] = useState('');
   
   // Use billing cycle (day 20 to day 19)
-  const billingCycle = getBillingCycle(selectedDate);
+  const billingCycle = useMemo(() => getBillingCycle(selectedDate), [selectedDate]);
   const selectedMonthLabel = billingCycle.label;
+
+  // Pass billing cycle to profitability hook for filtering
+  const { projects: profitProjects, totalProfit, totalRevenue, totalPayouts, averageMargin } = useProjectsProfitability(billingCycle);
 
   const goToPreviousMonth = () => setSelectedDate(subMonths(selectedDate, 1));
   const goToNextMonth = () => setSelectedDate(addMonths(selectedDate, 1));
