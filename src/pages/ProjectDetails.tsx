@@ -66,8 +66,8 @@ export default function ProjectDetails() {
   const [addMemberOpen, setAddMemberOpen] = useState(false);
 
   const project = projects.find(p => p.id === id);
-  const canManageMembers = isAdmin || isDirector || members.some(m => m.user_id === user?.id && m.role === 'director');
-  
+  const isProjectOwner = project?.user_id === user?.id;
+  const canManageMembers = isAdmin || isDirector || isProjectOwner || members.some(m => m.user_id === user?.id && m.role === 'director');
   // Get user's role in this project
   const userProjectRole = members.find(m => m.user_id === user?.id)?.role;
   
