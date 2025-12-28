@@ -3,8 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { 
   Plus, Search, FolderKanban, ArrowRight, ExternalLink, MoreVertical, 
   Trash2, Power, CheckCircle, Image, Layers, Pencil,
-  Users, Palette, TrendingUp, GraduationCap, Globe, BarChart3,
-  FileText, Calendar, Megaphone, Sparkles
+  Users, Palette, TrendingUp, Video,
+  FileText, Calendar, Megaphone
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,6 +20,7 @@ import { useProjects, CreateProjectData, Project } from '@/hooks/useProjects';
 import { useClients } from '@/hooks/useClients';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Badge } from '@/components/ui/badge';
+import { ProjectTypeSelector } from '@/components/project/ProjectTypeSelector';
 
 const currencies = [
   { value: 'BRL', label: 'R$ (Real)' },
@@ -182,28 +183,10 @@ export default function Projects() {
               </div>
               <div className="space-y-2">
                 <Label>Tipos de Projeto (selecione um ou mais)</Label>
-                <div className="grid grid-cols-2 gap-2 p-3 rounded-lg border border-border/50 bg-muted/30">
-                  {projectTypes.map(t => {
-                    const IconComponent = t.icon;
-                    return (
-                      <label
-                        key={t.value}
-                        className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-colors ${
-                          selectedProjectTypes.includes(t.value)
-                            ? 'bg-primary/10 border border-primary/30'
-                            : 'bg-background border border-border/50 hover:bg-muted/50'
-                        }`}
-                      >
-                        <Checkbox
-                          checked={selectedProjectTypes.includes(t.value)}
-                          onCheckedChange={() => handleToggleProjectType(t.value)}
-                        />
-                        <IconComponent className={`h-4 w-4 ${t.color}`} />
-                        <span className="text-sm">{t.label}</span>
-                      </label>
-                    );
-                  })}
-                </div>
+                <ProjectTypeSelector 
+                  selectedTypes={selectedProjectTypes}
+                  onToggle={handleToggleProjectType}
+                />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
