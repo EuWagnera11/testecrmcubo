@@ -890,6 +890,44 @@ export type Database = {
           },
         ]
       }
+      post_notifications: {
+        Row: {
+          created_at: string
+          id: string
+          notification_type: string
+          post_id: string
+          scheduled_for: string
+          sent_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notification_type?: string
+          post_id: string
+          scheduled_for: string
+          sent_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notification_type?: string
+          post_id?: string
+          scheduled_for?: string
+          sent_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_notifications_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "project_social_calendar"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -1456,46 +1494,73 @@ export type Database = {
       }
       project_social_calendar: {
         Row: {
+          comments: number | null
           content: string | null
           created_at: string
+          engagement_rate: number | null
           hashtags: string | null
           id: string
+          impressions: number | null
+          likes: number | null
           media_urls: string[] | null
+          metrics_updated_at: string | null
           notes: string | null
           platform: string
+          post_url: string | null
           project_id: string
+          reach: number | null
+          saves: number | null
           scheduled_date: string
           scheduled_time: string | null
+          shares: number | null
           status: string | null
           title: string
           updated_at: string
         }
         Insert: {
+          comments?: number | null
           content?: string | null
           created_at?: string
+          engagement_rate?: number | null
           hashtags?: string | null
           id?: string
+          impressions?: number | null
+          likes?: number | null
           media_urls?: string[] | null
+          metrics_updated_at?: string | null
           notes?: string | null
           platform: string
+          post_url?: string | null
           project_id: string
+          reach?: number | null
+          saves?: number | null
           scheduled_date: string
           scheduled_time?: string | null
+          shares?: number | null
           status?: string | null
           title: string
           updated_at?: string
         }
         Update: {
+          comments?: number | null
           content?: string | null
           created_at?: string
+          engagement_rate?: number | null
           hashtags?: string | null
           id?: string
+          impressions?: number | null
+          likes?: number | null
           media_urls?: string[] | null
+          metrics_updated_at?: string | null
           notes?: string | null
           platform?: string
+          post_url?: string | null
           project_id?: string
+          reach?: number | null
+          saves?: number | null
           scheduled_date?: string
           scheduled_time?: string | null
+          shares?: number | null
           status?: string | null
           title?: string
           updated_at?: string
