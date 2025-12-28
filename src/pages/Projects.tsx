@@ -29,7 +29,7 @@ const currencies = [
 
 // 5 core project types
 const projectTypes = [
-  { value: 'trafego_pago', label: 'Tráfego Pago', icon: TrendingUp, color: 'text-green-500' },
+  { value: 'traffic', label: 'Tráfego Pago', icon: TrendingUp, color: 'text-green-500' },
   { value: 'design', label: 'Design', icon: Palette, color: 'text-pink-500' },
   { value: 'copy', label: 'Copywriting', icon: FileText, color: 'text-blue-500' },
   { value: 'social_media', label: 'Social Media', icon: Users, color: 'text-purple-500' },
@@ -44,7 +44,7 @@ const statusConfig: Record<string, { label: string; className: string }> = {
 };
 
 const projectTypeLabels: Record<string, string> = {
-  trafego_pago: 'Tráfego Pago',
+  traffic: 'Tráfego Pago',
   design: 'Design',
   copy: 'Copywriting',
   social_media: 'Social Media',
@@ -62,7 +62,7 @@ export default function Projects() {
   const [showDesignFields, setShowDesignFields] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
-  const [selectedProjectTypes, setSelectedProjectTypes] = useState<string[]>(['one_time']);
+  const [selectedProjectTypes, setSelectedProjectTypes] = useState<string[]>([]);
 
   const filteredProjects = projects.filter(p => {
     const matchSearch = p.name.toLowerCase().includes(search.toLowerCase());
@@ -93,7 +93,8 @@ export default function Projects() {
       total_value: Number(formData.get('total_value')) || 0,
       deadline: formData.get('deadline') as string || undefined,
       advance_payment: formData.get('advance_payment') === 'on',
-      project_type: selectedProjectTypes.join(','),
+      project_type: selectedProjectTypes[0] || 'traffic',
+      project_types: selectedProjectTypes,
       static_creatives: Number(formData.get('static_creatives')) || 0,
       carousel_creatives: Number(formData.get('carousel_creatives')) || 0,
     };

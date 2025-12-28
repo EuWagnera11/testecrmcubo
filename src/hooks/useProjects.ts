@@ -18,11 +18,16 @@ export interface Project {
   deadline: string | null;
   status: 'active' | 'completed' | 'paused' | 'inactive';
   project_type: string;
+  project_types: string[] | null;
   share_token: string | null;
   share_enabled: boolean | null;
   cancelled_at: string | null;
   static_creatives: number | null;
   carousel_creatives: number | null;
+  monthly_budget: number | null;
+  target_cpa: number | null;
+  target_roas: number | null;
+  target_cpl: number | null;
   created_at: string;
   updated_at: string;
   clients?: {
@@ -41,9 +46,14 @@ export interface CreateProjectData {
   deadline?: string;
   status?: 'active' | 'completed' | 'paused' | 'inactive';
   project_type?: string;
+  project_types?: string[];
   cancelled_at?: string | null;
   static_creatives?: number;
   carousel_creatives?: number;
+  monthly_budget?: number;
+  target_cpa?: number;
+  target_roas?: number;
+  target_cpl?: number;
 }
 
 export function useProjects() {

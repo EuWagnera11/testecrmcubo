@@ -64,13 +64,11 @@ const platformIcons: Record<string, string> = {
 
 // Project type config
 const projectTypeConfig: Record<string, { label: string; icon: React.ElementType; color: string }> = {
-  trafego_pago: { label: 'Tráfego Pago', icon: TrendingUp, color: 'text-green-500' },
+  traffic: { label: 'Tráfego Pago', icon: TrendingUp, color: 'text-green-500' },
   design: { label: 'Design', icon: Palette, color: 'text-pink-500' },
   copy: { label: 'Copywriting', icon: FileText, color: 'text-blue-500' },
   social_media: { label: 'Social Media', icon: MessageSquare, color: 'text-purple-500' },
   audiovisual: { label: 'Audiovisual', icon: Video, color: 'text-orange-500' },
-  treinamento_comercial: { label: 'Treinamento', icon: GraduationCap, color: 'text-amber-500' },
-  desenvolvimento_web: { label: 'Web', icon: Globe, color: 'text-cyan-500' },
 };
 
 // Calculate percentage change

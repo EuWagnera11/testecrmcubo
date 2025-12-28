@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { 
   ArrowLeft, Users, Plus, Trash2, Save, Share2, Copy, Check,
-  Palette, FileText, TrendingUp, MessageSquare, DollarSign, Image, Layers, LayoutGrid, ExternalLink
+  Palette, FileText, TrendingUp, MessageSquare, DollarSign, Image, Layers, LayoutGrid, ExternalLink,
+  Video, Megaphone
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,7 +20,6 @@ import { useUsers } from '@/hooks/useUsers';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { MetricsEditor } from '@/components/MetricsEditor';
 import { CampaignMetricsManager } from '@/components/CampaignMetricsManager';
 import { FileUpload } from '@/components/FileUpload';
 import { ProjectFinancials } from '@/components/ProjectFinancials';
@@ -29,7 +29,9 @@ import { useProjectPresence } from '@/hooks/useProjectPresence';
 import { OnlineUsers } from '@/components/OnlineUsers';
 import { ProjectChat } from '@/components/ProjectChat';
 import { KanbanBoard } from '@/components/KanbanBoard';
-
+import { TrafficModule } from '@/components/project/TrafficModule';
+import { StrategyModule } from '@/components/project/StrategyModule';
+import { CreativesModule } from '@/components/project/CreativesModule';
 
 const fieldConfig = {
   design: { label: 'Design', icon: Palette, color: 'text-pink-500', role: 'designer' as ProjectRole },
@@ -45,6 +47,14 @@ const roleLabels: Record<ProjectRole, string> = {
   copywriter: 'Copywriter',
   traffic_manager: 'Gestor de Tráfego',
   social_media: 'Social Media',
+};
+
+const projectTypeConfig: Record<string, { label: string; icon: React.ElementType; color: string }> = {
+  traffic: { label: 'Tráfego Pago', icon: TrendingUp, color: 'text-green-500' },
+  design: { label: 'Design', icon: Palette, color: 'text-pink-500' },
+  copy: { label: 'Copywriting', icon: FileText, color: 'text-blue-500' },
+  social_media: { label: 'Social Media', icon: MessageSquare, color: 'text-purple-500' },
+  audiovisual: { label: 'Audiovisual', icon: Video, color: 'text-orange-500' },
 };
 
 export default function ProjectDetails() {
@@ -159,6 +169,19 @@ export default function ProjectDetails() {
 
   const canSeeFinancials = isAdmin || isDirector;
 
+  // Determine which modules to show based on project types
+  const projectTypes = project?.project_types || [];
+  const hasTraffic = projectTypes.includes('traffic');
+  const hasDesign = projectTypes.includes('design');
+  const hasCopy = projectTypes.includes('copy');
+  const hasSocialMedia = projectTypes.includes('social_media');
+  const hasAudiovisual = projectTypes.includes('audiovisual');
+  
+  // Show creatives module for design, copy, or audiovisual
+  const showCreatives = hasDesign || hasCopy || hasAudiovisual;
+  // Show strategy for all project types
+  const showStrategy = true;
+
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
@@ -172,6 +195,24 @@ export default function ProjectDetails() {
             <span>{project.clients?.name || 'Sem cliente'}</span>
             <span>•</span>
             <span className="text-primary font-display">{formatCurrency(Number(project.total_value), project.currency)}</span>
+            {projectTypes.length > 0 && (
+              <>
+                <span>•</span>
+                <div className="flex gap-1 flex-wrap">
+                  {projectTypes.map(type => {
+                    const config = projectTypeConfig[type];
+                    if (!config) return null;
+                    const Icon = config.icon;
+                    return (
+                      <Badge key={type} variant="outline" className="text-xs gap-1">
+                        <Icon className={`h-3 w-3 ${config.color}`} />
+                        {config.label}
+                      </Badge>
+                    );
+                  })}
+                </div>
+              </>
+            )}
             {(project.static_creatives || project.carousel_creatives) ? (
               <>
                 <span>•</span>
@@ -217,14 +258,60 @@ export default function ProjectDetails() {
         )}
       </div>
 
-      <Tabs defaultValue="fields">
-        <TabsList className="h-11 mb-6">
+      <Tabs defaultValue={hasTraffic ? "traffic" : showStrategy ? "strategy" : "fields"}>
+        <TabsList className="h-11 mb-6 flex-wrap">
+          {hasTraffic && (
+            <TabsTrigger value="traffic" className="px-4 gap-1">
+              <TrendingUp className="h-4 w-4" /> Tráfego
+            </TabsTrigger>
+          )}
+          {showStrategy && (
+            <TabsTrigger value="strategy" className="px-4 gap-1">
+              <Megaphone className="h-4 w-4" /> Estratégia
+            </TabsTrigger>
+          )}
+          {showCreatives && (
+            <TabsTrigger value="creatives" className="px-4 gap-1">
+              <Palette className="h-4 w-4" /> Criativos
+            </TabsTrigger>
+          )}
           <TabsTrigger value="fields" className="px-4">Campos</TabsTrigger>
           <TabsTrigger value="tasks" className="px-4">Tarefas</TabsTrigger>
           <TabsTrigger value="team" className="px-4">Equipe</TabsTrigger>
           {canSeeFinancials && <TabsTrigger value="financials" className="px-4">Financeiro</TabsTrigger>}
-          <TabsTrigger value="metrics" className="px-4">Métricas</TabsTrigger>
+          {hasTraffic && <TabsTrigger value="metrics" className="px-4">Métricas</TabsTrigger>}
         </TabsList>
+
+        {/* Traffic Module Tab */}
+        {hasTraffic && (
+          <TabsContent value="traffic" className="space-y-6">
+            <TrafficModule 
+              projectId={id!} 
+              project={{
+                monthly_budget: project.monthly_budget || undefined,
+                target_cpa: project.target_cpa || undefined,
+                target_roas: project.target_roas || undefined,
+                target_cpl: project.target_cpl || undefined,
+                status: project.status,
+              }}
+              onUpdateProject={(data) => updateProject.mutateAsync({ id: project.id, ...data })}
+            />
+          </TabsContent>
+        )}
+
+        {/* Strategy Module Tab */}
+        {showStrategy && (
+          <TabsContent value="strategy" className="space-y-6">
+            <StrategyModule projectId={id!} />
+          </TabsContent>
+        )}
+
+        {/* Creatives Module Tab */}
+        {showCreatives && (
+          <TabsContent value="creatives" className="space-y-6">
+            <CreativesModule projectId={id!} />
+          </TabsContent>
+        )}
 
         {/* Fields Tab */}
         <TabsContent value="fields" className="space-y-6">
@@ -402,10 +489,12 @@ export default function ProjectDetails() {
           </TabsContent>
         )}
 
-        {/* Metrics Tab */}
-        <TabsContent value="metrics" className="space-y-4">
-          <CampaignMetricsManager projectId={id!} currency={project.currency} />
-        </TabsContent>
+        {/* Metrics Tab - Only for Traffic projects */}
+        {hasTraffic && (
+          <TabsContent value="metrics" className="space-y-4">
+            <CampaignMetricsManager projectId={id!} currency={project.currency} />
+          </TabsContent>
+        )}
       </Tabs>
 
       {/* Project Chat */}
