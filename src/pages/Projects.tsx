@@ -66,6 +66,7 @@ export default function Projects() {
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [selectedProjectTypes, setSelectedProjectTypes] = useState<string[]>([]);
+  const [billingType, setBillingType] = useState<'one_time' | 'recurring'>('one_time');
 
   const filteredProjects = projects.filter(p => {
     const matchSearch = p.name.toLowerCase().includes(search.toLowerCase());
@@ -118,7 +119,7 @@ export default function Projects() {
       total_value: Number(formData.get('total_value')) || 0,
       deadline: formData.get('deadline') as string || undefined,
       advance_payment: formData.get('advance_payment') === 'on',
-      project_type: selectedProjectTypes[0] || 'traffic',
+      project_type: billingType === 'recurring' ? 'recurring' : (selectedProjectTypes[0] || 'traffic'),
       project_types: selectedProjectTypes,
       static_creatives: Number(formData.get('static_creatives')) || 0,
       carousel_creatives: Number(formData.get('carousel_creatives')) || 0,
@@ -127,6 +128,7 @@ export default function Projects() {
     setIsOpen(false);
     setShowDesignFields(false);
     setSelectedProjectTypes([]);
+    setBillingType('one_time');
   };
 
   const handleEdit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -205,13 +207,12 @@ export default function Projects() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
-                <Label>Tipos de Projeto (selecione um ou mais)</Label>
-                <ProjectTypeSelector 
-                  selectedTypes={selectedProjectTypes}
-                  onToggle={handleToggleProjectType}
-                />
-              </div>
+              <ProjectTypeSelector 
+                selectedTypes={selectedProjectTypes}
+                onToggle={handleToggleProjectType}
+                billingType={billingType}
+                onBillingTypeChange={setBillingType}
+              />
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Moeda</Label>
