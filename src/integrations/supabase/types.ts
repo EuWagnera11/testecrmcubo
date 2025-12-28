@@ -1454,6 +1454,69 @@ export type Database = {
           },
         ]
       }
+      project_social_calendar: {
+        Row: {
+          content: string | null
+          created_at: string
+          hashtags: string | null
+          id: string
+          media_urls: string[] | null
+          notes: string | null
+          platform: string
+          project_id: string
+          scheduled_date: string
+          scheduled_time: string | null
+          status: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          hashtags?: string | null
+          id?: string
+          media_urls?: string[] | null
+          notes?: string | null
+          platform: string
+          project_id: string
+          scheduled_date: string
+          scheduled_time?: string | null
+          status?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          hashtags?: string | null
+          id?: string
+          media_urls?: string[] | null
+          notes?: string | null
+          platform?: string
+          project_id?: string
+          scheduled_date?: string
+          scheduled_time?: string | null
+          status?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_social_calendar_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_social_calendar_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "shared_project_clients"
+            referencedColumns: ["project_id"]
+          },
+        ]
+      }
       project_social_media: {
         Row: {
           brand_voice: string | null
