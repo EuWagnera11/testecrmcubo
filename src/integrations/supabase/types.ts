@@ -1022,6 +1022,105 @@ export type Database = {
           },
         ]
       }
+      project_copy_bank: {
+        Row: {
+          angle: string
+          content: string
+          created_at: string
+          id: string
+          project_id: string
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          angle: string
+          content: string
+          created_at?: string
+          id?: string
+          project_id: string
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          angle?: string
+          content?: string
+          created_at?: string
+          id?: string
+          project_id?: string
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_copy_bank_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_copy_bank_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "shared_project_clients"
+            referencedColumns: ["project_id"]
+          },
+        ]
+      }
+      project_creatives: {
+        Row: {
+          created_at: string
+          dark_post_id: string | null
+          id: string
+          media_type: string | null
+          media_url: string | null
+          project_id: string
+          status: string | null
+          tags: string[] | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          dark_post_id?: string | null
+          id?: string
+          media_type?: string | null
+          media_url?: string | null
+          project_id: string
+          status?: string | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          dark_post_id?: string | null
+          id?: string
+          media_type?: string | null
+          media_url?: string | null
+          project_id?: string
+          status?: string | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_creatives_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_creatives_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "shared_project_clients"
+            referencedColumns: ["project_id"]
+          },
+        ]
+      }
       project_fields: {
         Row: {
           attachments: string[] | null
@@ -1202,6 +1301,51 @@ export type Database = {
           },
         ]
       }
+      project_optimization_log: {
+        Row: {
+          action_date: string
+          action_description: string
+          created_at: string
+          id: string
+          project_id: string
+          reason: string | null
+          user_id: string
+        }
+        Insert: {
+          action_date?: string
+          action_description: string
+          created_at?: string
+          id?: string
+          project_id: string
+          reason?: string | null
+          user_id: string
+        }
+        Update: {
+          action_date?: string
+          action_description?: string
+          created_at?: string
+          id?: string
+          project_id?: string
+          reason?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_optimization_log_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_optimization_log_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "shared_project_clients"
+            referencedColumns: ["project_id"]
+          },
+        ]
+      }
       project_payouts: {
         Row: {
           amount: number
@@ -1251,6 +1395,57 @@ export type Database = {
             foreignKeyName: "project_payouts_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
+            referencedRelation: "shared_project_clients"
+            referencedColumns: ["project_id"]
+          },
+        ]
+      }
+      project_strategy: {
+        Row: {
+          created_at: string
+          funnel_structure: string | null
+          id: string
+          landing_page_test_url: string | null
+          landing_page_url: string | null
+          offer_big_idea: string | null
+          personas: string | null
+          project_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          funnel_structure?: string | null
+          id?: string
+          landing_page_test_url?: string | null
+          landing_page_url?: string | null
+          offer_big_idea?: string | null
+          personas?: string | null
+          project_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          funnel_structure?: string | null
+          id?: string
+          landing_page_test_url?: string | null
+          landing_page_url?: string | null
+          offer_big_idea?: string | null
+          personas?: string | null
+          project_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_strategy_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: true
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_strategy_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: true
             referencedRelation: "shared_project_clients"
             referencedColumns: ["project_id"]
           },
@@ -1332,6 +1527,63 @@ export type Database = {
           },
         ]
       }
+      project_technical_setup: {
+        Row: {
+          ad_account_id: string | null
+          ads_manager_link: string | null
+          capi_status: string | null
+          created_at: string
+          drive_link: string | null
+          id: string
+          meta_pixel_id: string | null
+          project_id: string
+          tiktok_pixel_id: string | null
+          updated_at: string
+          utm_pattern: string | null
+        }
+        Insert: {
+          ad_account_id?: string | null
+          ads_manager_link?: string | null
+          capi_status?: string | null
+          created_at?: string
+          drive_link?: string | null
+          id?: string
+          meta_pixel_id?: string | null
+          project_id: string
+          tiktok_pixel_id?: string | null
+          updated_at?: string
+          utm_pattern?: string | null
+        }
+        Update: {
+          ad_account_id?: string | null
+          ads_manager_link?: string | null
+          capi_status?: string | null
+          created_at?: string
+          drive_link?: string | null
+          id?: string
+          meta_pixel_id?: string | null
+          project_id?: string
+          tiktok_pixel_id?: string | null
+          updated_at?: string
+          utm_pattern?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_technical_setup_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: true
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_technical_setup_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: true
+            referencedRelation: "shared_project_clients"
+            referencedColumns: ["project_id"]
+          },
+        ]
+      }
       project_templates: {
         Row: {
           created_at: string | null
@@ -1373,6 +1625,57 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      project_tests: {
+        Row: {
+          created_at: string
+          hypothesis: string
+          id: string
+          learnings: string | null
+          project_id: string
+          result: string | null
+          status: string | null
+          updated_at: string
+          variables: string | null
+        }
+        Insert: {
+          created_at?: string
+          hypothesis: string
+          id?: string
+          learnings?: string | null
+          project_id: string
+          result?: string | null
+          status?: string | null
+          updated_at?: string
+          variables?: string | null
+        }
+        Update: {
+          created_at?: string
+          hypothesis?: string
+          id?: string
+          learnings?: string | null
+          project_id?: string
+          result?: string | null
+          status?: string | null
+          updated_at?: string
+          variables?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_tests_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_tests_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "shared_project_clients"
+            referencedColumns: ["project_id"]
+          },
+        ]
       }
       project_workflows: {
         Row: {
@@ -1425,13 +1728,19 @@ export type Database = {
           currency: string
           deadline: string | null
           id: string
+          monthly_budget: number | null
           name: string
           project_type: string
+          project_types: string[] | null
+          responsible_id: string | null
           share_enabled: boolean | null
           share_expires_at: string | null
           share_token: string | null
           static_creatives: number | null
           status: string
+          target_cpa: number | null
+          target_cpl: number | null
+          target_roas: number | null
           template_id: string | null
           total_value: number
           updated_at: string
@@ -1448,13 +1757,19 @@ export type Database = {
           currency?: string
           deadline?: string | null
           id?: string
+          monthly_budget?: number | null
           name: string
           project_type?: string
+          project_types?: string[] | null
+          responsible_id?: string | null
           share_enabled?: boolean | null
           share_expires_at?: string | null
           share_token?: string | null
           static_creatives?: number | null
           status?: string
+          target_cpa?: number | null
+          target_cpl?: number | null
+          target_roas?: number | null
           template_id?: string | null
           total_value?: number
           updated_at?: string
@@ -1471,13 +1786,19 @@ export type Database = {
           currency?: string
           deadline?: string | null
           id?: string
+          monthly_budget?: number | null
           name?: string
           project_type?: string
+          project_types?: string[] | null
+          responsible_id?: string | null
           share_enabled?: boolean | null
           share_expires_at?: string | null
           share_token?: string | null
           static_creatives?: number | null
           status?: string
+          target_cpa?: number | null
+          target_cpl?: number | null
+          target_roas?: number | null
           template_id?: string | null
           total_value?: number
           updated_at?: string
