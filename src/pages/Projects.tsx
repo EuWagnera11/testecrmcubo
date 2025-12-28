@@ -27,18 +27,13 @@ const currencies = [
   { value: 'EUR', label: '€ (Euro)' },
 ];
 
-// Refine Cubo Services + project types
+// 5 core project types
 const projectTypes = [
-  { value: 'social_media', label: 'Social Media', icon: Users, color: 'text-blue-500' },
-  { value: 'design', label: 'Design', icon: Palette, color: 'text-pink-500' },
   { value: 'trafego_pago', label: 'Tráfego Pago', icon: TrendingUp, color: 'text-green-500' },
-  { value: 'treinamento_comercial', label: 'Treinamento Comercial', icon: GraduationCap, color: 'text-amber-500' },
-  { value: 'desenvolvimento_web', label: 'Desenvolvimento Web', icon: Globe, color: 'text-cyan-500' },
-  { value: 'assessoria_marketing', label: 'Assessoria de Marketing', icon: BarChart3, color: 'text-purple-500' },
-  { value: 'one_time', label: 'Pontual', icon: FileText, color: 'text-muted-foreground' },
-  { value: 'monthly', label: 'Mensal', icon: Calendar, color: 'text-primary' },
-  { value: 'campaign', label: 'Campanha', icon: Megaphone, color: 'text-orange-500' },
-  { value: 'branding', label: 'Branding', icon: Sparkles, color: 'text-yellow-500' },
+  { value: 'design', label: 'Design', icon: Palette, color: 'text-pink-500' },
+  { value: 'copy', label: 'Copywriting', icon: FileText, color: 'text-blue-500' },
+  { value: 'social_media', label: 'Social Media', icon: Users, color: 'text-purple-500' },
+  { value: 'audiovisual', label: 'Audiovisual', icon: Megaphone, color: 'text-orange-500' },
 ];
 
 const statusConfig: Record<string, { label: string; className: string }> = {
@@ -49,16 +44,11 @@ const statusConfig: Record<string, { label: string; className: string }> = {
 };
 
 const projectTypeLabels: Record<string, string> = {
-  social_media: 'Social Media',
-  design: 'Design',
   trafego_pago: 'Tráfego Pago',
-  treinamento_comercial: 'Treinamento Comercial',
-  desenvolvimento_web: 'Desenvolvimento Web',
-  assessoria_marketing: 'Assessoria de Marketing',
-  one_time: 'Pontual',
-  monthly: 'Mensal',
-  campaign: 'Campanha',
-  branding: 'Branding',
+  design: 'Design',
+  copy: 'Copywriting',
+  social_media: 'Social Media',
+  audiovisual: 'Audiovisual',
 };
 
 export default function Projects() {
