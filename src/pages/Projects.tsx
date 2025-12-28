@@ -21,6 +21,7 @@ import { useClients } from '@/hooks/useClients';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Badge } from '@/components/ui/badge';
 import { ProjectTypeSelector } from '@/components/project/ProjectTypeSelector';
+import { useToast } from '@/hooks/use-toast';
 
 const currencies = [
   { value: 'BRL', label: 'R$ (Real)' },
@@ -56,6 +57,7 @@ export default function Projects() {
   const { projects, isLoading, createProject, updateProject, deleteProject } = useProjects();
   const { clients } = useClients();
   const { canCreateProjects, canSeeFinancials } = useUserRole();
+  const { toast } = useToast();
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [isOpen, setIsOpen] = useState(false);
@@ -86,9 +88,31 @@ export default function Projects() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    
+    // Validate at least one project type selected
+    if (selectedProjectTypes.length === 0) {
+      toast({
+        title: 'Tipo de projeto obrigatório',
+        description: 'Selecione pelo menos um tipo de projeto.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
     const formData = new FormData(e.currentTarget);
+    const name = (formData.get('name') as string)?.trim();
+    
+    if (!name) {
+      toast({
+        title: 'Nome obrigatório',
+        description: 'O nome do projeto é obrigatório.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
     const data: CreateProjectData = {
-      name: formData.get('name') as string,
+      name,
       client_id: formData.get('client_id') as string || undefined,
       currency: formData.get('currency') as string || 'BRL',
       total_value: Number(formData.get('total_value')) || 0,
@@ -102,7 +126,7 @@ export default function Projects() {
     await createProject.mutateAsync(data);
     setIsOpen(false);
     setShowDesignFields(false);
-    setSelectedProjectTypes(['one_time']);
+    setSelectedProjectTypes([]);
   };
 
   const handleEdit = async (e: React.FormEvent<HTMLFormElement>) => {
