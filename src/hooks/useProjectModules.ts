@@ -490,3 +490,141 @@ export function useProjectOptimizationLog(projectId?: string) {
 
   return { logs: query.data ?? [], isLoading: query.isLoading, createLog: create, deleteLog: remove };
 }
+
+// Types for Social Media
+export interface ProjectSocialMedia {
+  id: string;
+  project_id: string;
+  platforms: string[] | null;
+  posting_frequency: string | null;
+  content_pillars: string | null;
+  brand_voice: string | null;
+  hashtag_strategy: string | null;
+  engagement_goals: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// Hook for Social Media
+export function useProjectSocialMedia(projectId?: string) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  const query = useQuery({
+    queryKey: ['project-social-media', projectId],
+    queryFn: async () => {
+      if (!projectId) return null;
+      const { data, error } = await supabase
+        .from('project_social_media')
+        .select('*')
+        .eq('project_id', projectId)
+        .maybeSingle();
+      
+      if (error) throw error;
+      return data as ProjectSocialMedia | null;
+    },
+    enabled: !!projectId,
+  });
+
+  const upsert = useMutation({
+    mutationFn: async (data: Partial<ProjectSocialMedia>) => {
+      const existing = query.data;
+      if (existing) {
+        const { data: updated, error } = await supabase
+          .from('project_social_media')
+          .update({ ...data, updated_at: new Date().toISOString() })
+          .eq('id', existing.id)
+          .select()
+          .single();
+        if (error) throw error;
+        return updated;
+      } else {
+        const { data: created, error } = await supabase
+          .from('project_social_media')
+          .insert({ project_id: projectId!, ...data })
+          .select()
+          .single();
+        if (error) throw error;
+        return created;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['project-social-media', projectId] });
+      toast({ title: 'Social Media salvo!' });
+    },
+    onError: (error) => {
+      toast({ title: 'Erro ao salvar', description: error.message, variant: 'destructive' });
+    },
+  });
+
+  return { socialMedia: query.data, isLoading: query.isLoading, upsertSocialMedia: upsert };
+}
+
+// Types for Audiovisual
+export interface ProjectAudiovisual {
+  id: string;
+  project_id: string;
+  video_types: string[] | null;
+  production_notes: string | null;
+  equipment_requirements: string | null;
+  delivery_formats: string | null;
+  style_references: string | null;
+  script_notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// Hook for Audiovisual
+export function useProjectAudiovisual(projectId?: string) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  const query = useQuery({
+    queryKey: ['project-audiovisual', projectId],
+    queryFn: async () => {
+      if (!projectId) return null;
+      const { data, error } = await supabase
+        .from('project_audiovisual')
+        .select('*')
+        .eq('project_id', projectId)
+        .maybeSingle();
+      
+      if (error) throw error;
+      return data as ProjectAudiovisual | null;
+    },
+    enabled: !!projectId,
+  });
+
+  const upsert = useMutation({
+    mutationFn: async (data: Partial<ProjectAudiovisual>) => {
+      const existing = query.data;
+      if (existing) {
+        const { data: updated, error } = await supabase
+          .from('project_audiovisual')
+          .update({ ...data, updated_at: new Date().toISOString() })
+          .eq('id', existing.id)
+          .select()
+          .single();
+        if (error) throw error;
+        return updated;
+      } else {
+        const { data: created, error } = await supabase
+          .from('project_audiovisual')
+          .insert({ project_id: projectId!, ...data })
+          .select()
+          .single();
+        if (error) throw error;
+        return created;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['project-audiovisual', projectId] });
+      toast({ title: 'Audiovisual salvo!' });
+    },
+    onError: (error) => {
+      toast({ title: 'Erro ao salvar', description: error.message, variant: 'destructive' });
+    },
+  });
+
+  return { audiovisual: query.data, isLoading: query.isLoading, upsertAudiovisual: upsert };
+}

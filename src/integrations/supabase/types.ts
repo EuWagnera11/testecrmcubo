@@ -968,6 +968,60 @@ export type Database = {
           },
         ]
       }
+      project_audiovisual: {
+        Row: {
+          created_at: string
+          delivery_formats: string | null
+          equipment_requirements: string | null
+          id: string
+          production_notes: string | null
+          project_id: string
+          script_notes: string | null
+          style_references: string | null
+          updated_at: string
+          video_types: string[] | null
+        }
+        Insert: {
+          created_at?: string
+          delivery_formats?: string | null
+          equipment_requirements?: string | null
+          id?: string
+          production_notes?: string | null
+          project_id: string
+          script_notes?: string | null
+          style_references?: string | null
+          updated_at?: string
+          video_types?: string[] | null
+        }
+        Update: {
+          created_at?: string
+          delivery_formats?: string | null
+          equipment_requirements?: string | null
+          id?: string
+          production_notes?: string | null
+          project_id?: string
+          script_notes?: string | null
+          style_references?: string | null
+          updated_at?: string
+          video_types?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_audiovisual_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: true
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_audiovisual_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: true
+            referencedRelation: "shared_project_clients"
+            referencedColumns: ["project_id"]
+          },
+        ]
+      }
       project_change_requests: {
         Row: {
           attachments: string[] | null
@@ -1395,6 +1449,60 @@ export type Database = {
             foreignKeyName: "project_payouts_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
+            referencedRelation: "shared_project_clients"
+            referencedColumns: ["project_id"]
+          },
+        ]
+      }
+      project_social_media: {
+        Row: {
+          brand_voice: string | null
+          content_pillars: string | null
+          created_at: string
+          engagement_goals: string | null
+          hashtag_strategy: string | null
+          id: string
+          platforms: string[] | null
+          posting_frequency: string | null
+          project_id: string
+          updated_at: string
+        }
+        Insert: {
+          brand_voice?: string | null
+          content_pillars?: string | null
+          created_at?: string
+          engagement_goals?: string | null
+          hashtag_strategy?: string | null
+          id?: string
+          platforms?: string[] | null
+          posting_frequency?: string | null
+          project_id: string
+          updated_at?: string
+        }
+        Update: {
+          brand_voice?: string | null
+          content_pillars?: string | null
+          created_at?: string
+          engagement_goals?: string | null
+          hashtag_strategy?: string | null
+          id?: string
+          platforms?: string[] | null
+          posting_frequency?: string | null
+          project_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_social_media_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: true
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_social_media_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: true
             referencedRelation: "shared_project_clients"
             referencedColumns: ["project_id"]
           },

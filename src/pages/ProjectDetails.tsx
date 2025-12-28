@@ -32,6 +32,8 @@ import { KanbanBoard } from '@/components/KanbanBoard';
 import { TrafficModule } from '@/components/project/TrafficModule';
 import { StrategyModule } from '@/components/project/StrategyModule';
 import { CreativesModule } from '@/components/project/CreativesModule';
+import { SocialMediaModule } from '@/components/project/SocialMediaModule';
+import { AudiovisualModule } from '@/components/project/AudiovisualModule';
 
 const fieldConfig = {
   design: { label: 'Design', icon: Palette, color: 'text-pink-500', role: 'designer' as ProjectRole },
@@ -258,11 +260,21 @@ export default function ProjectDetails() {
         )}
       </div>
 
-      <Tabs defaultValue={hasTraffic ? "traffic" : showStrategy ? "strategy" : "fields"}>
+      <Tabs defaultValue={hasTraffic ? "traffic" : hasSocialMedia ? "social_media" : hasAudiovisual ? "audiovisual" : showStrategy ? "strategy" : "fields"}>
         <TabsList className="h-11 mb-6 flex-wrap">
           {hasTraffic && (
             <TabsTrigger value="traffic" className="px-4 gap-1">
               <TrendingUp className="h-4 w-4" /> Tráfego
+            </TabsTrigger>
+          )}
+          {hasSocialMedia && (
+            <TabsTrigger value="social_media" className="px-4 gap-1">
+              <Users className="h-4 w-4" /> Social Media
+            </TabsTrigger>
+          )}
+          {hasAudiovisual && (
+            <TabsTrigger value="audiovisual" className="px-4 gap-1">
+              <Video className="h-4 w-4" /> Audiovisual
             </TabsTrigger>
           )}
           {showStrategy && (
@@ -296,6 +308,20 @@ export default function ProjectDetails() {
               }}
               onUpdateProject={(data) => updateProject.mutateAsync({ id: project.id, ...data })}
             />
+          </TabsContent>
+        )}
+
+        {/* Social Media Module Tab */}
+        {hasSocialMedia && (
+          <TabsContent value="social_media" className="space-y-6">
+            <SocialMediaModule projectId={id!} />
+          </TabsContent>
+        )}
+
+        {/* Audiovisual Module Tab */}
+        {hasAudiovisual && (
+          <TabsContent value="audiovisual" className="space-y-6">
+            <AudiovisualModule projectId={id!} />
           </TabsContent>
         )}
 
