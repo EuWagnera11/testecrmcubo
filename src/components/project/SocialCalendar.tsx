@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, parseISO, isAfter, isBefore } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,7 +12,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   ChevronLeft, ChevronRight, Calendar, Trash2, List, LayoutGrid,
-  Instagram, Facebook, Twitter, Linkedin, Youtube, Filter, GripVertical
+  Instagram, Facebook, Twitter, Linkedin, Youtube, Filter, GripVertical,
+  BarChart3, Heart, MessageCircle, Share2, Eye, Bookmark, Link2, Bell, TrendingUp
 } from 'lucide-react';
 import { useSocialCalendar, type SocialCalendarPost } from '@/hooks/useSocialCalendar';
 
@@ -58,15 +59,16 @@ const platforms = [
 ];
 
 export function SocialCalendar({ projectId }: SocialCalendarProps) {
-  const { posts, isLoading, createPost, updatePost, deletePost } = useSocialCalendar(projectId);
+  const { posts, isLoading, upcomingPosts, createPost, updatePost, updateMetrics, deletePost } = useSocialCalendar(projectId);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingPost, setEditingPost] = useState<SocialCalendarPost | null>(null);
-  const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
+  const [viewMode, setViewMode] = useState<'calendar' | 'list' | 'metrics'>('calendar');
   const [filterPlatform, setFilterPlatform] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [draggedPost, setDraggedPost] = useState<SocialCalendarPost | null>(null);
+  const [dialogTab, setDialogTab] = useState<'post' | 'metrics'>('post');
   const [formData, setFormData] = useState({
     title: '',
     content: '',
@@ -75,6 +77,16 @@ export function SocialCalendar({ projectId }: SocialCalendarProps) {
     hashtags: '',
     notes: '',
     status: 'draft' as 'draft' | 'scheduled' | 'published' | 'cancelled',
+  });
+  const [metricsData, setMetricsData] = useState({
+    post_url: '',
+    likes: 0,
+    comments: 0,
+    shares: 0,
+    reach: 0,
+    impressions: 0,
+    saves: 0,
+    engagement_rate: 0,
   });
 
   const monthStart = startOfMonth(currentMonth);
@@ -96,6 +108,7 @@ export function SocialCalendar({ projectId }: SocialCalendarProps) {
 
   const handleOpenDialog = (date: Date, post?: SocialCalendarPost) => {
     setSelectedDate(date);
+    setDialogTab('post');
     if (post) {
       setEditingPost(post);
       setFormData({
@@ -106,6 +119,16 @@ export function SocialCalendar({ projectId }: SocialCalendarProps) {
         hashtags: post.hashtags || '',
         notes: post.notes || '',
         status: post.status as 'draft' | 'scheduled' | 'published' | 'cancelled',
+      });
+      setMetricsData({
+        post_url: post.post_url || '',
+        likes: post.likes || 0,
+        comments: post.comments || 0,
+        shares: post.shares || 0,
+        reach: post.reach || 0,
+        impressions: post.impressions || 0,
+        saves: post.saves || 0,
+        engagement_rate: post.engagement_rate || 0,
       });
     } else {
       setEditingPost(null);
@@ -118,8 +141,32 @@ export function SocialCalendar({ projectId }: SocialCalendarProps) {
         notes: '',
         status: 'draft',
       });
+      setMetricsData({
+        post_url: '',
+        likes: 0,
+        comments: 0,
+        shares: 0,
+        reach: 0,
+        impressions: 0,
+        saves: 0,
+        engagement_rate: 0,
+      });
     }
     setIsDialogOpen(true);
+  };
+
+  const handleSaveMetrics = async () => {
+    if (!editingPost) return;
+    await updateMetrics.mutateAsync({ id: editingPost.id, metrics: metricsData });
+    setIsDialogOpen(false);
+  };
+
+  const calculateEngagementRate = () => {
+    if (metricsData.reach > 0) {
+      const totalEngagement = metricsData.likes + metricsData.comments + metricsData.shares + metricsData.saves;
+      const rate = (totalEngagement / metricsData.reach) * 100;
+      setMetricsData(prev => ({ ...prev, engagement_rate: parseFloat(rate.toFixed(2)) }));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -186,11 +233,19 @@ export function SocialCalendar({ projectId }: SocialCalendarProps) {
     <Card className="border-border/50">
       <CardHeader className="pb-4">
         <div className="flex flex-col gap-4">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-purple-500" />
-              Calendário de Conteúdo
-            </CardTitle>
+            <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Calendar className="h-5 w-5 text-purple-500" />
+                Calendário de Conteúdo
+              </CardTitle>
+              {upcomingPosts.length > 0 && (
+                <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/30 flex items-center gap-1">
+                  <Bell className="h-3 w-3" />
+                  {upcomingPosts.length} próximo{upcomingPosts.length > 1 ? 's' : ''}
+                </Badge>
+              )}
+            </div>
             <div className="flex items-center gap-2">
               {/* View Toggle */}
               <div className="flex border rounded-lg overflow-hidden">
@@ -199,6 +254,7 @@ export function SocialCalendar({ projectId }: SocialCalendarProps) {
                   size="sm" 
                   className="rounded-none h-8"
                   onClick={() => setViewMode('calendar')}
+                  title="Calendário"
                 >
                   <LayoutGrid className="h-4 w-4" />
                 </Button>
@@ -207,8 +263,18 @@ export function SocialCalendar({ projectId }: SocialCalendarProps) {
                   size="sm" 
                   className="rounded-none h-8"
                   onClick={() => setViewMode('list')}
+                  title="Lista"
                 >
                   <List className="h-4 w-4" />
+                </Button>
+                <Button 
+                  variant={viewMode === 'metrics' ? 'default' : 'ghost'} 
+                  size="sm" 
+                  className="rounded-none h-8"
+                  onClick={() => setViewMode('metrics')}
+                  title="Métricas"
+                >
+                  <BarChart3 className="h-4 w-4" />
                 </Button>
               </div>
               
@@ -269,7 +335,7 @@ export function SocialCalendar({ projectId }: SocialCalendarProps) {
         </div>
       </CardHeader>
       <CardContent>
-        {viewMode === 'calendar' ? (
+        {viewMode === 'calendar' && (
           <>
             {/* Weekday headers */}
             <div className="grid grid-cols-7 gap-1 mb-1">
@@ -341,8 +407,9 @@ export function SocialCalendar({ projectId }: SocialCalendarProps) {
               })}
             </div>
           </>
-        ) : (
-          /* List View */
+        )}
+
+        {viewMode === 'list' && (
           <div className="space-y-2">
             {listPosts.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
@@ -368,11 +435,133 @@ export function SocialCalendar({ projectId }: SocialCalendarProps) {
                         {post.scheduled_time && ` às ${post.scheduled_time}`}
                       </p>
                     </div>
+                    {post.engagement_rate && post.engagement_rate > 0 && (
+                      <div className="flex items-center gap-1 text-sm text-green-500">
+                        <TrendingUp className="h-3 w-3" />
+                        {post.engagement_rate}%
+                      </div>
+                    )}
                     <Badge className={status.className}>{status.label}</Badge>
                   </div>
                 );
               })
             )}
+          </div>
+        )}
+
+        {viewMode === 'metrics' && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {(() => {
+                const publishedPosts = posts.filter(p => p.status === 'published');
+                const totalLikes = publishedPosts.reduce((sum, p) => sum + (p.likes || 0), 0);
+                const totalComments = publishedPosts.reduce((sum, p) => sum + (p.comments || 0), 0);
+                const totalReach = publishedPosts.reduce((sum, p) => sum + (p.reach || 0), 0);
+                const avgEngagement = publishedPosts.length > 0 
+                  ? publishedPosts.reduce((sum, p) => sum + (p.engagement_rate || 0), 0) / publishedPosts.length 
+                  : 0;
+                return (
+                  <>
+                    <Card className="p-3">
+                      <div className="flex items-center gap-2 text-pink-500 mb-1">
+                        <Heart className="h-4 w-4" />
+                        <span className="text-xs">Total Likes</span>
+                      </div>
+                      <p className="text-xl font-bold">{totalLikes.toLocaleString()}</p>
+                    </Card>
+                    <Card className="p-3">
+                      <div className="flex items-center gap-2 text-blue-500 mb-1">
+                        <MessageCircle className="h-4 w-4" />
+                        <span className="text-xs">Comentários</span>
+                      </div>
+                      <p className="text-xl font-bold">{totalComments.toLocaleString()}</p>
+                    </Card>
+                    <Card className="p-3">
+                      <div className="flex items-center gap-2 text-purple-500 mb-1">
+                        <Eye className="h-4 w-4" />
+                        <span className="text-xs">Alcance Total</span>
+                      </div>
+                      <p className="text-xl font-bold">{totalReach.toLocaleString()}</p>
+                    </Card>
+                    <Card className="p-3">
+                      <div className="flex items-center gap-2 text-green-500 mb-1">
+                        <TrendingUp className="h-4 w-4" />
+                        <span className="text-xs">Engajamento Médio</span>
+                      </div>
+                      <p className="text-xl font-bold">{avgEngagement.toFixed(2)}%</p>
+                    </Card>
+                  </>
+                );
+              })()}
+            </div>
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium text-muted-foreground">Posts Publicados</h4>
+              {posts.filter(p => p.status === 'published').length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  Nenhum post publicado ainda
+                </div>
+              ) : (
+                posts.filter(p => p.status === 'published').map(post => {
+                  const PlatformIcon = platformIcons[post.platform] || Calendar;
+                  return (
+                    <div
+                      key={post.id}
+                      className="p-4 rounded-lg border border-border/50 hover:bg-muted/30 cursor-pointer transition-colors"
+                      onClick={() => handleOpenDialog(parseISO(post.scheduled_date), post)}
+                    >
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className={`p-2 rounded-lg border ${platformColors[post.platform]}`}>
+                          <PlatformIcon className="h-4 w-4" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-medium">{post.title}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {format(parseISO(post.scheduled_date), "dd 'de' MMMM", { locale: ptBR })}
+                          </p>
+                        </div>
+                        {post.post_url && (
+                          <a 
+                            href={post.post_url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-muted-foreground hover:text-primary"
+                          >
+                            <Link2 className="h-4 w-4" />
+                          </a>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
+                        <div className="flex items-center gap-1 text-xs">
+                          <Heart className="h-3 w-3 text-pink-500" />
+                          <span>{post.likes || 0}</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-xs">
+                          <MessageCircle className="h-3 w-3 text-blue-500" />
+                          <span>{post.comments || 0}</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-xs">
+                          <Share2 className="h-3 w-3 text-green-500" />
+                          <span>{post.shares || 0}</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-xs">
+                          <Eye className="h-3 w-3 text-purple-500" />
+                          <span>{post.reach || 0}</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-xs">
+                          <Bookmark className="h-3 w-3 text-amber-500" />
+                          <span>{post.saves || 0}</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-xs font-medium text-green-500">
+                          <TrendingUp className="h-3 w-3" />
+                          <span>{post.engagement_rate || 0}%</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
           </div>
         )}
 
@@ -384,107 +573,339 @@ export function SocialCalendar({ projectId }: SocialCalendarProps) {
                 {editingPost ? 'Editar Post' : 'Novo Post'} - {selectedDate && format(selectedDate, "dd 'de' MMMM", { locale: ptBR })}
               </DialogTitle>
             </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-              <div className="space-y-2">
-                <Label htmlFor="title">Título *</Label>
-                <Input
-                  id="title"
-                  value={formData.title}
-                  onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                  placeholder="Título do post"
-                  required
-                  maxLength={200}
-                />
-              </div>
+            
+            {editingPost ? (
+              <Tabs value={dialogTab} onValueChange={(v) => setDialogTab(v as 'post' | 'metrics')} className="mt-4">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="post">Detalhes</TabsTrigger>
+                  <TabsTrigger value="metrics" className="flex items-center gap-1">
+                    <BarChart3 className="h-3 w-3" />
+                    Métricas
+                  </TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="post" className="mt-4">
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="title">Título *</Label>
+                      <Input
+                        id="title"
+                        value={formData.title}
+                        onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                        placeholder="Título do post"
+                        required
+                        maxLength={200}
+                      />
+                    </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Plataforma *</Label>
-                  <Select value={formData.platform} onValueChange={(v) => setFormData(prev => ({ ...prev, platform: v }))}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {platforms.map(p => (
-                        <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Plataforma *</Label>
+                        <Select value={formData.platform} onValueChange={(v) => setFormData(prev => ({ ...prev, platform: v }))}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {platforms.map(p => (
+                              <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
 
-                <div className="space-y-2">
-                  <Label>Status</Label>
-                  <Select value={formData.status} onValueChange={(v: 'draft' | 'scheduled' | 'published' | 'cancelled') => setFormData(prev => ({ ...prev, status: v }))}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(statusConfig).map(([value, config]) => (
-                        <SelectItem key={value} value={value}>{config.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
+                      <div className="space-y-2">
+                        <Label>Status</Label>
+                        <Select value={formData.status} onValueChange={(v: 'draft' | 'scheduled' | 'published' | 'cancelled') => setFormData(prev => ({ ...prev, status: v }))}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {Object.entries(statusConfig).map(([value, config]) => (
+                              <SelectItem key={value} value={value}>{config.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="scheduled_time">Horário</Label>
-                <Input
-                  id="scheduled_time"
-                  type="time"
-                  value={formData.scheduled_time}
-                  onChange={(e) => setFormData(prev => ({ ...prev, scheduled_time: e.target.value }))}
-                />
-              </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="scheduled_time">Horário</Label>
+                      <Input
+                        id="scheduled_time"
+                        type="time"
+                        value={formData.scheduled_time}
+                        onChange={(e) => setFormData(prev => ({ ...prev, scheduled_time: e.target.value }))}
+                      />
+                    </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="content">Conteúdo</Label>
-                <Textarea
-                  id="content"
-                  value={formData.content}
-                  onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
-                  placeholder="Texto do post..."
-                  rows={4}
-                  maxLength={2200}
-                />
-                <p className="text-xs text-muted-foreground text-right">{formData.content.length}/2200</p>
-              </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="content">Conteúdo</Label>
+                      <Textarea
+                        id="content"
+                        value={formData.content}
+                        onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
+                        placeholder="Texto do post..."
+                        rows={4}
+                        maxLength={2200}
+                      />
+                      <p className="text-xs text-muted-foreground text-right">{formData.content.length}/2200</p>
+                    </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="hashtags">Hashtags</Label>
-                <Input
-                  id="hashtags"
-                  value={formData.hashtags}
-                  onChange={(e) => setFormData(prev => ({ ...prev, hashtags: e.target.value }))}
-                  placeholder="#marketing #socialmedia"
-                  maxLength={500}
-                />
-              </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="hashtags">Hashtags</Label>
+                      <Input
+                        id="hashtags"
+                        value={formData.hashtags}
+                        onChange={(e) => setFormData(prev => ({ ...prev, hashtags: e.target.value }))}
+                        placeholder="#marketing #socialmedia"
+                        maxLength={500}
+                      />
+                    </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="notes">Notas</Label>
-                <Textarea
-                  id="notes"
-                  value={formData.notes}
-                  onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-                  placeholder="Notas internas..."
-                  rows={2}
-                  maxLength={500}
-                />
-              </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="notes">Notas</Label>
+                      <Textarea
+                        id="notes"
+                        value={formData.notes}
+                        onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                        placeholder="Notas internas..."
+                        rows={2}
+                        maxLength={500}
+                      />
+                    </div>
 
-              <div className="flex gap-2 pt-2">
-                {editingPost && (
-                  <Button type="button" variant="destructive" onClick={handleDelete} disabled={deletePost.isPending}>
-                    <Trash2 className="h-4 w-4 mr-1" />
-                    Excluir
+                    <div className="flex gap-2 pt-2">
+                      <Button type="button" variant="destructive" onClick={handleDelete} disabled={deletePost.isPending}>
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Excluir
+                      </Button>
+                      <Button type="submit" className="flex-1" disabled={updatePost.isPending}>
+                        Salvar Alterações
+                      </Button>
+                    </div>
+                  </form>
+                </TabsContent>
+                
+                <TabsContent value="metrics" className="mt-4 space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="post_url" className="flex items-center gap-2">
+                      <Link2 className="h-4 w-4" />
+                      Link do Post
+                    </Label>
+                    <Input
+                      id="post_url"
+                      value={metricsData.post_url}
+                      onChange={(e) => setMetricsData(prev => ({ ...prev, post_url: e.target.value }))}
+                      placeholder="https://instagram.com/p/..."
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-2">
+                        <Heart className="h-4 w-4 text-pink-500" />
+                        Curtidas
+                      </Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        value={metricsData.likes}
+                        onChange={(e) => setMetricsData(prev => ({ ...prev, likes: parseInt(e.target.value) || 0 }))}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-2">
+                        <MessageCircle className="h-4 w-4 text-blue-500" />
+                        Comentários
+                      </Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        value={metricsData.comments}
+                        onChange={(e) => setMetricsData(prev => ({ ...prev, comments: parseInt(e.target.value) || 0 }))}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-2">
+                        <Share2 className="h-4 w-4 text-green-500" />
+                        Compartilhamentos
+                      </Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        value={metricsData.shares}
+                        onChange={(e) => setMetricsData(prev => ({ ...prev, shares: parseInt(e.target.value) || 0 }))}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-2">
+                        <Bookmark className="h-4 w-4 text-amber-500" />
+                        Salvos
+                      </Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        value={metricsData.saves}
+                        onChange={(e) => setMetricsData(prev => ({ ...prev, saves: parseInt(e.target.value) || 0 }))}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-2">
+                        <Eye className="h-4 w-4 text-purple-500" />
+                        Alcance
+                      </Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        value={metricsData.reach}
+                        onChange={(e) => setMetricsData(prev => ({ ...prev, reach: parseInt(e.target.value) || 0 }))}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="flex items-center gap-2">
+                        <BarChart3 className="h-4 w-4 text-cyan-500" />
+                        Impressões
+                      </Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        value={metricsData.impressions}
+                        onChange={(e) => setMetricsData(prev => ({ ...prev, impressions: parseInt(e.target.value) || 0 }))}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="flex items-center gap-2">
+                        <TrendingUp className="h-4 w-4 text-green-500" />
+                        Taxa de Engajamento (%)
+                      </Label>
+                      <Button 
+                        type="button" 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={calculateEngagementRate}
+                      >
+                        Calcular
+                      </Button>
+                    </div>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={metricsData.engagement_rate}
+                      onChange={(e) => setMetricsData(prev => ({ ...prev, engagement_rate: parseFloat(e.target.value) || 0 }))}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      (Curtidas + Comentários + Compartilhamentos + Salvos) ÷ Alcance × 100
+                    </p>
+                  </div>
+                  
+                  <Button 
+                    onClick={handleSaveMetrics} 
+                    className="w-full" 
+                    disabled={updateMetrics.isPending}
+                  >
+                    Salvar Métricas
                   </Button>
-                )}
-                <Button type="submit" className="flex-1" disabled={createPost.isPending || updatePost.isPending}>
-                  {editingPost ? 'Salvar Alterações' : 'Criar Post'}
+                </TabsContent>
+              </Tabs>
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+                <div className="space-y-2">
+                  <Label htmlFor="title">Título *</Label>
+                  <Input
+                    id="title"
+                    value={formData.title}
+                    onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                    placeholder="Título do post"
+                    required
+                    maxLength={200}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Plataforma *</Label>
+                    <Select value={formData.platform} onValueChange={(v) => setFormData(prev => ({ ...prev, platform: v }))}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {platforms.map(p => (
+                          <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Status</Label>
+                    <Select value={formData.status} onValueChange={(v: 'draft' | 'scheduled' | 'published' | 'cancelled') => setFormData(prev => ({ ...prev, status: v }))}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(statusConfig).map(([value, config]) => (
+                          <SelectItem key={value} value={value}>{config.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="scheduled_time">Horário</Label>
+                  <Input
+                    id="scheduled_time"
+                    type="time"
+                    value={formData.scheduled_time}
+                    onChange={(e) => setFormData(prev => ({ ...prev, scheduled_time: e.target.value }))}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="content">Conteúdo</Label>
+                  <Textarea
+                    id="content"
+                    value={formData.content}
+                    onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
+                    placeholder="Texto do post..."
+                    rows={4}
+                    maxLength={2200}
+                  />
+                  <p className="text-xs text-muted-foreground text-right">{formData.content.length}/2200</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="hashtags">Hashtags</Label>
+                  <Input
+                    id="hashtags"
+                    value={formData.hashtags}
+                    onChange={(e) => setFormData(prev => ({ ...prev, hashtags: e.target.value }))}
+                    placeholder="#marketing #socialmedia"
+                    maxLength={500}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="notes">Notas</Label>
+                  <Textarea
+                    id="notes"
+                    value={formData.notes}
+                    onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                    placeholder="Notas internas..."
+                    rows={2}
+                    maxLength={500}
+                  />
+                </div>
+
+                <Button type="submit" className="w-full" disabled={createPost.isPending}>
+                  Criar Post
                 </Button>
-              </div>
-            </form>
+              </form>
+            )}
           </DialogContent>
         </Dialog>
       </CardContent>
