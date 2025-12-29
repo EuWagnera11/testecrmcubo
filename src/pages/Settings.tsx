@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, UserCheck, UserX, Shield, Target, Save, Info, Palette, PenTool, TrendingUp, Share2, Crown, User, Camera } from 'lucide-react';
+import { Users, UserCheck, UserX, Shield, Target, Save, Info, Palette, PenTool, TrendingUp, Share2, Crown, User, Camera, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -46,7 +46,7 @@ const roleIcons: Record<string, React.ReactNode> = {
 export default function Settings() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { users, isLoading, approveUser, rejectUser, setUserRoles } = useUsers();
+  const { users, isLoading, approveUser, rejectUser, setUserRoles, deleteUser } = useUsers();
   const { isAdmin, isDirector, canSetRevenueGoal, roles: currentUserRoles } = useUserRole();
   const { profile, updateProfile } = useProfile();
   const { getCurrentMonthGoal, upsertGoal } = useTeamGoals();
@@ -253,6 +253,20 @@ export default function Settings() {
                               onClick={() => approveUser.mutate(u.id)}
                             >
                               Aprovar
+                            </Button>
+                          )}
+                          {u.id !== user?.id && (
+                            <Button 
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => {
+                                if (confirm('Tem certeza que deseja remover este usuário? Esta ação não pode ser desfeita.')) {
+                                  deleteUser.mutate(u.id);
+                                }
+                              }}
+                              disabled={deleteUser.isPending}
+                            >
+                              <Trash2 className="h-4 w-4" />
                             </Button>
                           )}
                         </div>
