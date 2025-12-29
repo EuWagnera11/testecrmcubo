@@ -156,6 +156,38 @@ export function useUsers() {
     },
   });
 
+  const deleteUser = useMutation({
+    mutationFn: async (userId: string) => {
+      // First delete user roles
+      await supabase
+        .from('user_roles')
+        .delete()
+        .eq('user_id', userId);
+
+      // Then delete profile
+      const { error } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('user_id', userId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      toast({
+        title: 'Usuário removido!',
+        description: 'O usuário foi removido do sistema.',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Erro ao remover usuário',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
   return {
     users: usersQuery.data ?? [],
     isLoading: usersQuery.isLoading,
@@ -164,5 +196,6 @@ export function useUsers() {
     rejectUser,
     setUserRole,
     setUserRoles,
+    deleteUser,
   };
 }
