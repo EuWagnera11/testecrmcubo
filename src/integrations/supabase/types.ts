@@ -420,9 +420,13 @@ export type Database = {
           created_at: string
           email: string | null
           id: string
+          monthly_plan_value: number | null
           name: string
           notes: string | null
           phone: string | null
+          plan_billing_day: number | null
+          plan_currency: string | null
+          plan_start_date: string | null
           status: string
           updated_at: string
           user_id: string
@@ -435,9 +439,13 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
+          monthly_plan_value?: number | null
           name: string
           notes?: string | null
           phone?: string | null
+          plan_billing_day?: number | null
+          plan_currency?: string | null
+          plan_start_date?: string | null
           status?: string
           updated_at?: string
           user_id: string
@@ -450,9 +458,13 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
+          monthly_plan_value?: number | null
           name?: string
           notes?: string | null
           phone?: string | null
+          plan_billing_day?: number | null
+          plan_currency?: string | null
+          plan_start_date?: string | null
           status?: string
           updated_at?: string
           user_id?: string
@@ -2015,6 +2027,7 @@ export type Database = {
           currency: string
           deadline: string | null
           id: string
+          included_in_plan: boolean | null
           monthly_budget: number | null
           name: string
           project_type: string
@@ -2044,6 +2057,7 @@ export type Database = {
           currency?: string
           deadline?: string | null
           id?: string
+          included_in_plan?: boolean | null
           monthly_budget?: number | null
           name: string
           project_type?: string
@@ -2073,6 +2087,7 @@ export type Database = {
           currency?: string
           deadline?: string | null
           id?: string
+          included_in_plan?: boolean | null
           monthly_budget?: number | null
           name?: string
           project_type?: string

@@ -17,6 +17,10 @@ export interface Client {
   status: string;
   created_at: string;
   updated_at: string;
+  monthly_plan_value: number | null;
+  plan_currency: string | null;
+  plan_start_date: string | null;
+  plan_billing_day: number | null;
 }
 
 export interface CreateClientData {
@@ -25,6 +29,10 @@ export interface CreateClientData {
   phone?: string;
   country_code?: string;
   company?: string;
+  monthly_plan_value?: number;
+  plan_currency?: string;
+  plan_start_date?: string;
+  plan_billing_day?: number;
 }
 
 export function useClients() {
@@ -61,6 +69,10 @@ export function useClients() {
         company: validation.data.company ? sanitizeForStorage(validation.data.company, 100) : null,
         country_code: validation.data.country_code || '+55',
         user_id: user!.id,
+        monthly_plan_value: clientData.monthly_plan_value ?? null,
+        plan_currency: clientData.plan_currency ?? 'BRL',
+        plan_start_date: clientData.plan_start_date ?? null,
+        plan_billing_day: clientData.plan_billing_day ?? 1,
       };
 
       const { data, error } = await supabase
@@ -106,6 +118,10 @@ export function useClients() {
       if (clientData.company) sanitizedData.company = sanitizeForStorage(clientData.company, 100);
       if (clientData.country_code) sanitizedData.country_code = clientData.country_code;
       if (clientData.status) sanitizedData.status = clientData.status;
+      if (clientData.monthly_plan_value !== undefined) sanitizedData.monthly_plan_value = clientData.monthly_plan_value;
+      if (clientData.plan_currency !== undefined) sanitizedData.plan_currency = clientData.plan_currency;
+      if (clientData.plan_start_date !== undefined) sanitizedData.plan_start_date = clientData.plan_start_date;
+      if (clientData.plan_billing_day !== undefined) sanitizedData.plan_billing_day = clientData.plan_billing_day;
 
       const { data, error } = await supabase
         .from('clients')

@@ -4,7 +4,7 @@ import {
   Plus, Search, FolderKanban, ArrowRight, ExternalLink, MoreVertical, 
   Trash2, Power, CheckCircle, Image, Layers, Pencil,
   Users, Palette, TrendingUp, Video,
-  FileText, Calendar, Megaphone
+  FileText, Calendar, Megaphone, CreditCard
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -67,6 +67,11 @@ export default function Projects() {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [selectedProjectTypes, setSelectedProjectTypes] = useState<string[]>([]);
   const [billingType, setBillingType] = useState<'one_time' | 'recurring'>('one_time');
+  const [selectedClientId, setSelectedClientId] = useState<string>('');
+
+  // Check if selected client has a plan
+  const selectedClient = clients.find(c => c.id === selectedClientId);
+  const clientHasPlan = selectedClient?.monthly_plan_value && selectedClient.monthly_plan_value > 0;
 
   const filteredProjects = projects.filter(p => {
     const matchSearch = p.name.toLowerCase().includes(search.toLowerCase());
@@ -123,12 +128,14 @@ export default function Projects() {
       project_types: selectedProjectTypes,
       static_creatives: Number(formData.get('static_creatives')) || 0,
       carousel_creatives: Number(formData.get('carousel_creatives')) || 0,
+      included_in_plan: formData.get('included_in_plan') === 'on',
     };
     await createProject.mutateAsync(data);
     setIsOpen(false);
     setShowDesignFields(false);
     setSelectedProjectTypes([]);
     setBillingType('one_time');
+    setSelectedClientId('');
   };
 
   const handleEdit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -196,17 +203,35 @@ export default function Projects() {
               </div>
               <div className="space-y-2">
                 <Label>Cliente</Label>
-                <Select name="client_id">
+                <Select 
+                  name="client_id" 
+                  value={selectedClientId}
+                  onValueChange={setSelectedClientId}
+                >
                   <SelectTrigger className="h-11">
                     <SelectValue placeholder="Selecione um cliente" />
                   </SelectTrigger>
                   <SelectContent>
                     {clients.filter(c => c.status !== 'inactive').map(c => (
-                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name}
+                        {c.monthly_plan_value && c.monthly_plan_value > 0 && ' (Plano)'}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Included in Plan Checkbox - only show if client has a plan */}
+              {clientHasPlan && (
+                <div className="flex items-center gap-3 py-2 px-4 rounded-xl bg-primary/5 border border-primary/20">
+                  <Checkbox id="included_in_plan" name="included_in_plan" defaultChecked />
+                  <Label htmlFor="included_in_plan" className="text-sm font-normal cursor-pointer flex items-center gap-2">
+                    <CreditCard className="h-4 w-4 text-primary" />
+                    Incluso no plano mensal (nao conta como receita extra)
+                  </Label>
+                </div>
+              )}
               <ProjectTypeSelector 
                 selectedTypes={selectedProjectTypes}
                 onToggle={handleToggleProjectType}
@@ -499,6 +524,12 @@ export default function Projects() {
                 </div>
                 <p className="text-sm text-muted-foreground mb-1 font-body">{project.clients?.name || 'Sem cliente'}</p>
                 <div className="flex flex-wrap items-center gap-2 mb-4">
+                  {project.included_in_plan && (
+                    <Badge className="bg-primary/15 text-primary border-primary/30 text-xs">
+                      <CreditCard className="h-3 w-3 mr-1" />
+                      Incluso no Plano
+                    </Badge>
+                  )}
                   {project.project_type.split(',').map((type) => (
                     <Badge key={type} variant="secondary" className="text-xs">
                       {projectTypeLabels[type] || type}
