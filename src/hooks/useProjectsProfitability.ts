@@ -13,6 +13,7 @@ export interface ProjectProfitability {
   total_payouts: number;
   profit: number;
   profit_margin: number;
+  included_in_plan?: boolean;
 }
 
 export function useProjectsProfitability() {
@@ -24,7 +25,7 @@ export function useProjectsProfitability() {
       // Fetch projects
       const { data: projects, error: projectsError } = await supabase
         .from('projects')
-        .select('id, name, total_value, status, project_type, created_at')
+        .select('id, name, total_value, status, project_type, created_at, included_in_plan')
         .order('created_at', { ascending: false });
 
       if (projectsError) throw projectsError;
@@ -43,7 +44,7 @@ export function useProjectsProfitability() {
 
       if (payoutsError) throw payoutsError;
 
-      // Calculate profitability for each project
+      // Calculate profitability for each project (excluding included_in_plan projects from revenue)
       const projectsWithProfit: ProjectProfitability[] = projects.map(project => {
         const projectAlterations = alterations?.filter(a => a.project_id === project.id) ?? [];
         const projectPayouts = payouts?.filter(p => p.project_id === project.id) ?? [];
@@ -51,7 +52,11 @@ export function useProjectsProfitability() {
         const total_alterations = projectAlterations.reduce((sum, a) => sum + Number(a.value), 0);
         const total_payouts = projectPayouts.reduce((sum, p) => sum + Number(p.amount), 0);
         
-        const totalRevenue = Number(project.total_value) + total_alterations;
+        // If project is included in plan, its value doesn't count as separate revenue
+        const includedInPlan = (project as { included_in_plan?: boolean }).included_in_plan ?? false;
+        const effectiveValue = includedInPlan ? 0 : Number(project.total_value);
+        
+        const totalRevenue = effectiveValue + total_alterations;
         const profit = totalRevenue - total_payouts;
         const profit_margin = totalRevenue > 0 ? (profit / totalRevenue) * 100 : 0;
 
@@ -62,6 +67,7 @@ export function useProjectsProfitability() {
           total_payouts,
           profit,
           profit_margin,
+          included_in_plan: includedInPlan,
         };
       });
 
@@ -70,7 +76,11 @@ export function useProjectsProfitability() {
     enabled: !!user,
   });
 
-  const totalRevenue = query.data?.reduce((sum, p) => sum + p.total_value + p.total_alterations, 0) ?? 0;
+  // Filter out included_in_plan projects from total revenue calculation
+  const totalRevenue = query.data?.reduce((sum, p) => {
+    const includedInPlan = (p as { included_in_plan?: boolean }).included_in_plan ?? false;
+    return sum + (includedInPlan ? 0 : p.total_value) + p.total_alterations;
+  }, 0) ?? 0;
   const totalPayouts = query.data?.reduce((sum, p) => sum + p.total_payouts, 0) ?? 0;
   const totalProfit = query.data?.reduce((sum, p) => sum + p.profit, 0) ?? 0;
   const averageMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;

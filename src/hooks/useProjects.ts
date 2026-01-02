@@ -28,11 +28,14 @@ export interface Project {
   target_cpa: number | null;
   target_roas: number | null;
   target_cpl: number | null;
+  included_in_plan: boolean;
   created_at: string;
   updated_at: string;
   clients?: {
     id: string;
     name: string;
+    monthly_plan_value?: number | null;
+    plan_currency?: string | null;
   } | null;
 }
 
@@ -54,6 +57,7 @@ export interface CreateProjectData {
   target_cpa?: number;
   target_roas?: number;
   target_cpl?: number;
+  included_in_plan?: boolean;
 }
 
 export function useProjects() {
@@ -70,7 +74,9 @@ export function useProjects() {
           *,
           clients (
             id,
-            name
+            name,
+            monthly_plan_value,
+            plan_currency
           )
         `)
         .order('created_at', { ascending: false });
