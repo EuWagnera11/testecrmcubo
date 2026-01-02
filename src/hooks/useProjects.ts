@@ -159,13 +159,19 @@ export function useProjects() {
 
   const deleteProject = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('projects')
         .delete()
-        .eq('id', id);
-      
+        .eq('id', id)
+        .select('id');
+
       if (error) throw error;
-      
+
+      // PostgREST may return success with 0 rows when RLS blocks the operation.
+      if (!data || data.length === 0) {
+        throw new Error('Não foi possível remover este projeto (sem permissão ou projeto inexistente).');
+      }
+
       await logAuditEvent({
         action: 'data_delete',
         tableName: 'projects',
