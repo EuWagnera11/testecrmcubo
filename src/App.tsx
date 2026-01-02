@@ -21,6 +21,7 @@ import ClientDashboard from "./pages/ClientDashboard";
 import Financial from "./pages/Financial";
 import Payouts from "./pages/Payouts";
 import Reports from "./pages/Reports";
+import Studies from "./pages/Studies";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -89,6 +90,7 @@ const AppRoutes = () => (
         <Route path="financeiro" element={<Financial />} />
         <Route path="pagamentos" element={<Payouts />} />
         <Route path="relatorios" element={<Reports />} />
+        <Route path="estudos" element={<Studies />} />
         <Route path="configuracoes" element={<Settings />} />
       </Route>
       <Route path="*" element={<NotFound />} />
