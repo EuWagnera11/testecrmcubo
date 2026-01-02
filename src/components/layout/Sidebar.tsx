@@ -24,7 +24,7 @@ interface SidebarProps {
 
 const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
-  { icon: BarChart3, label: 'Relatórios', path: '/admin', adminOnly: true },
+  { icon: BarChart3, label: 'Relatórios', path: '/relatorios', directorOnly: true },
   { icon: Users, label: 'Clientes', path: '/clientes' },
   { icon: FolderKanban, label: 'Projetos', path: '/projetos' },
   { icon: FileText, label: 'Contratos', path: '/contratos' },
@@ -37,7 +37,6 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
   const { isAdmin, isDirector } = useUserRole();
   
   const filteredNavItems = navItems.filter(item => {
-    if (item.adminOnly) return isAdmin || isDirector;
     if (item.directorOnly) return isAdmin || isDirector;
     return true;
   });

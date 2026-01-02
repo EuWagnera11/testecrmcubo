@@ -754,11 +754,16 @@ export type Database = {
           created_at: string | null
           email_enabled: boolean | null
           id: string
+          notify_approvals: boolean | null
+          notify_clients: boolean | null
           notify_contracts: boolean | null
           notify_messages: boolean | null
           notify_payments: boolean | null
+          notify_projects: boolean | null
           notify_tasks: boolean | null
           push_enabled: boolean | null
+          quiet_hours_end: string | null
+          quiet_hours_start: string | null
           updated_at: string | null
           user_id: string
         }
@@ -766,11 +771,16 @@ export type Database = {
           created_at?: string | null
           email_enabled?: boolean | null
           id?: string
+          notify_approvals?: boolean | null
+          notify_clients?: boolean | null
           notify_contracts?: boolean | null
           notify_messages?: boolean | null
           notify_payments?: boolean | null
+          notify_projects?: boolean | null
           notify_tasks?: boolean | null
           push_enabled?: boolean | null
+          quiet_hours_end?: string | null
+          quiet_hours_start?: string | null
           updated_at?: string | null
           user_id: string
         }
@@ -778,11 +788,16 @@ export type Database = {
           created_at?: string | null
           email_enabled?: boolean | null
           id?: string
+          notify_approvals?: boolean | null
+          notify_clients?: boolean | null
           notify_contracts?: boolean | null
           notify_messages?: boolean | null
           notify_payments?: boolean | null
+          notify_projects?: boolean | null
           notify_tasks?: boolean | null
           push_enabled?: boolean | null
+          quiet_hours_end?: string | null
+          quiet_hours_start?: string | null
           updated_at?: string | null
           user_id?: string
         }
