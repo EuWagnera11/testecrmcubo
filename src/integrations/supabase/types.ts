@@ -569,6 +569,42 @@ export type Database = {
           },
         ]
       }
+      courses: {
+        Row: {
+          category: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          drive_url: string
+          id: string
+          thumbnail_url: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          drive_url: string
+          id?: string
+          thumbnail_url?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          drive_url?: string
+          id?: string
+          thumbnail_url?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       dashboard_access_logs: {
         Row: {
           accessed_at: string

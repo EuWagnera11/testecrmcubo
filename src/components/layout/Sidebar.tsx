@@ -8,7 +8,8 @@ import {
   X,
   ChevronLeft,
   Wallet,
-  BarChart3
+  BarChart3,
+  GraduationCap
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -29,6 +30,7 @@ const navItems = [
   { icon: FolderKanban, label: 'Projetos', path: '/projetos' },
   { icon: FileText, label: 'Contratos', path: '/contratos' },
   { icon: Wallet, label: 'Financeiro', path: '/financeiro', directorOnly: true },
+  { icon: GraduationCap, label: 'Estudos', path: '/estudos' },
   { icon: Settings, label: 'Configurações', path: '/configuracoes' },
 ];
 
