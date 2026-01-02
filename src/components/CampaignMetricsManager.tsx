@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useCampaigns, useCampaignMetrics, Campaign, CampaignMetric } from '@/hooks/useCampaigns';
 import { CampaignCharts } from './CampaignCharts';
 import { FacebookMetricsImport } from './FacebookMetricsImport';
@@ -50,18 +51,35 @@ export function CampaignMetricsManager({ projectId, currency }: CampaignMetricsM
 
   const [newCampaign, setNewCampaign] = useState({
     name: '',
-    platform: '',
+    platforms: [] as string[],
     objective: '',
     start_date: '',
     end_date: '',
     budget: 0,
   });
 
+  const platformOptions = [
+    { value: 'facebook', label: 'Facebook', icon: '📘' },
+    { value: 'instagram', label: 'Instagram', icon: '📸' },
+    { value: 'google', label: 'Google Ads', icon: '🔍' },
+    { value: 'tiktok', label: 'TikTok', icon: '🎵' },
+    { value: 'linkedin', label: 'LinkedIn', icon: '💼' },
+  ];
+
+  const togglePlatform = (platform: string) => {
+    setNewCampaign(prev => ({
+      ...prev,
+      platforms: prev.platforms.includes(platform)
+        ? prev.platforms.filter(p => p !== platform)
+        : [...prev.platforms, platform]
+    }));
+  };
+
   const handleCreateCampaign = async () => {
     await createCampaign.mutateAsync({
       project_id: projectId,
       name: newCampaign.name,
-      platform: newCampaign.platform || null,
+      platform: newCampaign.platforms.length > 0 ? newCampaign.platforms.join(',') : null,
       objective: newCampaign.objective || null,
       start_date: newCampaign.start_date || null,
       end_date: newCampaign.end_date || null,
@@ -69,7 +87,7 @@ export function CampaignMetricsManager({ projectId, currency }: CampaignMetricsM
       status: 'active',
     });
     setIsNewCampaignOpen(false);
-    setNewCampaign({ name: '', platform: '', objective: '', start_date: '', end_date: '', budget: 0 });
+    setNewCampaign({ name: '', platforms: [], objective: '', start_date: '', end_date: '', budget: 0 });
   };
 
   const formatCurrency = (value: number) => {
@@ -112,43 +130,46 @@ export function CampaignMetricsManager({ projectId, currency }: CampaignMetricsM
                     placeholder="Ex: Black Friday 2024"
                   />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>Plataforma</Label>
-                    <Select
-                      value={newCampaign.platform}
-                      onValueChange={(v) => setNewCampaign({ ...newCampaign, platform: v })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="facebook">Facebook</SelectItem>
-                        <SelectItem value="instagram">Instagram</SelectItem>
-                        <SelectItem value="google">Google Ads</SelectItem>
-                        <SelectItem value="tiktok">TikTok</SelectItem>
-                        <SelectItem value="linkedin">LinkedIn</SelectItem>
-                      </SelectContent>
-                    </Select>
+                <div>
+                  <Label>Plataformas</Label>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-2">
+                    {platformOptions.map((platform) => (
+                      <div
+                        key={platform.value}
+                        className={`flex items-center gap-2 p-2 rounded-md border cursor-pointer transition-colors ${
+                          newCampaign.platforms.includes(platform.value)
+                            ? 'bg-primary/10 border-primary'
+                            : 'bg-muted/30 border-border hover:border-primary/50'
+                        }`}
+                        onClick={() => togglePlatform(platform.value)}
+                      >
+                        <Checkbox
+                          checked={newCampaign.platforms.includes(platform.value)}
+                          onCheckedChange={() => togglePlatform(platform.value)}
+                        />
+                        <span className="text-lg">{platform.icon}</span>
+                        <span className="text-sm">{platform.label}</span>
+                      </div>
+                    ))}
                   </div>
-                  <div>
-                    <Label>Objetivo</Label>
-                    <Select
-                      value={newCampaign.objective}
-                      onValueChange={(v) => setNewCampaign({ ...newCampaign, objective: v })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="conversions">Conversões</SelectItem>
-                        <SelectItem value="leads">Leads</SelectItem>
-                        <SelectItem value="traffic">Tráfego</SelectItem>
-                        <SelectItem value="awareness">Reconhecimento</SelectItem>
-                        <SelectItem value="engagement">Engajamento</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                </div>
+                <div>
+                  <Label>Objetivo</Label>
+                  <Select
+                    value={newCampaign.objective}
+                    onValueChange={(v) => setNewCampaign({ ...newCampaign, objective: v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="conversions">Conversões</SelectItem>
+                      <SelectItem value="leads">Leads</SelectItem>
+                      <SelectItem value="traffic">Tráfego</SelectItem>
+                      <SelectItem value="awareness">Reconhecimento</SelectItem>
+                      <SelectItem value="engagement">Engajamento</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -269,7 +290,11 @@ function CampaignCard({ campaign, currency, onSelect, onDelete, onStatusChange }
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-2">
             {campaign.platform && (
-              <span className="text-xl">{platformIcons[campaign.platform] || '📊'}</span>
+              <div className="flex gap-0.5">
+                {campaign.platform.split(',').map((p) => (
+                  <span key={p} className="text-lg">{platformIcons[p.trim()] || '📊'}</span>
+                ))}
+              </div>
             )}
             <div>
               <CardTitle className="text-base">{campaign.name}</CardTitle>
@@ -457,7 +482,13 @@ function MetricsDialog({ campaign, currency, open, onOpenChange }: MetricsDialog
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            {campaign?.platform && platformIcons[campaign.platform]}
+            {campaign?.platform && (
+              <div className="flex gap-0.5">
+                {campaign.platform.split(',').map((p) => (
+                  <span key={p} className="text-lg">{platformIcons[p.trim()] || '📊'}</span>
+                ))}
+              </div>
+            )}
             {campaign?.name} - Métricas
           </DialogTitle>
         </DialogHeader>
