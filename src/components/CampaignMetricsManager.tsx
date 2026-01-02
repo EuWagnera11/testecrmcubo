@@ -21,11 +21,11 @@ interface CampaignMetricsManagerProps {
 }
 
 const platformIcons: Record<string, string> = {
-  facebook: '📘',
-  instagram: '📸',
-  google: '🔍',
-  tiktok: '🎵',
-  linkedin: '💼',
+  facebook: 'FB',
+  instagram: 'IG',
+  google: 'GA',
+  tiktok: 'TT',
+  linkedin: 'LI',
 };
 
 const objectiveLabels: Record<string, string> = {
@@ -59,11 +59,11 @@ export function CampaignMetricsManager({ projectId, currency }: CampaignMetricsM
   });
 
   const platformOptions = [
-    { value: 'facebook', label: 'Facebook', icon: '📘' },
-    { value: 'instagram', label: 'Instagram', icon: '📸' },
-    { value: 'google', label: 'Google Ads', icon: '🔍' },
-    { value: 'tiktok', label: 'TikTok', icon: '🎵' },
-    { value: 'linkedin', label: 'LinkedIn', icon: '💼' },
+    { value: 'facebook', label: 'Facebook' },
+    { value: 'instagram', label: 'Instagram' },
+    { value: 'google', label: 'Google Ads' },
+    { value: 'tiktok', label: 'TikTok' },
+    { value: 'linkedin', label: 'LinkedIn' },
   ];
 
   const togglePlatform = (platform: string) => {
@@ -147,7 +147,6 @@ export function CampaignMetricsManager({ projectId, currency }: CampaignMetricsM
                           checked={newCampaign.platforms.includes(platform.value)}
                           onCheckedChange={() => togglePlatform(platform.value)}
                         />
-                        <span className="text-lg">{platform.icon}</span>
                         <span className="text-sm">{platform.label}</span>
                       </div>
                     ))}
@@ -190,7 +189,7 @@ export function CampaignMetricsManager({ projectId, currency }: CampaignMetricsM
                   </div>
                 </div>
                 <div>
-                  <Label>Orçamento</Label>
+                  <Label>Orçamento Diário</Label>
                   <Input
                     type="number"
                     value={newCampaign.budget}
