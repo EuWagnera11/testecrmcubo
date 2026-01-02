@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, UserCheck, UserX, Shield, Target, Save, Info, Palette, PenTool, TrendingUp, Share2, Crown, User, Camera, Trash2 } from 'lucide-react';
+import { Users, UserCheck, UserX, Shield, Target, Save, Info, Palette, PenTool, TrendingUp, Share2, Crown, User, Camera, Trash2, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -16,6 +16,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { NotificationSettings } from '@/components/NotificationSettings';
 import { 
   appRoleLabels, 
   appRoleDescriptions, 
@@ -149,6 +150,7 @@ export default function Settings() {
           {isAdmin && <TabsTrigger value="users" className="px-4">Usuários</TabsTrigger>}
           {isAdmin && <TabsTrigger value="roles" className="px-4">Cargos</TabsTrigger>}
           {canEditTeamGoal && <TabsTrigger value="team" className="px-4">Meta da Equipe</TabsTrigger>}
+          <TabsTrigger value="notifications" className="px-4">Notificações</TabsTrigger>
           <TabsTrigger value="profile" className="px-4">Meu Perfil</TabsTrigger>
         </TabsList>
 
@@ -593,6 +595,11 @@ export default function Settings() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Notifications Tab */}
+        <TabsContent value="notifications">
+          <NotificationSettings />
         </TabsContent>
       </Tabs>
     </div>

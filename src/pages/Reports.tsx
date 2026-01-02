@@ -1,0 +1,344 @@
+import { useState, useRef, useMemo } from 'react';
+import { FileText, Download, Calendar, Filter, TrendingUp, DollarSign, Users, FolderKanban, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useClients } from '@/hooks/useClients';
+import { useProjects } from '@/hooks/useProjects';
+import { useFinancial } from '@/hooks/useFinancial';
+import { useProjectsProfitability } from '@/hooks/useProjectsProfitability';
+import { format, subMonths, parseISO, startOfMonth, endOfMonth } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { getFiscalMonthRange, isWithinFiscalMonth } from '@/lib/fiscalMonth';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
+import refineLogo from '@/assets/refine-logo.png';
+
+const COLORS = ['hsl(var(--primary))', 'hsl(var(--accent))', 'hsl(142, 76%, 36%)', 'hsl(45, 93%, 47%)', 'hsl(280, 67%, 50%)'];
+
+export default function Reports() {
+  const [selectedPeriod, setSelectedPeriod] = useState('current');
+  const [isExporting, setIsExporting] = useState(false);
+  const reportRef = useRef<HTMLDivElement>(null);
+
+  const { clients } = useClients();
+  const { projects } = useProjects();
+  const { transactions, totalIncome, totalExpenses, balance } = useFinancial();
+  const { projects: profitProjects, totalProfit, totalRevenue, totalPayouts, averageMargin } = useProjectsProfitability();
+
+  // Calculate date range based on selected period
+  const dateRange = useMemo(() => {
+    const now = new Date();
+    switch (selectedPeriod) {
+      case 'last3':
+        return { start: subMonths(now, 3), end: now, label: 'Últimos 3 meses' };
+      case 'last6':
+        return { start: subMonths(now, 6), end: now, label: 'Últimos 6 meses' };
+      case 'year':
+        return { start: subMonths(now, 12), end: now, label: 'Último ano' };
+      default:
+        const { start, end } = getFiscalMonthRange(now);
+        return { start, end, label: format(now, "MMMM 'de' yyyy", { locale: ptBR }) };
+    }
+  }, [selectedPeriod]);
+
+  // Filter data based on period
+  const filteredTransactions = useMemo(() => {
+    return transactions.filter(t => {
+      const date = parseISO(t.date);
+      return date >= dateRange.start && date <= dateRange.end;
+    });
+  }, [transactions, dateRange]);
+
+  const filteredProjects = useMemo(() => {
+    return projects.filter(p => {
+      const date = parseISO(p.created_at);
+      return date >= dateRange.start && date <= dateRange.end;
+    });
+  }, [projects, dateRange]);
+
+  const periodIncome = filteredTransactions
+    .filter(t => t.type === 'income')
+    .reduce((sum, t) => sum + Number(t.amount), 0);
+
+  const periodExpenses = filteredTransactions
+    .filter(t => t.type === 'expense')
+    .reduce((sum, t) => sum + Number(t.amount), 0);
+
+  // Charts data
+  const projectsByStatus = useMemo(() => {
+    const statusCounts: Record<string, number> = {};
+    filteredProjects.forEach(p => {
+      statusCounts[p.status] = (statusCounts[p.status] || 0) + 1;
+    });
+    return Object.entries(statusCounts).map(([name, value]) => ({
+      name: name === 'active' ? 'Ativos' : name === 'completed' ? 'Concluídos' : name === 'paused' ? 'Pausados' : name,
+      value
+    }));
+  }, [filteredProjects]);
+
+  const revenueByCategory = useMemo(() => {
+    const categories: Record<string, number> = {};
+    filteredTransactions.filter(t => t.type === 'income').forEach(t => {
+      categories[t.category] = (categories[t.category] || 0) + Number(t.amount);
+    });
+    return Object.entries(categories).map(([name, value]) => ({ name, value }));
+  }, [filteredTransactions]);
+
+  const formatCurrency = (value: number) =>
+    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+
+  const handleExportPDF = async () => {
+    if (!reportRef.current) return;
+    setIsExporting(true);
+
+    try {
+      const element = reportRef.current;
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const imgWidth = 210;
+      const pageHeight = 297;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      const fileName = `relatorio-${format(new Date(), 'yyyy-MM-dd')}.pdf`;
+      pdf.save(fileName);
+    } catch (error) {
+      console.error('Error exporting PDF:', error);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  return (
+    <div className="space-y-8 animate-fade-in">
+      {/* Header */}
+      <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+        <div>
+          <p className="text-muted-foreground text-sm uppercase tracking-wider mb-1">Análise</p>
+          <h1 className="text-3xl font-bold tracking-tight">Relatórios</h1>
+          <p className="text-muted-foreground mt-2">Gere relatórios consolidados com métricas do seu negócio.</p>
+        </div>
+        <div className="flex gap-3">
+          <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+            <SelectTrigger className="w-48 h-11">
+              <Calendar className="h-4 w-4 mr-2" />
+              <SelectValue placeholder="Período" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="current">Mês atual</SelectItem>
+              <SelectItem value="last3">Últimos 3 meses</SelectItem>
+              <SelectItem value="last6">Últimos 6 meses</SelectItem>
+              <SelectItem value="year">Último ano</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button onClick={handleExportPDF} disabled={isExporting} className="h-11">
+            {isExporting ? (
+              <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Exportando...</>
+            ) : (
+              <><Download className="h-4 w-4 mr-2" /> Exportar PDF</>
+            )}
+          </Button>
+        </div>
+      </div>
+
+      {/* Report Content */}
+      <div ref={reportRef} className="space-y-6 bg-background p-6 rounded-xl">
+        {/* Report Header */}
+        <div className="flex items-center justify-between border-b border-border pb-4">
+          <div className="flex items-center gap-4">
+            <img src={refineLogo} alt="Logo" className="h-10" />
+            <div>
+              <h2 className="text-xl font-bold">Relatório Gerencial</h2>
+              <p className="text-sm text-muted-foreground">{dateRange.label}</p>
+            </div>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Gerado em {format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+          </p>
+        </div>
+
+        {/* Summary Cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="border-border/50">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <DollarSign className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Receita</p>
+                  <p className="text-xl font-bold text-green-500">{formatCurrency(periodIncome)}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="border-border/50">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-destructive/10 flex items-center justify-center">
+                  <TrendingUp className="h-5 w-5 text-destructive" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Despesas</p>
+                  <p className="text-xl font-bold text-red-500">{formatCurrency(periodExpenses)}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="border-border/50">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-accent/10 flex items-center justify-center">
+                  <FolderKanban className="h-5 w-5 text-accent" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Projetos</p>
+                  <p className="text-xl font-bold">{filteredProjects.length}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="border-border/50">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-green-500/10 flex items-center justify-center">
+                  <Users className="h-5 w-5 text-green-500" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Lucro Líquido</p>
+                  <p className="text-xl font-bold">{formatCurrency(periodIncome - periodExpenses)}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Charts */}
+        <div className="grid lg:grid-cols-2 gap-6">
+          {/* Revenue by Category */}
+          <Card className="border-border/50">
+            <CardHeader>
+              <CardTitle className="text-lg">Receita por Categoria</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {revenueByCategory.length > 0 ? (
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={revenueByCategory}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                        label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                      >
+                        {revenueByCategory.map((_, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <p className="text-muted-foreground text-center py-8">Nenhuma receita no período</p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Projects by Status */}
+          <Card className="border-border/50">
+            <CardHeader>
+              <CardTitle className="text-lg">Projetos por Status</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {projectsByStatus.length > 0 ? (
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={projectsByStatus}>
+                      <XAxis dataKey="name" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
+                      <YAxis tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
+                      <Tooltip />
+                      <Bar dataKey="value" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              ) : (
+                <p className="text-muted-foreground text-center py-8">Nenhum projeto no período</p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Profitability Table */}
+        {profitProjects.length > 0 && (
+          <Card className="border-border/50">
+            <CardHeader>
+              <CardTitle className="text-lg">Rentabilidade por Projeto</CardTitle>
+              <CardDescription>Margem de lucro de cada projeto considerando repasses</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border">
+                      <th className="text-left py-3 px-2 font-medium">Projeto</th>
+                      <th className="text-right py-3 px-2 font-medium">Receita</th>
+                      <th className="text-right py-3 px-2 font-medium">Repasses</th>
+                      <th className="text-right py-3 px-2 font-medium">Lucro</th>
+                      <th className="text-right py-3 px-2 font-medium">Margem</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {profitProjects.slice(0, 10).map((p) => (
+                      <tr key={p.id} className="border-b border-border/50">
+                        <td className="py-3 px-2">{p.name}</td>
+                        <td className="py-3 px-2 text-right">{formatCurrency(p.total_value + p.total_alterations)}</td>
+                        <td className="py-3 px-2 text-right text-red-500">{formatCurrency(p.total_payouts)}</td>
+                        <td className="py-3 px-2 text-right text-green-500">{formatCurrency(p.profit)}</td>
+                        <td className="py-3 px-2 text-right font-medium">{p.profit_margin.toFixed(1)}%</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr className="bg-muted/30">
+                      <td className="py-3 px-2 font-bold">Total</td>
+                      <td className="py-3 px-2 text-right font-bold">{formatCurrency(totalRevenue)}</td>
+                      <td className="py-3 px-2 text-right font-bold text-red-500">{formatCurrency(totalPayouts)}</td>
+                      <td className="py-3 px-2 text-right font-bold text-green-500">{formatCurrency(totalProfit)}</td>
+                      <td className="py-3 px-2 text-right font-bold">{averageMargin.toFixed(1)}%</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </div>
+  );
+}
