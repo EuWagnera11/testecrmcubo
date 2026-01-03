@@ -1,6 +1,7 @@
 import { useRef, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { format, startOfMonth, endOfMonth, subMonths, isWithinInterval } from 'date-fns';
+import { format, subMonths, isWithinInterval } from 'date-fns';
+import { getClientFiscalMonthRange } from '@/lib/fiscalMonth';
 import { PDFExport } from '@/components/PDFExport';
 import { ptBR } from 'date-fns/locale';
 import { 
@@ -268,7 +269,7 @@ export default function ClientDashboard() {
     enabled: isTokenValid,
   });
 
-  // Get client info
+  // Get client info (including plan_billing_day)
   const { data: clientData } = useQuery({
     queryKey: ['client-info', initialProject?.client_id],
     queryFn: async () => {
@@ -276,7 +277,7 @@ export default function ClientDashboard() {
       
       const { data } = await supabase
         .from('clients')
-        .select('id, name, company, email, phone, status, created_at')
+        .select('id, name, company, email, phone, status, created_at, plan_billing_day')
         .eq('id', initialProject.client_id)
         .maybeSingle();
       
@@ -378,11 +379,11 @@ export default function ClientDashboard() {
     }
   }, [initialProject, token]);
 
-  // Calculate monthly data helper
-  const calculateMonthlyTotals = (metrics: any[], projects: any[], campaigns: any[], month: string) => {
+  // Calculate monthly data helper with client billing day
+  const calculateMonthlyTotals = (metrics: any[], projects: any[], campaigns: any[], month: string, billingDay: number = 1) => {
     const [year, m] = month.split('-').map(Number);
-    const monthStart = startOfMonth(new Date(year, m - 1));
-    const monthEnd = endOfMonth(new Date(year, m - 1));
+    const referenceDate = new Date(year, m - 1);
+    const { start: monthStart, end: monthEnd } = getClientFiscalMonthRange(referenceDate, billingDay);
 
     const monthMetrics = metrics.filter(metric => {
       const date = new Date(metric.date);
@@ -505,6 +506,9 @@ export default function ClientDashboard() {
     };
   };
 
+  // Get client billing day (default to 1 = standard calendar month)
+  const clientBillingDay = clientData?.plan_billing_day || 1;
+
   // Calculate current month data
   const monthlyData = useMemo(() => {
     if (!allProjects?.length) {
@@ -529,8 +533,8 @@ export default function ClientDashboard() {
         campaignBreakdown: [],
       };
     }
-    return calculateMonthlyTotals(allMetrics || [], allProjects, allCampaigns || [], selectedMonth);
-  }, [allMetrics, allProjects, allCampaigns, selectedMonth]);
+    return calculateMonthlyTotals(allMetrics || [], allProjects, allCampaigns || [], selectedMonth, clientBillingDay);
+  }, [allMetrics, allProjects, allCampaigns, selectedMonth, clientBillingDay]);
 
   // Calculate previous month data for comparison
   const previousMonthData = useMemo(() => {
@@ -559,8 +563,8 @@ export default function ClientDashboard() {
     const [year, month] = selectedMonth.split('-').map(Number);
     const prevDate = subMonths(new Date(year, month - 1), 1);
     const prevMonth = format(prevDate, 'yyyy-MM');
-    return calculateMonthlyTotals(allMetrics || [], allProjects, allCampaigns || [], prevMonth);
-  }, [allMetrics, allProjects, allCampaigns, selectedMonth]);
+    return calculateMonthlyTotals(allMetrics || [], allProjects, allCampaigns || [], prevMonth, clientBillingDay);
+  }, [allMetrics, allProjects, allCampaigns, selectedMonth, clientBillingDay]);
 
   // Generate insights (only for traffic)
   const insights = useMemo(() => {
@@ -573,8 +577,8 @@ export default function ClientDashboard() {
     if (!allCampaigns?.length || !allMetrics?.length || !allProjects?.length) return [];
 
     const [year, month] = selectedMonth.split('-').map(Number);
-    const monthStart = startOfMonth(new Date(year, month - 1));
-    const monthEnd = endOfMonth(new Date(year, month - 1));
+    const referenceDate = new Date(year, month - 1);
+    const { start: monthStart, end: monthEnd } = getClientFiscalMonthRange(referenceDate, clientBillingDay);
 
     return allProjects.map((project, index) => {
       const projectCampaigns = allCampaigns.filter(c => c.project_id === project.id);
@@ -592,21 +596,25 @@ export default function ClientDashboard() {
         fill: CHART_COLORS[index % CHART_COLORS.length],
       };
     }).filter(p => p.value > 0);
-  }, [allProjects, allCampaigns, allMetrics, selectedMonth]);
+  }, [allProjects, allCampaigns, allMetrics, selectedMonth, clientBillingDay]);
 
-  // Generate month options
+  // Generate month options with billing cycle display
   const monthOptions = useMemo(() => {
     const options = [];
     const now = new Date();
     for (let i = 0; i < 12; i++) {
       const date = subMonths(now, i);
+      const { start, end } = getClientFiscalMonthRange(date, clientBillingDay);
+      const periodLabel = clientBillingDay > 1 
+        ? ` (${format(start, 'dd/MM')} - ${format(end, 'dd/MM')})`
+        : '';
       options.push({
         value: format(date, 'yyyy-MM'),
-        label: format(date, 'MMMM yyyy', { locale: ptBR }),
+        label: `${format(date, 'MMMM yyyy', { locale: ptBR })}${periodLabel}`,
       });
     }
     return options;
-  }, []);
+  }, [clientBillingDay]);
 
   // Comparison data for KPIs
   const comparisons = useMemo(() => ({
