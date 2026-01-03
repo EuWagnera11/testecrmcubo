@@ -248,54 +248,17 @@ export default function ClientDashboard() {
   
   const isTokenValid = token && isValidUUID(token);
 
-  // First, get the project to find the client_id
+  // First, get the shared project (public entrypoint) to find the client_id
   const { data: initialProject, isLoading: initialLoading } = useQuery({
     queryKey: ['initial-project', token],
     queryFn: async () => {
       if (!token) throw new Error('Token não fornecido');
-      
-      const { data, error } = await supabase
-        .from('projects')
-        .select('id, client_id')
-        .eq('share_token', token)
-        .eq('share_enabled', true)
-        .maybeSingle();
-      
-      if (error) throw error;
-      if (!data) throw new Error('Dashboard não encontrado');
-      
-      return data;
-    },
-    enabled: isTokenValid,
-  });
 
-  // Get client info (including plan_billing_day)
-  const { data: clientData } = useQuery({
-    queryKey: ['client-info', initialProject?.client_id],
-    queryFn: async () => {
-      if (!initialProject?.client_id) return null;
-      
-      const { data } = await supabase
-        .from('clients')
-        .select('id, name, company, email, phone, status, created_at, plan_billing_day')
-        .eq('id', initialProject.client_id)
-        .maybeSingle();
-      
-      return data;
-    },
-    enabled: !!initialProject?.client_id,
-  });
-
-  // Get ALL projects for this client
-  const { data: allProjects, isLoading } = useQuery({
-    queryKey: ['all-client-projects', initialProject?.client_id],
-    queryFn: async () => {
-      if (!initialProject?.client_id) return [];
-      
       const { data, error } = await supabase
         .from('projects')
         .select(`
           id,
+          client_id,
           name,
           currency,
           status,
@@ -309,16 +272,68 @@ export default function ClientDashboard() {
           deadline,
           advance_payment,
           advance_percentage,
-          project_fields (field_type, content, attachments, link_url)
+          share_enabled
         `)
-        .eq('client_id', initialProject.client_id)
-        .order('created_at', { ascending: false });
-      
+        .eq('share_token', token)
+        .eq('share_enabled', true)
+        .maybeSingle();
+
       if (error) throw error;
-      return data || [];
+      if (!data) throw new Error('Dashboard não encontrado');
+
+      return data;
     },
-    enabled: !!initialProject?.client_id,
+    enabled: isTokenValid,
   });
+
+  // Get client info (try direct clients table; fallback to shared view for public dashboards)
+  const { data: clientData } = useQuery({
+    queryKey: ['client-info', initialProject?.client_id, initialProject?.id],
+    queryFn: async () => {
+      if (!initialProject?.client_id) return null;
+
+      // 1) Try reading from clients (works for authenticated/internal)
+      try {
+        const { data } = await supabase
+          .from('clients')
+          .select('id, name, company, email, phone, status, created_at, plan_billing_day')
+          .eq('id', initialProject.client_id)
+          .maybeSingle();
+
+        if (data) return data;
+      } catch {
+        // ignore and fallback
+      }
+
+      // 2) Fallback for public shared dashboards
+      const { data: shared } = await supabase
+        .from('shared_project_clients')
+        .select('id, name, company')
+        .eq('project_id', initialProject.id)
+        .maybeSingle();
+
+      if (!shared) return null;
+
+      return {
+        id: shared.id,
+        name: shared.name,
+        company: shared.company,
+        email: null,
+        phone: null,
+        status: 'active',
+        created_at: new Date().toISOString(),
+        plan_billing_day: 1,
+      };
+    },
+    enabled: !!initialProject?.client_id && !!initialProject?.id,
+  });
+
+  // Public dashboard only has access to the shared project itself
+  const allProjects = useMemo<any[]>(() => {
+    return initialProject ? [initialProject as any] : [];
+  }, [initialProject]);
+
+  const isLoading = initialLoading;
 
   // Detect project types for this client
   const clientProjectTypes = useMemo(() => {
@@ -454,7 +469,7 @@ export default function ClientDashboard() {
         dateFormatted: format(new Date(d.date), 'dd/MM', { locale: ptBR }),
       }));
 
-    // Campaign breakdown
+    // Campaign breakdown (include campaigns even when there are no metrics in the period)
     const campaignBreakdown = campaigns?.map(campaign => {
       const campaignMetrics = monthMetrics.filter(m => m.campaign_id === campaign.id);
       const spend = campaignMetrics.reduce((acc, m) => acc + (Number(m.spend) || 0), 0);
@@ -482,7 +497,7 @@ export default function ClientDashboard() {
         roas: spend > 0 ? revenue / spend : 0,
         metrics: campaignMetrics,
       };
-    }).filter(c => c.spend > 0 || c.impressions > 0) || [];
+    }) || [];
 
     return {
       totalSpend,
@@ -509,6 +524,41 @@ export default function ClientDashboard() {
   // Get client billing day (default to 1 = standard calendar month)
   const clientBillingDay = clientData?.plan_billing_day || 1;
 
+  const campaignsForSelectedMonth = useMemo(() => {
+    if (!allCampaigns?.length) return [];
+
+    const [year, m] = selectedMonth.split('-').map(Number);
+    const referenceDate = new Date(year, m - 1);
+    const { start: monthStart, end: monthEnd } = getClientFiscalMonthRange(referenceDate, clientBillingDay);
+
+    const overlapsFiscalMonth = (campaign: any) => {
+      // If there are no dates, keep it visible (legacy data)
+      if (!campaign.start_date && !campaign.end_date) return true;
+
+      const start = campaign.start_date ? new Date(campaign.start_date) : null;
+      const end = campaign.end_date ? new Date(campaign.end_date) : null;
+
+      // Single-sided ranges
+      if (start && !end) return start <= monthEnd;
+      if (!start && end) return end >= monthStart;
+
+      // Full range
+      if (start && end) return start <= monthEnd && end >= monthStart;
+
+      return true;
+    };
+
+    const hasMetricsInMonth = (campaignId: string) => {
+      return (allMetrics || []).some(m =>
+        m.campaign_id === campaignId &&
+        isWithinInterval(new Date(m.date), { start: monthStart, end: monthEnd })
+      );
+    };
+
+    // A campaign is considered part of the month if its date range overlaps OR it has at least one metric in the month
+    return allCampaigns.filter(c => overlapsFiscalMonth(c) || hasMetricsInMonth(c.id));
+  }, [allCampaigns, allMetrics, selectedMonth, clientBillingDay]);
+
   // Calculate current month data
   const monthlyData = useMemo(() => {
     if (!allProjects?.length) {
@@ -533,8 +583,8 @@ export default function ClientDashboard() {
         campaignBreakdown: [],
       };
     }
-    return calculateMonthlyTotals(allMetrics || [], allProjects, allCampaigns || [], selectedMonth, clientBillingDay);
-  }, [allMetrics, allProjects, allCampaigns, selectedMonth, clientBillingDay]);
+    return calculateMonthlyTotals(allMetrics || [], allProjects, campaignsForSelectedMonth, selectedMonth, clientBillingDay);
+  }, [allMetrics, allProjects, campaignsForSelectedMonth, selectedMonth, clientBillingDay]);
 
   // Calculate previous month data for comparison
   const previousMonthData = useMemo(() => {
@@ -560,10 +610,30 @@ export default function ClientDashboard() {
         campaignBreakdown: [],
       };
     }
+
     const [year, month] = selectedMonth.split('-').map(Number);
     const prevDate = subMonths(new Date(year, month - 1), 1);
     const prevMonth = format(prevDate, 'yyyy-MM');
-    return calculateMonthlyTotals(allMetrics || [], allProjects, allCampaigns || [], prevMonth, clientBillingDay);
+
+    const [py, pm] = prevMonth.split('-').map(Number);
+    const prevReference = new Date(py, pm - 1);
+    const { start: prevStart, end: prevEnd } = getClientFiscalMonthRange(prevReference, clientBillingDay);
+
+    const campaignsForPrevMonth = (allCampaigns || []).filter(c => {
+      if (!c.start_date && !c.end_date) return true;
+      const start = c.start_date ? new Date(c.start_date) : null;
+      const end = c.end_date ? new Date(c.end_date) : null;
+      if (start && !end) return start <= prevEnd;
+      if (!start && end) return end >= prevStart;
+      if (start && end) return start <= prevEnd && end >= prevStart;
+
+      return (allMetrics || []).some(m =>
+        m.campaign_id === c.id &&
+        isWithinInterval(new Date(m.date), { start: prevStart, end: prevEnd })
+      );
+    });
+
+    return calculateMonthlyTotals(allMetrics || [], allProjects, campaignsForPrevMonth, prevMonth, clientBillingDay);
   }, [allMetrics, allProjects, allCampaigns, selectedMonth, clientBillingDay]);
 
   // Generate insights (only for traffic)
@@ -690,7 +760,7 @@ export default function ClientDashboard() {
     );
   }
 
-  if (!clientData || !allProjects?.length) {
+  if (!initialProject) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
         <Card className="max-w-md w-full">
@@ -706,8 +776,8 @@ export default function ClientDashboard() {
     );
   }
 
-  const clientName = clientData.company || clientData.name;
-  const hasCampaigns = allCampaigns && allCampaigns.length > 0;
+  const clientName = clientData?.company || clientData?.name || 'Cliente';
+  const hasCampaigns = campaignsForSelectedMonth.length > 0;
   const hasMetrics = monthlyData.totalImpressions > 0 || monthlyData.totalSpend > 0;
   const hasCreatives = lifetimeTotals.totalStatic > 0 || lifetimeTotals.totalCarousel > 0;
 
@@ -775,11 +845,13 @@ export default function ClientDashboard() {
                 <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
                   {clientName}
                 </h1>
-                <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-                  <span className="flex items-center gap-1.5">
-                    <Calendar className="h-4 w-4" />
-                    Cliente desde {format(new Date(clientData.created_at), 'MMMM yyyy', { locale: ptBR })}
-                  </span>
+                  <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+                   {clientData?.created_at && (
+                     <span className="flex items-center gap-1.5">
+                       <Calendar className="h-4 w-4" />
+                       Cliente desde {format(new Date(clientData.created_at), 'MMMM yyyy', { locale: ptBR })}
+                     </span>
+                   )}
                   {clientData.email && (
                     <span className="flex items-center gap-1.5">
                       <Mail className="h-4 w-4" />
@@ -1221,7 +1293,7 @@ export default function ClientDashboard() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {allCampaigns?.map((campaign, index) => {
+                    {campaignsForSelectedMonth.map((campaign, index) => {
                       const campaignData = monthlyData.campaignBreakdown.find(c => c.id === campaign.id);
                       
                       return (
