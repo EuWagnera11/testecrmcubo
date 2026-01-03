@@ -1,26 +1,23 @@
 import { useState, useRef, useMemo } from 'react';
-import { FileText, Download, Calendar, Filter, TrendingUp, DollarSign, Users, FolderKanban, Loader2 } from 'lucide-react';
+import { FileText, Calendar, TrendingUp, DollarSign, Users, FolderKanban } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useClients } from '@/hooks/useClients';
 import { useProjects } from '@/hooks/useProjects';
 import { useFinancial } from '@/hooks/useFinancial';
 import { useProjectsProfitability } from '@/hooks/useProjectsProfitability';
-import { format, subMonths, parseISO, startOfMonth, endOfMonth } from 'date-fns';
+import { format, subMonths, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { getFiscalMonthRange, isWithinFiscalMonth } from '@/lib/fiscalMonth';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
+import { getFiscalMonthRange } from '@/lib/fiscalMonth';
+import { PDFExportDialog } from '@/components/PDFExportDialog';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import refineLogo from '@/assets/refine-logo.png';
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--accent))', 'hsl(142, 76%, 36%)', 'hsl(45, 93%, 47%)', 'hsl(280, 67%, 50%)'];
 
 export default function Reports() {
   const [selectedPeriod, setSelectedPeriod] = useState('current');
-  const [isExporting, setIsExporting] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
 
   const { clients } = useClients();
@@ -90,46 +87,6 @@ export default function Reports() {
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 
-  const handleExportPDF = async () => {
-    if (!reportRef.current) return;
-    setIsExporting(true);
-
-    try {
-      const element = reportRef.current;
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff',
-      });
-
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const imgWidth = 210;
-      const pageHeight = 297;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      let heightLeft = imgHeight;
-      let position = 0;
-
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-      }
-
-      const fileName = `relatorio-${format(new Date(), 'yyyy-MM-dd')}.pdf`;
-      pdf.save(fileName);
-    } catch (error) {
-      console.error('Error exporting PDF:', error);
-    } finally {
-      setIsExporting(false);
-    }
-  };
-
   return (
     <div className="space-y-8 animate-fade-in">
       {/* Header */}
@@ -152,13 +109,12 @@ export default function Reports() {
               <SelectItem value="year">Último ano</SelectItem>
             </SelectContent>
           </Select>
-          <Button onClick={handleExportPDF} disabled={isExporting} className="h-11">
-            {isExporting ? (
-              <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Exportando...</>
-            ) : (
-              <><Download className="h-4 w-4 mr-2" /> Exportar PDF</>
-            )}
-          </Button>
+          <PDFExportDialog
+            contentRef={reportRef}
+            fileName="relatorio-gerencial"
+            title="Relatório Gerencial"
+            subtitle={dateRange.label}
+          />
         </div>
       </div>
 
