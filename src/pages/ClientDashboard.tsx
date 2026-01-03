@@ -8,7 +8,7 @@ import { useClientClosures } from '@/hooks/useClientClosures';
 import { ptBR } from 'date-fns/locale';
 import { 
   Eye, MousePointer, TrendingUp, 
-  Users2, BarChart3, Palette, FileText, MessageSquare,
+  Users2, BarChart3, Palette, FileText, MessageSquare, MessageCircle,
   FileIcon, AlertCircle, Loader2, Image, Layers, Target, 
   DollarSign, Percent, Zap, Calendar, Building2, Award,
   ChevronDown, ChevronUp, Sparkles, ArrowUpRight, Activity,
@@ -1365,7 +1365,8 @@ export default function ClientDashboard() {
                           </div>
                           
                           {expandedCampaign === campaign.id && campaignData && (
-                            <div className="border-t border-border/50 p-4 bg-muted/20">
+                            <div className="border-t border-border/50 p-4 bg-muted/20 space-y-4">
+                              {/* Primary KPIs */}
                               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                                 <div className="p-3 bg-background rounded-lg text-center">
                                   <Eye className="h-4 w-4 text-blue-500 mx-auto mb-1" />
@@ -1387,6 +1388,55 @@ export default function ClientDashboard() {
                                   <p className="text-xs text-muted-foreground">CPC</p>
                                   <p className="font-bold">R$ {campaignData.cpc.toFixed(2)}</p>
                                 </div>
+                              </div>
+                              
+                              {/* Secondary KPIs - Leads, CPL, Reach, Conversions */}
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                <div className="p-3 bg-background rounded-lg text-center">
+                                  <Users2 className="h-4 w-4 text-pink-500 mx-auto mb-1" />
+                                  <p className="text-xs text-muted-foreground">Leads / Conversas</p>
+                                  <p className="font-bold">{campaignData.leads.toLocaleString('pt-BR')}</p>
+                                </div>
+                                <div className="p-3 bg-background rounded-lg text-center">
+                                  <MessageCircle className="h-4 w-4 text-teal-500 mx-auto mb-1" />
+                                  <p className="text-xs text-muted-foreground">CPL / Custo por Conversa</p>
+                                  <p className="font-bold">
+                                    R$ {campaignData.leads > 0 ? (campaignData.spend / campaignData.leads).toFixed(2) : '0.00'}
+                                  </p>
+                                </div>
+                                <div className="p-3 bg-background rounded-lg text-center">
+                                  <BarChart3 className="h-4 w-4 text-cyan-500 mx-auto mb-1" />
+                                  <p className="text-xs text-muted-foreground">Alcance</p>
+                                  <p className="font-bold">{campaignData.reach.toLocaleString('pt-BR')}</p>
+                                </div>
+                                <div className="p-3 bg-background rounded-lg text-center">
+                                  <Target className="h-4 w-4 text-amber-500 mx-auto mb-1" />
+                                  <p className="text-xs text-muted-foreground">Conversões</p>
+                                  <p className="font-bold">{campaignData.conversions.toLocaleString('pt-BR')}</p>
+                                </div>
+                              </div>
+
+                              {/* Investment & ROI Row */}
+                              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                <div className="p-3 bg-gradient-to-br from-green-500/10 to-transparent rounded-lg text-center border border-green-500/20">
+                                  <DollarSign className="h-4 w-4 text-green-500 mx-auto mb-1" />
+                                  <p className="text-xs text-muted-foreground">Investimento</p>
+                                  <p className="font-bold text-green-500">R$ {campaignData.spend.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                                </div>
+                                {campaignData.revenue > 0 && (
+                                  <div className="p-3 bg-gradient-to-br from-emerald-500/10 to-transparent rounded-lg text-center border border-emerald-500/20">
+                                    <TrendingUp className="h-4 w-4 text-emerald-500 mx-auto mb-1" />
+                                    <p className="text-xs text-muted-foreground">Receita</p>
+                                    <p className="font-bold text-emerald-500">R$ {campaignData.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                                  </div>
+                                )}
+                                {campaignData.roas > 0 && (
+                                  <div className="p-3 bg-gradient-to-br from-yellow-500/10 to-transparent rounded-lg text-center border border-yellow-500/20">
+                                    <Zap className="h-4 w-4 text-yellow-500 mx-auto mb-1" />
+                                    <p className="text-xs text-muted-foreground">ROAS</p>
+                                    <p className="font-bold text-yellow-500">{campaignData.roas.toFixed(2)}x</p>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           )}
