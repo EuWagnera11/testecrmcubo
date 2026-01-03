@@ -732,6 +732,9 @@ export default function ClientDashboard() {
     };
   }, [allProjects, allMetrics]);
 
+  // Check if month is closed (must be called before any conditional returns)
+  const { isMonthClosed, closures: clientClosures } = useClientClosures(clientData?.id);
+
   if (!isTokenValid) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -782,9 +785,6 @@ export default function ClientDashboard() {
   const hasCampaigns = campaignsForSelectedMonth.length > 0;
   const hasMetrics = monthlyData.totalImpressions > 0 || monthlyData.totalSpend > 0;
   const hasCreatives = lifetimeTotals.totalStatic > 0 || lifetimeTotals.totalCarousel > 0;
-
-  // Check if month is closed (use clientData.id for closures hook)
-  const { isMonthClosed, closures: clientClosures } = useClientClosures(clientData?.id);
   const selectedMonthClosed = isMonthClosed(selectedMonth);
 
   const ComparisonBadge = ({ change, inverted = false }: { change: { value: number; isPositive: boolean }; inverted?: boolean }) => {
