@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, UserCheck, UserX, Shield, Target, Save, Info, Palette, PenTool, TrendingUp, Share2, Crown, User, Camera, Trash2, Bell } from 'lucide-react';
+import { Users, UserCheck, UserX, Shield, Target, Save, Info, Palette, PenTool, TrendingUp, Share2, Crown, User, Camera, Trash2, Bell, DollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -17,6 +17,7 @@ import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { NotificationSettings } from '@/components/NotificationSettings';
+import { CommissionRulesManager } from '@/components/CommissionRulesManager';
 import { 
   appRoleLabels, 
   appRoleDescriptions, 
@@ -146,9 +147,10 @@ export default function Settings() {
       </div>
 
       <Tabs defaultValue={isAdmin ? "users" : "profile"}>
-        <TabsList className="h-11 mb-6">
+        <TabsList className="h-11 mb-6 flex-wrap">
           {isAdmin && <TabsTrigger value="users" className="px-4">Usuários</TabsTrigger>}
           {isAdmin && <TabsTrigger value="roles" className="px-4">Cargos</TabsTrigger>}
+          {isAdmin && <TabsTrigger value="commissions" className="px-4">Comissões</TabsTrigger>}
           {canEditTeamGoal && <TabsTrigger value="team" className="px-4">Meta da Equipe</TabsTrigger>}
           <TabsTrigger value="notifications" className="px-4">Notificações</TabsTrigger>
           <TabsTrigger value="profile" className="px-4">Meu Perfil</TabsTrigger>
@@ -429,6 +431,13 @@ export default function Settings() {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+        )}
+
+        {/* Commission Rules Tab - Admin Only */}
+        {isAdmin && (
+          <TabsContent value="commissions" className="space-y-6">
+            <CommissionRulesManager />
           </TabsContent>
         )}
 

@@ -3,6 +3,8 @@ import { useParams } from 'react-router-dom';
 import { format, subMonths, isWithinInterval } from 'date-fns';
 import { getClientFiscalMonthRange } from '@/lib/fiscalMonth';
 import { PDFExport } from '@/components/PDFExport';
+import { ClientMonthHistory } from '@/components/ClientMonthHistory';
+import { useClientClosures } from '@/hooks/useClientClosures';
 import { ptBR } from 'date-fns/locale';
 import { 
   Eye, MousePointer, TrendingUp, 
@@ -12,7 +14,7 @@ import {
   ChevronDown, ChevronUp, Sparkles, ArrowUpRight, Activity,
   ArrowDownRight, TrendingDown, Lightbulb, CheckCircle2, 
   AlertTriangle, Info, Star, Flame, ThumbsUp, Clock, Mail, Phone,
-  Video, GraduationCap, Globe
+  Video, GraduationCap, Globe, Lock
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -781,6 +783,10 @@ export default function ClientDashboard() {
   const hasMetrics = monthlyData.totalImpressions > 0 || monthlyData.totalSpend > 0;
   const hasCreatives = lifetimeTotals.totalStatic > 0 || lifetimeTotals.totalCarousel > 0;
 
+  // Check if month is closed (use clientData.id for closures hook)
+  const { isMonthClosed, closures: clientClosures } = useClientClosures(clientData?.id);
+  const selectedMonthClosed = isMonthClosed(selectedMonth);
+
   const ComparisonBadge = ({ change, inverted = false }: { change: { value: number; isPositive: boolean }; inverted?: boolean }) => {
     const isGood = inverted ? !change.isPositive : change.isPositive;
     if (change.value === 0) return null;
@@ -825,7 +831,12 @@ export default function ClientDashboard() {
               Dashboard Premium
             </Badge>
           </div>
-          <PDFExport contentRef={contentRef} fileName={`relatorio-${clientName}-${selectedMonth}`} />
+          <div className="flex items-center gap-2">
+            {clientData?.id && clientClosures.length > 0 && (
+              <ClientMonthHistory clientId={clientData.id} clientName={clientName} />
+            )}
+            <PDFExport contentRef={contentRef} fileName={`relatorio-${clientName}-${selectedMonth}`} />
+          </div>
         </div>
       </header>
 
@@ -881,20 +892,28 @@ export default function ClientDashboard() {
                 </div>
               </div>
               
-              {/* Month Selector - only show if has traffic */}
-              {hasTraffic && (
-                <select
-                  value={selectedMonth}
-                  onChange={(e) => setSelectedMonth(e.target.value)}
-                  className="bg-card border border-border rounded-lg px-4 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary capitalize"
-                >
-                  {monthOptions.map(option => (
-                    <option key={option.value} value={option.value} className="capitalize">
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              )}
+              {/* Month Selector with closed badge */}
+              <div className="flex items-center gap-3">
+                {selectedMonthClosed && (
+                  <Badge variant="outline" className="bg-success/10 text-success border-success/30">
+                    <Lock className="h-3 w-3 mr-1" />
+                    Mês Fechado
+                  </Badge>
+                )}
+                {hasTraffic && (
+                  <select
+                    value={selectedMonth}
+                    onChange={(e) => setSelectedMonth(e.target.value)}
+                    className="bg-card border border-border rounded-lg px-4 py-2 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary capitalize"
+                  >
+                    {monthOptions.map(option => (
+                      <option key={option.value} value={option.value} className="capitalize">
+                        {option.label}{isMonthClosed(option.value) ? ' ✓' : ''}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
             </div>
 
             {/* Lifetime Summary - Adaptive based on project types */}
