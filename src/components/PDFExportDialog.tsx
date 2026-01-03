@@ -1,11 +1,12 @@
-import { useState, useRef } from 'react';
-import { Download, Loader2, FileText, Settings2 } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Download, Loader2, FileText, Settings2, Eye, EyeOff, Moon, Sun } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
@@ -19,6 +20,7 @@ export interface PDFExportOptions {
   includeFooter: boolean;
   includePageNumbers: boolean;
   margins: boolean;
+  theme: 'light' | 'dark' | 'auto';
 }
 
 interface PDFExportDialogProps {
@@ -38,6 +40,7 @@ const defaultOptions: PDFExportOptions = {
   includeFooter: true,
   includePageNumbers: true,
   margins: true,
+  theme: 'dark',
 };
 
 export function PDFExportDialog({ 
@@ -53,15 +56,65 @@ export function PDFExportDialog({
   const [isOpen, setIsOpen] = useState(false);
   const [options, setOptions] = useState<PDFExportOptions>(defaultOptions);
   const [customFileName, setCustomFileName] = useState(fileName);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
+  const [showPreview, setShowPreview] = useState(true);
   const { toast } = useToast();
 
-  const getScaleForQuality = () => {
+  const getScaleForQuality = (forPreview = false) => {
+    if (forPreview) return 1; // Lower scale for preview
     switch (options.quality) {
       case 'max': return 3;
       case 'high': return 2;
       default: return 1.5;
     }
   };
+
+  const getBackgroundColor = () => {
+    switch (options.theme) {
+      case 'light': return '#ffffff';
+      case 'dark': return '#0a0a0a';
+      case 'auto': return null; // Will capture the actual background
+    }
+  };
+
+  const generatePreview = useCallback(async () => {
+    if (!contentRef.current || !isOpen) return;
+    
+    setIsGeneratingPreview(true);
+    
+    try {
+      const element = contentRef.current;
+      const bgColor = getBackgroundColor();
+      
+      const canvas = await html2canvas(element, {
+        scale: getScaleForQuality(true),
+        useCORS: true,
+        logging: false,
+        backgroundColor: bgColor,
+        allowTaint: true,
+      });
+
+      const url = canvas.toDataURL('image/png', 0.8);
+      setPreviewUrl(url);
+    } catch (error) {
+      console.error('Error generating preview:', error);
+    } finally {
+      setIsGeneratingPreview(false);
+    }
+  }, [contentRef, isOpen, options.theme]);
+
+  // Generate preview when dialog opens or theme changes
+  useEffect(() => {
+    if (isOpen) {
+      const timer = setTimeout(() => {
+        generatePreview();
+      }, 300);
+      return () => clearTimeout(timer);
+    } else {
+      setPreviewUrl(null);
+    }
+  }, [isOpen, options.theme, generatePreview]);
 
   const handleExport = async () => {
     if (!contentRef.current) {
@@ -78,13 +131,14 @@ export function PDFExportDialog({
     try {
       const element = contentRef.current;
       const scale = getScaleForQuality();
+      const bgColor = getBackgroundColor();
       
-      // Create canvas with high quality settings
+      // Create canvas with settings
       const canvas = await html2canvas(element, {
         scale,
         useCORS: true,
         logging: false,
-        backgroundColor: '#ffffff',
+        backgroundColor: bgColor,
         allowTaint: true,
         imageTimeout: 15000,
       });
@@ -119,29 +173,45 @@ export function PDFExportDialog({
         creator: 'PDF Export',
       });
 
+      // Set background for each page based on theme
+      const setPageBackground = () => {
+        if (options.theme === 'dark') {
+          pdf.setFillColor(10, 10, 10);
+          pdf.rect(0, 0, pageWidth, pageHeight, 'F');
+        } else if (options.theme === 'light') {
+          pdf.setFillColor(255, 255, 255);
+          pdf.rect(0, 0, pageWidth, pageHeight, 'F');
+        }
+      };
+
       let heightLeft = imgHeight;
       let position = marginTop;
       let pageNumber = 1;
 
       const addHeaderFooter = (pageNum: number, totalPages: number) => {
+        const isDark = options.theme === 'dark';
+        const textColor = isDark ? 200 : 50;
+        const mutedColor = isDark ? 150 : 120;
+        const bgFill = isDark ? [20, 20, 20] : [250, 250, 250];
+
         // Header
         if (options.includeHeader && options.margins) {
-          pdf.setFillColor(250, 250, 250);
+          pdf.setFillColor(bgFill[0], bgFill[1], bgFill[2]);
           pdf.rect(0, 0, pageWidth, 20, 'F');
           
           pdf.setFontSize(12);
-          pdf.setTextColor(50, 50, 50);
+          pdf.setTextColor(textColor, textColor, textColor);
           pdf.text(title, marginX, 12);
           
           if (subtitle) {
             pdf.setFontSize(9);
-            pdf.setTextColor(100, 100, 100);
+            pdf.setTextColor(mutedColor, mutedColor, mutedColor);
             pdf.text(subtitle, marginX, 17);
           }
           
           // Date on the right
           pdf.setFontSize(8);
-          pdf.setTextColor(120, 120, 120);
+          pdf.setTextColor(mutedColor, mutedColor, mutedColor);
           const dateText = format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR });
           const dateWidth = pdf.getTextWidth(dateText);
           pdf.text(dateText, pageWidth - marginX - dateWidth, 12);
@@ -149,11 +219,11 @@ export function PDFExportDialog({
 
         // Footer
         if (options.includeFooter && options.margins) {
-          pdf.setFillColor(250, 250, 250);
+          pdf.setFillColor(bgFill[0], bgFill[1], bgFill[2]);
           pdf.rect(0, pageHeight - 15, pageWidth, 15, 'F');
           
           pdf.setFontSize(8);
-          pdf.setTextColor(120, 120, 120);
+          pdf.setTextColor(mutedColor, mutedColor, mutedColor);
           
           if (options.includePageNumbers) {
             const pageText = `Página ${pageNum} de ${totalPages}`;
@@ -170,6 +240,7 @@ export function PDFExportDialog({
       const totalPages = Math.ceil(imgHeight / contentHeight);
 
       // First page
+      setPageBackground();
       pdf.addImage(imgData, 'PNG', marginX, position, contentWidth, imgHeight);
       addHeaderFooter(pageNumber, totalPages);
       heightLeft -= contentHeight;
@@ -179,6 +250,7 @@ export function PDFExportDialog({
         position = heightLeft - imgHeight + marginTop;
         pdf.addPage();
         pageNumber++;
+        setPageBackground();
         pdf.addImage(imgData, 'PNG', marginX, position, contentWidth, imgHeight);
         addHeaderFooter(pageNumber, totalPages);
         heightLeft -= contentHeight;
@@ -244,128 +316,220 @@ export function PDFExportDialog({
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
             Exportar PDF
           </DialogTitle>
           <DialogDescription>
-            Configure as opções de exportação do relatório.
+            Configure as opções e visualize o resultado antes de exportar.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
-          {/* File Name */}
-          <div className="space-y-2">
-            <Label htmlFor="fileName">Nome do Arquivo</Label>
-            <Input
-              id="fileName"
-              value={customFileName}
-              onChange={(e) => setCustomFileName(e.target.value)}
-              placeholder="relatorio"
-            />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 py-4">
+          {/* Options Column */}
+          <div className="space-y-5">
+            {/* File Name */}
+            <div className="space-y-2">
+              <Label htmlFor="fileName">Nome do Arquivo</Label>
+              <Input
+                id="fileName"
+                value={customFileName}
+                onChange={(e) => setCustomFileName(e.target.value)}
+                placeholder="relatorio"
+              />
+            </div>
+
+            {/* Theme */}
+            <div className="space-y-3">
+              <Label>Tema do PDF</Label>
+              <RadioGroup
+                value={options.theme}
+                onValueChange={(v) => setOptions({ ...options, theme: v as 'light' | 'dark' | 'auto' })}
+                className="flex gap-3"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="dark" id="dark" />
+                  <Label htmlFor="dark" className="cursor-pointer flex items-center gap-1">
+                    <Moon className="h-3 w-3" /> Escuro
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="light" id="light" />
+                  <Label htmlFor="light" className="cursor-pointer flex items-center gap-1">
+                    <Sun className="h-3 w-3" /> Claro
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="auto" id="auto" />
+                  <Label htmlFor="auto" className="cursor-pointer">Auto</Label>
+                </div>
+              </RadioGroup>
+            </div>
+
+            {/* Orientation */}
+            <div className="space-y-3">
+              <Label>Orientação</Label>
+              <RadioGroup
+                value={options.orientation}
+                onValueChange={(v) => setOptions({ ...options, orientation: v as 'portrait' | 'landscape' })}
+                className="flex gap-4"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="portrait" id="portrait" />
+                  <Label htmlFor="portrait" className="cursor-pointer">Retrato</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="landscape" id="landscape" />
+                  <Label htmlFor="landscape" className="cursor-pointer">Paisagem</Label>
+                </div>
+              </RadioGroup>
+            </div>
+
+            {/* Quality */}
+            <div className="space-y-3">
+              <Label>Qualidade</Label>
+              <RadioGroup
+                value={options.quality}
+                onValueChange={(v) => setOptions({ ...options, quality: v as 'normal' | 'high' | 'max' })}
+                className="flex gap-4"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="normal" id="normal" />
+                  <Label htmlFor="normal" className="cursor-pointer">Normal</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="high" id="high" />
+                  <Label htmlFor="high" className="cursor-pointer">Alta</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="max" id="max" />
+                  <Label htmlFor="max" className="cursor-pointer">Máxima</Label>
+                </div>
+              </RadioGroup>
+            </div>
+
+            {/* Toggle Options */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="includeHeader" className="cursor-pointer">Incluir Cabeçalho</Label>
+                <Switch
+                  id="includeHeader"
+                  checked={options.includeHeader}
+                  onCheckedChange={(checked) => setOptions({ ...options, includeHeader: checked })}
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="includeFooter" className="cursor-pointer">Incluir Rodapé</Label>
+                <Switch
+                  id="includeFooter"
+                  checked={options.includeFooter}
+                  onCheckedChange={(checked) => setOptions({ ...options, includeFooter: checked })}
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="pageNumbers" className="cursor-pointer">Numerar Páginas</Label>
+                <Switch
+                  id="pageNumbers"
+                  checked={options.includePageNumbers}
+                  onCheckedChange={(checked) => setOptions({ ...options, includePageNumbers: checked })}
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="margins" className="cursor-pointer">Incluir Margens</Label>
+                <Switch
+                  id="margins"
+                  checked={options.margins}
+                  onCheckedChange={(checked) => setOptions({ ...options, margins: checked })}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Preview Column */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label className="flex items-center gap-2">
+                <Eye className="h-4 w-4" />
+                Pré-visualização
+              </Label>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setShowPreview(!showPreview)}
+                className="h-8"
+              >
+                {showPreview ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </Button>
+            </div>
+            
+            {showPreview && (
+              <div className="relative border border-border rounded-lg overflow-hidden bg-muted/30">
+                {isGeneratingPreview ? (
+                  <div className="flex items-center justify-center h-80">
+                    <div className="text-center space-y-2">
+                      <Loader2 className="h-8 w-8 animate-spin mx-auto text-muted-foreground" />
+                      <p className="text-sm text-muted-foreground">Gerando pré-visualização...</p>
+                    </div>
+                  </div>
+                ) : previewUrl ? (
+                  <ScrollArea className="h-80">
+                    <div className="p-2">
+                      <img 
+                        src={previewUrl} 
+                        alt="Preview do PDF" 
+                        className="w-full rounded shadow-sm"
+                      />
+                    </div>
+                  </ScrollArea>
+                ) : (
+                  <div className="flex items-center justify-center h-80">
+                    <p className="text-sm text-muted-foreground">Carregando preview...</p>
+                  </div>
+                )}
+              </div>
+            )}
+            
             <p className="text-xs text-muted-foreground">
-              A data será adicionada automaticamente ao nome.
+              A pré-visualização mostra como o conteúdo será capturado. Cabeçalho e rodapé serão adicionados no PDF final.
             </p>
-          </div>
-
-          {/* Orientation */}
-          <div className="space-y-3">
-            <Label>Orientação</Label>
-            <RadioGroup
-              value={options.orientation}
-              onValueChange={(v) => setOptions({ ...options, orientation: v as 'portrait' | 'landscape' })}
-              className="flex gap-4"
-            >
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="portrait" id="portrait" />
-                <Label htmlFor="portrait" className="cursor-pointer">Retrato</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="landscape" id="landscape" />
-                <Label htmlFor="landscape" className="cursor-pointer">Paisagem</Label>
-              </div>
-            </RadioGroup>
-          </div>
-
-          {/* Quality */}
-          <div className="space-y-3">
-            <Label>Qualidade</Label>
-            <RadioGroup
-              value={options.quality}
-              onValueChange={(v) => setOptions({ ...options, quality: v as 'normal' | 'high' | 'max' })}
-              className="flex gap-4"
-            >
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="normal" id="normal" />
-                <Label htmlFor="normal" className="cursor-pointer">Normal</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="high" id="high" />
-                <Label htmlFor="high" className="cursor-pointer">Alta</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="max" id="max" />
-                <Label htmlFor="max" className="cursor-pointer">Máxima</Label>
-              </div>
-            </RadioGroup>
-          </div>
-
-          {/* Toggle Options */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="includeHeader" className="cursor-pointer">Incluir Cabeçalho</Label>
-              <Switch
-                id="includeHeader"
-                checked={options.includeHeader}
-                onCheckedChange={(checked) => setOptions({ ...options, includeHeader: checked })}
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <Label htmlFor="includeFooter" className="cursor-pointer">Incluir Rodapé</Label>
-              <Switch
-                id="includeFooter"
-                checked={options.includeFooter}
-                onCheckedChange={(checked) => setOptions({ ...options, includeFooter: checked })}
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <Label htmlFor="pageNumbers" className="cursor-pointer">Numerar Páginas</Label>
-              <Switch
-                id="pageNumbers"
-                checked={options.includePageNumbers}
-                onCheckedChange={(checked) => setOptions({ ...options, includePageNumbers: checked })}
-              />
-            </div>
-            <div className="flex items-center justify-between">
-              <Label htmlFor="margins" className="cursor-pointer">Incluir Margens</Label>
-              <Switch
-                id="margins"
-                checked={options.margins}
-                onCheckedChange={(checked) => setOptions({ ...options, margins: checked })}
-              />
-            </div>
           </div>
         </div>
 
-        <div className="flex justify-end gap-3">
-          <Button variant="outline" onClick={() => setIsOpen(false)}>
-            Cancelar
-          </Button>
-          <Button onClick={handleExport} disabled={isExporting}>
-            {isExporting ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Gerando...
-              </>
+        <div className="flex justify-between gap-3 pt-2 border-t">
+          <Button 
+            variant="ghost" 
+            onClick={generatePreview}
+            disabled={isGeneratingPreview}
+            size="sm"
+          >
+            {isGeneratingPreview ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             ) : (
-              <>
-                <Download className="h-4 w-4 mr-2" />
-                Exportar
-              </>
+              <Eye className="h-4 w-4 mr-2" />
             )}
+            Atualizar Preview
           </Button>
+          
+          <div className="flex gap-3">
+            <Button variant="outline" onClick={() => setIsOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleExport} disabled={isExporting}>
+              {isExporting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Gerando...
+                </>
+              ) : (
+                <>
+                  <Download className="h-4 w-4 mr-2" />
+                  Exportar
+                </>
+              )}
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
