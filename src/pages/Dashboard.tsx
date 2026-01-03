@@ -193,22 +193,22 @@ export default function Dashboard() {
       {/* Month Selector */}
       <Card className="border-border/50 glass-card">
         <CardContent className="p-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <Calendar className="h-5 w-5 text-primary" />
               <span className="text-sm text-muted-foreground font-body">Visualizando:</span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2">
               <Button variant="ghost" size="icon" onClick={goToPreviousMonth} className="h-8 w-8">
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <span className="font-display text-lg min-w-[200px] text-center capitalize">
+              <span className="font-display text-base sm:text-lg min-w-[140px] sm:min-w-[200px] text-center capitalize">
                 {selectedMonthLabel}
               </span>
               <Button variant="ghost" size="icon" onClick={goToNextMonth} className="h-8 w-8">
                 <ChevronRight className="h-4 w-4" />
               </Button>
-              <Button variant="outline" size="sm" onClick={goToCurrentMonth} className="ml-2">
+              <Button variant="outline" size="sm" onClick={goToCurrentMonth} className="ml-1 sm:ml-2 text-xs sm:text-sm">
                 Hoje
               </Button>
             </div>
@@ -236,13 +236,13 @@ export default function Dashboard() {
         ))}
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Revenue Goal - Only for directors+ */}
         {canSeeFinancials && (
           <Card className="border-border/50 glass-card">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-lg font-semibold font-body flex items-center gap-2">
+                <CardTitle className="text-base sm:text-lg font-semibold font-body flex items-center gap-2">
                   <Target className="h-5 w-5 text-primary" />
                   Meta de Receita
                 </CardTitle>
@@ -250,7 +250,7 @@ export default function Dashboard() {
                   <DialogTrigger asChild>
                     <Button variant="ghost" size="sm" className="h-8">
                       <Pencil className="h-4 w-4 mr-1" />
-                      Editar
+                      <span className="hidden sm:inline">Editar</span>
                     </Button>
                   </DialogTrigger>
                   <DialogContent>
@@ -291,7 +291,7 @@ export default function Dashboard() {
                 <span className="font-display text-lg">{progressPercent.toFixed(0)}%</span>
               </div>
               <Progress value={progressPercent} className="h-3" />
-              <div className="flex justify-between text-sm text-muted-foreground mt-3 font-body">
+              <div className="flex justify-between text-xs sm:text-sm text-muted-foreground mt-3 font-body">
                 <span>{formatCurrency(monthlyIncome)}</span>
                 <span>Meta: {formatCurrency(revenueGoal)}</span>
               </div>
@@ -303,12 +303,12 @@ export default function Dashboard() {
         )}
 
         {/* Projects for this month */}
-        <Card className="border-border/50 glass-card">
+        <Card className={cn("border-border/50 glass-card", !canSeeFinancials && "lg:col-span-2")}>
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-lg font-semibold font-body">Projetos do Mês</CardTitle>
+              <CardTitle className="text-base sm:text-lg font-semibold font-body">Projetos do Mês</CardTitle>
               <Button variant="ghost" size="sm" asChild>
-                <Link to="/projetos" className="text-primary font-body">
+                <Link to="/projetos" className="text-primary font-body text-xs sm:text-sm">
                   Ver todos <ArrowRight className="ml-1 h-4 w-4" />
                 </Link>
               </Button>
@@ -320,18 +320,18 @@ export default function Dashboard() {
             ) : (
               <div className="space-y-3">
                 {filteredProjects.slice(0, 4).map((project) => (
-                  <div key={project.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors">
+                  <div key={project.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors gap-2">
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium font-body truncate">{project.name}</p>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="font-medium font-body truncate text-sm sm:text-base">{project.name}</p>
                         <Badge variant="outline" className="text-xs shrink-0">
                           {projectTypeLabels[project.project_type || 'one_time']}
                         </Badge>
                       </div>
-                      <p className="text-sm text-muted-foreground font-body">{project.clients?.name || 'Sem cliente'}</p>
+                      <p className="text-xs sm:text-sm text-muted-foreground font-body truncate">{project.clients?.name || 'Sem cliente'}</p>
                     </div>
                     {canSeeFinancials && (
-                      <span className="font-display text-primary ml-2">{formatCurrency(Number(project.total_value))}</span>
+                      <span className="font-display text-primary text-sm sm:text-base whitespace-nowrap">{formatCurrency(Number(project.total_value))}</span>
                     )}
                   </div>
                 ))}
