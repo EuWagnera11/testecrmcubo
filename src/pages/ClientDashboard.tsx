@@ -808,15 +808,18 @@ export default function ClientDashboard() {
     );
   };
 
-  // Determine if traffic is the majority project type
-  const isTrafficMajority = useMemo(() => {
+  // Determine if traffic is the majority project type (no hook here to avoid conditional hook order issues)
+  const isTrafficMajority = (() => {
     if (!allProjects?.length) return false;
-    
+
     let trafficCount = 0;
     let totalTypeCount = 0;
-    
-    allProjects.forEach(project => {
-      const types = project.project_types || (project.project_type ? project.project_type.split(',').map((t: string) => t.trim()) : []);
+
+    allProjects.forEach((project) => {
+      const types =
+        project.project_types ||
+        (project.project_type ? project.project_type.split(',').map((t: string) => t.trim()) : []);
+
       types.forEach((type: string) => {
         totalTypeCount++;
         if (type === 'traffic' || type === 'trafego_pago' || type === 'trafego') {
@@ -824,34 +827,35 @@ export default function ClientDashboard() {
         }
       });
     });
-    
+
     return totalTypeCount > 0 && trafficCount / totalTypeCount >= 0.5;
-  }, [allProjects]);
+  })();
 
   // Build dynamic tabs based on client project types
-  const tabs = useMemo(() => {
-    const result = [];
-    
+  const tabs = (() => {
+    const result: Array<{ id: string; label: string }> = [];
+
     // Show traffic tab only if client has traffic projects
     if (hasTraffic && (hasCampaigns || hasMetrics)) {
       result.push({ id: 'traffic', label: 'Tráfego Pago' });
     }
-    
+
     // Always show projects tab
     result.push({ id: 'projects', label: 'Projetos' });
-    
+
     // Show deliverables tab if has design/creative work
     if (hasDesign || hasCreatives) {
       result.push({ id: 'deliverables', label: 'Entregas' });
     }
-    
+
     return result;
-  }, [hasTraffic, hasCampaigns, hasMetrics, hasDesign, hasCreatives]);
+  })();
 
   // Determine the default tab - traffic first if it's the majority type
-  const defaultTab = isTrafficMajority && hasTraffic && (hasCampaigns || hasMetrics) 
-    ? 'traffic' 
-    : (tabs[0]?.id || 'projects');
+  const defaultTab =
+    isTrafficMajority && hasTraffic && (hasCampaigns || hasMetrics)
+      ? 'traffic'
+      : tabs[0]?.id || 'projects';
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/30">
