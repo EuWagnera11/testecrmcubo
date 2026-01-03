@@ -1381,8 +1381,8 @@ export default function ClientDashboard() {
                               </div>
                             </div>
                             <div className="flex items-center gap-4">
-                              <Badge variant={campaign.status === 'active' ? 'default' : 'secondary'}>
-                                {campaign.status === 'active' ? 'Ativa' : 'Pausada'}
+                              <Badge variant={campaign.status === 'active' ? 'default' : campaign.status === 'completed' ? 'secondary' : 'outline'}>
+                                {campaign.status === 'active' ? 'Ativa' : campaign.status === 'completed' ? 'Concluída' : 'Pausada'}
                               </Badge>
                               {expandedCampaign === campaign.id ? (
                                 <ChevronUp className="h-5 w-5 text-muted-foreground" />
