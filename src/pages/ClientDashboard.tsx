@@ -1050,345 +1050,340 @@ export default function ClientDashboard() {
           </Card>
         )}
 
-        {/* Main Tabs - Dynamic based on project types */}
-        <Tabs defaultValue={defaultTab} className="space-y-6">
-          <TabsList className="bg-card border border-border/50 p-1">
-            {tabs.map(tab => (
-              <TabsTrigger 
-                key={tab.id}
-                value={tab.id} 
-                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-              >
-                {tab.label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-
-          {/* Traffic Tab - Only visible if has traffic projects */}
-          {hasTraffic && (
-            <TabsContent value="traffic" className="space-y-6">
-              {/* Monthly Period Header */}
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold capitalize">
-                  {monthOptions.find(m => m.value === selectedMonth)?.label}
-                </h2>
-                <Badge variant="outline">
-                  vs. mês anterior
-                </Badge>
+        {/* ===== TRAFFIC SECTION ===== */}
+        {hasTraffic && (hasCampaigns || hasMetrics) && (
+          <section className="space-y-6">
+            {/* Section Header */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <TrendingUp className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-semibold">Tráfego Pago</h2>
+                  <p className="text-sm text-muted-foreground capitalize">
+                    {monthOptions.find(m => m.value === selectedMonth)?.label}
+                  </p>
+                </div>
               </div>
+              <Badge variant="outline">vs. mês anterior</Badge>
+            </div>
 
-              {/* Performance KPIs with Comparison */}
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                <Card className="bg-gradient-to-br from-blue-500/10 to-transparent border-blue-500/20">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2 text-blue-500">
-                        <Eye className="h-4 w-4" />
-                        <span className="text-xs font-medium">Impressões</span>
-                      </div>
-                      <ComparisonBadge change={comparisons.impressions} />
+            {/* Performance KPIs with Comparison */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+              <Card className="bg-gradient-to-br from-blue-500/10 to-transparent border-blue-500/20">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2 text-blue-500">
+                      <Eye className="h-4 w-4" />
+                      <span className="text-xs font-medium">Impressões</span>
                     </div>
-                    <p className="text-2xl font-bold">
-                      {monthlyData.totalImpressions.toLocaleString('pt-BR')}
-                    </p>
-                  </CardContent>
-                </Card>
-                
-                <Card className="bg-gradient-to-br from-green-500/10 to-transparent border-green-500/20">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2 text-green-500">
-                        <MousePointer className="h-4 w-4" />
-                        <span className="text-xs font-medium">Cliques</span>
-                      </div>
-                      <ComparisonBadge change={comparisons.clicks} />
+                    <ComparisonBadge change={comparisons.impressions} />
+                  </div>
+                  <p className="text-2xl font-bold">
+                    {monthlyData.totalImpressions.toLocaleString('pt-BR')}
+                  </p>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-gradient-to-br from-green-500/10 to-transparent border-green-500/20">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2 text-green-500">
+                      <MousePointer className="h-4 w-4" />
+                      <span className="text-xs font-medium">Cliques</span>
                     </div>
-                    <p className="text-2xl font-bold">
-                      {monthlyData.totalClicks.toLocaleString('pt-BR')}
-                    </p>
-                  </CardContent>
-                </Card>
-                
-                <Card className="bg-gradient-to-br from-purple-500/10 to-transparent border-purple-500/20">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2 text-purple-500">
-                        <Percent className="h-4 w-4" />
-                        <span className="text-xs font-medium">CTR</span>
-                      </div>
-                      <ComparisonBadge change={comparisons.ctr} />
+                    <ComparisonBadge change={comparisons.clicks} />
+                  </div>
+                  <p className="text-2xl font-bold">
+                    {monthlyData.totalClicks.toLocaleString('pt-BR')}
+                  </p>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-gradient-to-br from-purple-500/10 to-transparent border-purple-500/20">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2 text-purple-500">
+                      <Percent className="h-4 w-4" />
+                      <span className="text-xs font-medium">CTR</span>
                     </div>
-                    <p className="text-2xl font-bold">
-                      {monthlyData.avgCTR.toFixed(2)}%
-                    </p>
-                  </CardContent>
-                </Card>
-                
-                <Card className="bg-gradient-to-br from-orange-500/10 to-transparent border-orange-500/20">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2 text-orange-500">
-                        <Target className="h-4 w-4" />
-                        <span className="text-xs font-medium">Conversões</span>
-                      </div>
-                      <ComparisonBadge change={comparisons.conversions} />
+                    <ComparisonBadge change={comparisons.ctr} />
+                  </div>
+                  <p className="text-2xl font-bold">
+                    {monthlyData.avgCTR.toFixed(2)}%
+                  </p>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-gradient-to-br from-orange-500/10 to-transparent border-orange-500/20">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2 text-orange-500">
+                      <Target className="h-4 w-4" />
+                      <span className="text-xs font-medium">Conversões</span>
                     </div>
-                    <p className="text-2xl font-bold">
-                      {monthlyData.totalConversions.toLocaleString('pt-BR')}
-                    </p>
-                  </CardContent>
-                </Card>
-                
-                <Card className="bg-gradient-to-br from-pink-500/10 to-transparent border-pink-500/20">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2 text-pink-500">
-                        <Users2 className="h-4 w-4" />
-                        <span className="text-xs font-medium">Leads</span>
-                      </div>
-                      <ComparisonBadge change={comparisons.leads} />
+                    <ComparisonBadge change={comparisons.conversions} />
+                  </div>
+                  <p className="text-2xl font-bold">
+                    {monthlyData.totalConversions.toLocaleString('pt-BR')}
+                  </p>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-gradient-to-br from-pink-500/10 to-transparent border-pink-500/20">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2 text-pink-500">
+                      <Users2 className="h-4 w-4" />
+                      <span className="text-xs font-medium">Leads</span>
                     </div>
-                    <p className="text-2xl font-bold">
-                      {monthlyData.totalLeads.toLocaleString('pt-BR')}
-                    </p>
-                  </CardContent>
-                </Card>
-                
-                <Card className="bg-gradient-to-br from-cyan-500/10 to-transparent border-cyan-500/20">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2 text-cyan-500">
-                        <BarChart3 className="h-4 w-4" />
-                        <span className="text-xs font-medium">Alcance</span>
-                      </div>
-                      <ComparisonBadge change={comparisons.reach} />
+                    <ComparisonBadge change={comparisons.leads} />
+                  </div>
+                  <p className="text-2xl font-bold">
+                    {monthlyData.totalLeads.toLocaleString('pt-BR')}
+                  </p>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-gradient-to-br from-cyan-500/10 to-transparent border-cyan-500/20">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2 text-cyan-500">
+                      <BarChart3 className="h-4 w-4" />
+                      <span className="text-xs font-medium">Alcance</span>
                     </div>
-                    <p className="text-2xl font-bold">
-                      {monthlyData.totalReach.toLocaleString('pt-BR')}
-                    </p>
-                  </CardContent>
-                </Card>
-              </div>
+                    <ComparisonBadge change={comparisons.reach} />
+                  </div>
+                  <p className="text-2xl font-bold">
+                    {monthlyData.totalReach.toLocaleString('pt-BR')}
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
 
-              {/* Investment Summary */}
-              <div className="grid md:grid-cols-3 gap-6">
-                <Card className="md:col-span-2 border-border/50">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <TrendingUp className="h-5 w-5 text-primary" />
-                      Performance Diária
-                    </CardTitle>
-                    <CardDescription>
-                      Evolução de impressões e cliques ao longo do mês
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {monthlyData.dailyData.length > 0 ? (
-                      <ResponsiveContainer width="100%" height={300}>
-                        <AreaChart data={monthlyData.dailyData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                          <defs>
-                            <linearGradient id="impressionsGrad" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
-                              <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
-                            </linearGradient>
-                            <linearGradient id="clicksGrad" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor="hsl(var(--chart-2))" stopOpacity={0.3} />
-                              <stop offset="95%" stopColor="hsl(var(--chart-2))" stopOpacity={0} />
-                            </linearGradient>
-                          </defs>
-                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                          <XAxis dataKey="dateFormatted" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
-                          <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
-                          <Tooltip
-                            contentStyle={{
-                              backgroundColor: 'hsl(var(--card))',
-                              border: '1px solid hsl(var(--border))',
-                              borderRadius: '8px',
-                            }}
-                            formatter={(value: number, name: string) => [
-                              value.toLocaleString('pt-BR'),
-                              name === 'impressions' ? 'Impressões' : 'Cliques'
-                            ]}
-                          />
-                          <Area
-                            type="monotone"
-                            dataKey="impressions"
-                            stroke="hsl(var(--primary))"
-                            fill="url(#impressionsGrad)"
-                            strokeWidth={2}
-                          />
-                          <Area
-                            type="monotone"
-                            dataKey="clicks"
-                            stroke="hsl(var(--chart-2))"
-                            fill="url(#clicksGrad)"
-                            strokeWidth={2}
-                          />
-                        </AreaChart>
-                      </ResponsiveContainer>
-                    ) : (
-                      <div className="h-[300px] flex items-center justify-center text-muted-foreground">
-                        Sem dados de performance para este período
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-
-                <Card className="border-border/50">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <DollarSign className="h-5 w-5 text-green-500" />
-                      Investimento do Mês
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    <div className="text-center p-6 bg-gradient-to-br from-green-500/10 to-transparent rounded-xl border border-green-500/20">
-                      <p className="text-sm text-muted-foreground mb-1">Total Investido</p>
-                      <p className="text-4xl font-bold text-green-500">
-                        R$ {monthlyData.totalSpend.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                      </p>
-                      <div className="mt-2">
-                        <ComparisonBadge change={comparisons.spend} />
-                      </div>
+            {/* Investment Summary */}
+            <div className="grid md:grid-cols-3 gap-6">
+              <Card className="md:col-span-2 border-border/50">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5 text-primary" />
+                    Performance Diária
+                  </CardTitle>
+                  <CardDescription>
+                    Evolução de impressões e cliques ao longo do mês
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {monthlyData.dailyData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={300}>
+                      <AreaChart data={monthlyData.dailyData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                        <defs>
+                          <linearGradient id="impressionsGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                            <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                          </linearGradient>
+                          <linearGradient id="clicksGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="hsl(var(--chart-2))" stopOpacity={0.3} />
+                            <stop offset="95%" stopColor="hsl(var(--chart-2))" stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                        <XAxis dataKey="dateFormatted" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
+                        <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: 'hsl(var(--card))',
+                            border: '1px solid hsl(var(--border))',
+                            borderRadius: '8px',
+                          }}
+                          formatter={(value: number, name: string) => [
+                            value.toLocaleString('pt-BR'),
+                            name === 'impressions' ? 'Impressões' : 'Cliques'
+                          ]}
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="impressions"
+                          stroke="hsl(var(--primary))"
+                          fill="url(#impressionsGrad)"
+                          strokeWidth={2}
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="clicks"
+                          stroke="hsl(var(--chart-2))"
+                          fill="url(#clicksGrad)"
+                          strokeWidth={2}
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                      Sem dados de performance para este período
                     </div>
-                    
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
-                        <span className="text-sm text-muted-foreground">CPC Médio</span>
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold">
-                            R$ {monthlyData.avgCPC.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                          </span>
-                          <ComparisonBadge change={comparisons.cpc} inverted />
-                        </div>
-                      </div>
-                      <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
-                        <span className="text-sm text-muted-foreground">CPL Médio</span>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card className="border-border/50">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <DollarSign className="h-5 w-5 text-green-500" />
+                    Investimento do Mês
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="text-center p-6 bg-gradient-to-br from-green-500/10 to-transparent rounded-xl border border-green-500/20">
+                    <p className="text-sm text-muted-foreground mb-1">Total Investido</p>
+                    <p className="text-4xl font-bold text-green-500">
+                      R$ {monthlyData.totalSpend.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </p>
+                    <div className="mt-2">
+                      <ComparisonBadge change={comparisons.spend} />
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
+                      <span className="text-sm text-muted-foreground">CPC Médio</span>
+                      <div className="flex items-center gap-2">
                         <span className="font-semibold">
-                          R$ {monthlyData.avgCPL.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          R$ {monthlyData.avgCPC.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </span>
+                        <ComparisonBadge change={comparisons.cpc} inverted />
+                      </div>
+                    </div>
+                    <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
+                      <span className="text-sm text-muted-foreground">CPL Médio</span>
+                      <span className="font-semibold">
+                        R$ {monthlyData.avgCPL.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                    {monthlyData.totalROAS > 0 && (
+                      <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
+                        <span className="text-sm text-muted-foreground">ROAS</span>
+                        <span className="font-semibold text-green-500">
+                          {monthlyData.totalROAS.toFixed(2)}x
                         </span>
                       </div>
-                      {monthlyData.totalROAS > 0 && (
-                        <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
-                          <span className="text-sm text-muted-foreground">ROAS</span>
-                          <span className="font-semibold text-green-500">
-                            {monthlyData.totalROAS.toFixed(2)}x
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Spend Distribution */}
+            {projectSpendData.length > 0 && (
+              <Card className="border-border/50">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Zap className="h-5 w-5 text-primary" />
+                    Investimento por Projeto
+                  </CardTitle>
+                  <CardDescription>
+                    Distribuição do investimento entre os projetos ativos
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <ResponsiveContainer width="100%" height={250}>
+                      <PieChart>
+                        <Pie
+                          data={projectSpendData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={60}
+                          outerRadius={100}
+                          paddingAngle={3}
+                          dataKey="value"
+                        >
+                          {projectSpendData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.fill} />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          contentStyle={{
+                            backgroundColor: 'hsl(var(--card))',
+                            border: '1px solid hsl(var(--border))',
+                            borderRadius: '8px',
+                          }}
+                          formatter={(value: number) => [
+                            `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+                            'Investimento'
+                          ]}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <div className="space-y-3">
+                      {projectSpendData.map((project, index) => (
+                        <div key={index} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <div 
+                              className="w-3 h-3 rounded-full" 
+                              style={{ backgroundColor: project.fill }}
+                            />
+                            <span className="text-sm font-medium">{project.fullName}</span>
+                          </div>
+                          <span className="font-semibold">
+                            R$ {project.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                           </span>
                         </div>
-                      )}
+                      ))}
                     </div>
-                  </CardContent>
-                </Card>
-              </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
-              {/* Spend Distribution */}
-              {projectSpendData.length > 0 && (
-                <Card className="border-border/50">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Zap className="h-5 w-5 text-primary" />
-                      Investimento por Projeto
-                    </CardTitle>
-                    <CardDescription>
-                      Distribuição do investimento entre os projetos ativos
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid md:grid-cols-2 gap-6">
-                      <ResponsiveContainer width="100%" height={250}>
-                        <PieChart>
-                          <Pie
-                            data={projectSpendData}
-                            cx="50%"
-                            cy="50%"
-                            innerRadius={60}
-                            outerRadius={100}
-                            paddingAngle={3}
-                            dataKey="value"
-                          >
-                            {projectSpendData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={entry.fill} />
-                            ))}
-                          </Pie>
-                          <Tooltip
-                            contentStyle={{
-                              backgroundColor: 'hsl(var(--card))',
-                              border: '1px solid hsl(var(--border))',
-                              borderRadius: '8px',
-                            }}
-                            formatter={(value: number) => [
-                              `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
-                              'Investimento'
-                            ]}
-                          />
-                        </PieChart>
-                      </ResponsiveContainer>
-                      <div className="space-y-3">
-                        {projectSpendData.map((project, index) => (
-                          <div key={index} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+            {/* Campaigns Section */}
+            {hasCampaigns && (
+              <Card className="border-border/50">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5 text-primary" />
+                    Campanhas
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {campaignsForSelectedMonth.map((campaign, index) => {
+                    const campaignData = monthlyData.campaignBreakdown.find(c => c.id === campaign.id);
+                    
+                    return (
+                      <div 
+                        key={campaign.id} 
+                        className="border border-border/50 rounded-lg overflow-hidden"
+                      >
+                        <div 
+                          className="p-4 cursor-pointer hover:bg-muted/30 transition-colors"
+                          onClick={() => setExpandedCampaign(
+                            expandedCampaign === campaign.id ? null : campaign.id
+                          )}
+                        >
+                          <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
                               <div 
-                                className="w-3 h-3 rounded-full" 
-                                style={{ backgroundColor: project.fill }}
+                                className="w-2 h-8 rounded-full"
+                                style={{ backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }}
                               />
-                              <span className="text-sm font-medium">{project.fullName}</span>
-                            </div>
-                            <span className="font-semibold">
-                              R$ {project.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Campaigns Section */}
-              {hasCampaigns && (
-                <Card className="border-border/50">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <TrendingUp className="h-5 w-5 text-primary" />
-                      Campanhas
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {campaignsForSelectedMonth.map((campaign, index) => {
-                      const campaignData = monthlyData.campaignBreakdown.find(c => c.id === campaign.id);
-                      
-                      return (
-                        <div 
-                          key={campaign.id} 
-                          className="border border-border/50 rounded-lg overflow-hidden"
-                        >
-                          <div 
-                            className="p-4 cursor-pointer hover:bg-muted/30 transition-colors"
-                            onClick={() => setExpandedCampaign(
-                              expandedCampaign === campaign.id ? null : campaign.id
-                            )}
-                          >
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-3">
-                                <div 
-                                  className="w-2 h-8 rounded-full"
-                                  style={{ backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }}
-                                />
-                                <div>
-                                  <p className="font-medium flex items-center gap-2">
-                                    {campaign.platform && platformIcons[campaign.platform]}
-                                    {campaign.name}
-                                  </p>
-                                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                    <Badge variant={campaign.status === 'active' ? 'default' : 'secondary'} className="text-xs">
-                                      {campaign.status === 'active' ? 'Ativa' : campaign.status}
-                                    </Badge>
-                                    {campaignData && (
-                                      <span>R$ {campaignData.spend.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-                                    )}
-                                  </div>
-                                </div>
+                              <div>
+                                <p className="font-medium flex items-center gap-2">
+                                  {campaign.name}
+                                  {campaign.platform && (
+                                    <span className="text-xs text-muted-foreground">
+                                      {campaign.platform.split(',').map((p: string) => platformIcons[p.trim().toLowerCase()] || p).join(' ')}
+                                    </span>
+                                  )}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {campaignData?.impressions?.toLocaleString('pt-BR') || 0} impressões • {campaignData?.clicks?.toLocaleString('pt-BR') || 0} cliques
+                                </p>
                               </div>
+                            </div>
+                            <div className="flex items-center gap-4">
+                              <Badge variant={campaign.status === 'active' ? 'default' : 'secondary'}>
+                                {campaign.status === 'active' ? 'Ativa' : 'Pausada'}
+                              </Badge>
                               {expandedCampaign === campaign.id ? (
                                 <ChevronUp className="h-5 w-5 text-muted-foreground" />
                               ) : (
@@ -1396,349 +1391,365 @@ export default function ClientDashboard() {
                               )}
                             </div>
                           </div>
-                          
-                          {expandedCampaign === campaign.id && campaignData && (
-                            <div className="border-t border-border/50 p-4 bg-muted/20 space-y-4">
-                              {/* Primary KPIs */}
-                              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                <div className="p-3 bg-background rounded-lg text-center">
-                                  <Eye className="h-4 w-4 text-blue-500 mx-auto mb-1" />
-                                  <p className="text-xs text-muted-foreground">Impressões</p>
-                                  <p className="font-bold">{campaignData.impressions.toLocaleString('pt-BR')}</p>
-                                </div>
-                                <div className="p-3 bg-background rounded-lg text-center">
-                                  <MousePointer className="h-4 w-4 text-green-500 mx-auto mb-1" />
-                                  <p className="text-xs text-muted-foreground">Cliques</p>
-                                  <p className="font-bold">{campaignData.clicks.toLocaleString('pt-BR')}</p>
-                                </div>
-                                <div className="p-3 bg-background rounded-lg text-center">
-                                  <Percent className="h-4 w-4 text-purple-500 mx-auto mb-1" />
-                                  <p className="text-xs text-muted-foreground">CTR</p>
-                                  <p className="font-bold">{campaignData.ctr.toFixed(2)}%</p>
-                                </div>
-                                <div className="p-3 bg-background rounded-lg text-center">
-                                  <DollarSign className="h-4 w-4 text-orange-500 mx-auto mb-1" />
-                                  <p className="text-xs text-muted-foreground">CPC</p>
-                                  <p className="font-bold">R$ {campaignData.cpc.toFixed(2)}</p>
-                                </div>
+                        </div>
+                        
+                        {expandedCampaign === campaign.id && campaignData && (
+                          <div className="p-4 bg-muted/20 border-t border-border/50 space-y-4">
+                            {/* Main KPIs Row */}
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                              <div className="p-3 bg-background rounded-lg text-center">
+                                <Eye className="h-4 w-4 text-blue-500 mx-auto mb-1" />
+                                <p className="text-xs text-muted-foreground">Impressões</p>
+                                <p className="font-bold">{campaignData.impressions.toLocaleString('pt-BR')}</p>
                               </div>
-                              
-                              {/* Secondary KPIs - Leads, CPL, Reach, Conversions */}
-                              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                <div className="p-3 bg-background rounded-lg text-center">
-                                  <Users2 className="h-4 w-4 text-pink-500 mx-auto mb-1" />
-                                  <p className="text-xs text-muted-foreground">Leads / Conversas</p>
-                                  <p className="font-bold">{campaignData.leads.toLocaleString('pt-BR')}</p>
-                                </div>
-                                <div className="p-3 bg-background rounded-lg text-center">
-                                  <MessageCircle className="h-4 w-4 text-teal-500 mx-auto mb-1" />
-                                  <p className="text-xs text-muted-foreground">CPL / Custo por Conversa</p>
-                                  <p className="font-bold">
-                                    R$ {campaignData.leads > 0 ? (campaignData.spend / campaignData.leads).toFixed(2) : '0.00'}
-                                  </p>
-                                </div>
-                                <div className="p-3 bg-background rounded-lg text-center">
-                                  <BarChart3 className="h-4 w-4 text-cyan-500 mx-auto mb-1" />
-                                  <p className="text-xs text-muted-foreground">Alcance</p>
-                                  <p className="font-bold">{campaignData.reach.toLocaleString('pt-BR')}</p>
-                                </div>
-                                <div className="p-3 bg-background rounded-lg text-center">
-                                  <Target className="h-4 w-4 text-amber-500 mx-auto mb-1" />
-                                  <p className="text-xs text-muted-foreground">Conversões</p>
-                                  <p className="font-bold">{campaignData.conversions.toLocaleString('pt-BR')}</p>
-                                </div>
+                              <div className="p-3 bg-background rounded-lg text-center">
+                                <MousePointer className="h-4 w-4 text-green-500 mx-auto mb-1" />
+                                <p className="text-xs text-muted-foreground">Cliques</p>
+                                <p className="font-bold">{campaignData.clicks.toLocaleString('pt-BR')}</p>
                               </div>
-
-                              {/* Investment & ROI Row */}
-                              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                                <div className="p-3 bg-gradient-to-br from-green-500/10 to-transparent rounded-lg text-center border border-green-500/20">
-                                  <DollarSign className="h-4 w-4 text-green-500 mx-auto mb-1" />
-                                  <p className="text-xs text-muted-foreground">Investimento</p>
-                                  <p className="font-bold text-green-500">R$ {campaignData.spend.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-                                </div>
-                                {campaignData.revenue > 0 && (
-                                  <div className="p-3 bg-gradient-to-br from-emerald-500/10 to-transparent rounded-lg text-center border border-emerald-500/20">
-                                    <TrendingUp className="h-4 w-4 text-emerald-500 mx-auto mb-1" />
-                                    <p className="text-xs text-muted-foreground">Receita</p>
-                                    <p className="font-bold text-emerald-500">R$ {campaignData.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-                                  </div>
-                                )}
-                                {campaignData.roas > 0 && (
-                                  <div className="p-3 bg-gradient-to-br from-yellow-500/10 to-transparent rounded-lg text-center border border-yellow-500/20">
-                                    <Zap className="h-4 w-4 text-yellow-500 mx-auto mb-1" />
-                                    <p className="text-xs text-muted-foreground">ROAS</p>
-                                    <p className="font-bold text-yellow-500">{campaignData.roas.toFixed(2)}x</p>
-                                  </div>
-                                )}
+                              <div className="p-3 bg-background rounded-lg text-center">
+                                <Percent className="h-4 w-4 text-purple-500 mx-auto mb-1" />
+                                <p className="text-xs text-muted-foreground">CTR</p>
+                                <p className="font-bold">{campaignData.ctr.toFixed(2)}%</p>
+                              </div>
+                              <div className="p-3 bg-background rounded-lg text-center">
+                                <DollarSign className="h-4 w-4 text-orange-500 mx-auto mb-1" />
+                                <p className="text-xs text-muted-foreground">CPC</p>
+                                <p className="font-bold">R$ {campaignData.cpc.toFixed(2)}</p>
                               </div>
                             </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </CardContent>
-                </Card>
-              )}
-            </TabsContent>
-          )}
 
-          {/* Projects Tab */}
-          <TabsContent value="projects" className="space-y-6">
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {allProjects?.map((project, index) => {
-                const types = project.project_types || (project.project_type ? project.project_type.split(',') : []);
-                
-                return (
-                  <Card key={project.id} className="border-border/50 overflow-hidden">
-                    <div 
-                      className="h-1.5"
-                      style={{ backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }}
-                    />
-                    <CardHeader>
-                      <div className="flex items-start justify-between">
-                        <CardTitle className="text-base">{project.name}</CardTitle>
-                        <Badge variant={
-                          project.status === 'completed' ? 'default' : 
-                          project.status === 'active' ? 'secondary' : 
-                          'destructive'
-                        }>
-                          {project.status === 'completed' ? 'Concluído' : 
-                           project.status === 'active' ? 'Ativo' : 
-                           'Cancelado'}
-                        </Badge>
-                      </div>
-                      {/* Project type badges */}
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {types.map((type: string, i: number) => {
-                          const config = projectTypeConfig[type.trim()];
-                          if (!config) return null;
-                          const Icon = config.icon;
-                          return (
-                            <Badge key={i} variant="outline" className="text-xs">
-                              <Icon className={`h-3 w-3 mr-1 ${config.color}`} />
-                              {config.label}
-                            </Badge>
-                          );
-                        })}
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      {/* Value and Payment Info */}
-                      {project.total_value > 0 && (
-                        <div className="p-3 bg-muted/30 rounded-lg">
-                          <div className="flex justify-between items-center">
-                            <span className="text-sm text-muted-foreground">Valor do Projeto</span>
-                            <span className="font-bold">
-                              {project.currency === 'BRL' ? 'R$' : '$'} {Number(project.total_value).toLocaleString('pt-BR')}
-                            </span>
-                          </div>
-                          {project.advance_payment && project.advance_percentage && (
-                            <div className="flex justify-between items-center mt-2 text-xs">
-                              <span className="text-muted-foreground">Entrada ({project.advance_percentage}%)</span>
-                              <span className="text-green-500">
-                                R$ {(Number(project.total_value) * Number(project.advance_percentage) / 100).toLocaleString('pt-BR')}
-                              </span>
+                            {/* Secondary KPIs Row */}
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                              <div className="p-3 bg-background rounded-lg text-center">
+                                <MessageCircle className="h-4 w-4 text-pink-500 mx-auto mb-1" />
+                                <p className="text-xs text-muted-foreground">Leads / Conversas</p>
+                                <p className="font-bold">{campaignData.leads.toLocaleString('pt-BR')}</p>
+                              </div>
+                              <div className="p-3 bg-background rounded-lg text-center">
+                                <MessageCircle className="h-4 w-4 text-teal-500 mx-auto mb-1" />
+                                <p className="text-xs text-muted-foreground">CPL / Custo por Conversa</p>
+                                <p className="font-bold">
+                                  R$ {campaignData.leads > 0 ? (campaignData.spend / campaignData.leads).toFixed(2) : '0.00'}
+                                </p>
+                              </div>
+                              <div className="p-3 bg-background rounded-lg text-center">
+                                <BarChart3 className="h-4 w-4 text-cyan-500 mx-auto mb-1" />
+                                <p className="text-xs text-muted-foreground">Alcance</p>
+                                <p className="font-bold">{campaignData.reach.toLocaleString('pt-BR')}</p>
+                              </div>
+                              <div className="p-3 bg-background rounded-lg text-center">
+                                <Target className="h-4 w-4 text-amber-500 mx-auto mb-1" />
+                                <p className="text-xs text-muted-foreground">Conversões</p>
+                                <p className="font-bold">{campaignData.conversions.toLocaleString('pt-BR')}</p>
+                              </div>
                             </div>
-                          )}
-                        </div>
-                      )}
 
-                      {/* Creatives Count - only if has design */}
-                      {((project.static_creatives || 0) + (project.carousel_creatives || 0) > 0) && (
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="p-3 bg-muted/30 rounded-lg text-center">
-                            <Image className="h-4 w-4 text-pink-500 mx-auto mb-1" />
-                            <p className="text-xs text-muted-foreground">Estáticos</p>
-                            <p className="font-bold">{project.static_creatives || 0}</p>
-                          </div>
-                          <div className="p-3 bg-muted/30 rounded-lg text-center">
-                            <Layers className="h-4 w-4 text-blue-500 mx-auto mb-1" />
-                            <p className="text-xs text-muted-foreground">Carrosséis</p>
-                            <p className="font-bold">{project.carousel_creatives || 0}</p>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Dates */}
-                      <div className="space-y-1.5 text-xs text-muted-foreground">
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-3.5 w-3.5" />
-                          <span>Criado em {format(new Date(project.created_at), 'dd/MM/yyyy', { locale: ptBR })}</span>
-                        </div>
-                        {project.deadline && (
-                          <div className="flex items-center gap-2">
-                            <Clock className="h-3.5 w-3.5" />
-                            <span>Prazo: {format(new Date(project.deadline), 'dd/MM/yyyy', { locale: ptBR })}</span>
+                            {/* Investment & ROI Row */}
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                              <div className="p-3 bg-gradient-to-br from-green-500/10 to-transparent rounded-lg text-center border border-green-500/20">
+                                <DollarSign className="h-4 w-4 text-green-500 mx-auto mb-1" />
+                                <p className="text-xs text-muted-foreground">Investimento</p>
+                                <p className="font-bold text-green-500">R$ {campaignData.spend.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                              </div>
+                              {campaignData.revenue > 0 && (
+                                <div className="p-3 bg-gradient-to-br from-emerald-500/10 to-transparent rounded-lg text-center border border-emerald-500/20">
+                                  <TrendingUp className="h-4 w-4 text-emerald-500 mx-auto mb-1" />
+                                  <p className="text-xs text-muted-foreground">Receita</p>
+                                  <p className="font-bold text-emerald-500">R$ {campaignData.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                                </div>
+                              )}
+                              {campaignData.roas > 0 && (
+                                <div className="p-3 bg-gradient-to-br from-yellow-500/10 to-transparent rounded-lg text-center border border-yellow-500/20">
+                                  <Zap className="h-4 w-4 text-yellow-500 mx-auto mb-1" />
+                                  <p className="text-xs text-muted-foreground">ROAS</p>
+                                  <p className="font-bold text-yellow-500">{campaignData.roas.toFixed(2)}x</p>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         )}
                       </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          </TabsContent>
-
-          {/* Deliverables Tab - Only visible if has design/creative work */}
-          {(hasDesign || hasCreatives) && (
-            <TabsContent value="deliverables" className="space-y-6">
-              {/* Summary Cards */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <Card className="border-border/50">
-                  <CardContent className="p-6 text-center">
-                    <Image className="h-8 w-8 text-pink-500 mx-auto mb-3" />
-                    <p className="text-3xl font-bold">{lifetimeTotals.totalStatic}</p>
-                    <p className="text-sm text-muted-foreground mt-1">Criativos Estáticos</p>
-                  </CardContent>
-                </Card>
-                <Card className="border-border/50">
-                  <CardContent className="p-6 text-center">
-                    <Layers className="h-8 w-8 text-blue-500 mx-auto mb-3" />
-                    <p className="text-3xl font-bold">{lifetimeTotals.totalCarousel}</p>
-                    <p className="text-sm text-muted-foreground mt-1">Carrosséis</p>
-                  </CardContent>
-                </Card>
-                <Card className="border-border/50">
-                  <CardContent className="p-6 text-center">
-                    <Sparkles className="h-8 w-8 text-primary mx-auto mb-3" />
-                    <p className="text-3xl font-bold">{lifetimeTotals.totalStatic + lifetimeTotals.totalCarousel}</p>
-                    <p className="text-sm text-muted-foreground mt-1">Total de Peças</p>
-                  </CardContent>
-                </Card>
-                <Card className="border-border/50">
-                  <CardContent className="p-6 text-center">
-                    <Award className="h-8 w-8 text-yellow-500 mx-auto mb-3" />
-                    <p className="text-3xl font-bold">{lifetimeTotals.completedProjects}</p>
-                    <p className="text-sm text-muted-foreground mt-1">Projetos Finalizados</p>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Projects with Deliverables */}
-              <Card className="border-border/50">
-                <CardHeader>
-                  <CardTitle>Entregas por Projeto</CardTitle>
-                  <CardDescription>Detalhamento de criativos entregues em cada projeto</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {allProjects?.filter(p => (p.static_creatives || 0) + (p.carousel_creatives || 0) > 0).map((project, index) => {
-                      const total = (project.static_creatives || 0) + (project.carousel_creatives || 0);
-                      
-                      return (
-                        <div key={project.id} className="p-4 bg-muted/30 rounded-lg">
-                          <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center gap-3">
-                              <div 
-                                className="w-3 h-3 rounded-full"
-                                style={{ backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }}
-                              />
-                              <span className="font-medium">{project.name}</span>
-                              <Badge variant={project.status === 'completed' ? 'default' : 'secondary'} className="text-xs">
-                                {project.status === 'completed' ? 'Concluído' : 'Ativo'}
-                              </Badge>
-                            </div>
-                            <span className="font-bold">{total} peças</span>
-                          </div>
-                          <div className="h-2 bg-muted rounded-full overflow-hidden">
-                            <div 
-                              className="h-full bg-gradient-to-r from-pink-500 to-blue-500"
-                              style={{ width: '100%' }}
-                            />
-                          </div>
-                          <div className="flex justify-between text-xs text-muted-foreground mt-2">
-                            <span className="flex items-center gap-1">
-                              <Image className="h-3 w-3 text-pink-500" />
-                              {project.static_creatives || 0} estáticos
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Layers className="h-3 w-3 text-blue-500" />
-                              {project.carousel_creatives || 0} carrosséis
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                    
-                    {!allProjects?.some(p => (p.static_creatives || 0) + (p.carousel_creatives || 0) > 0) && (
-                      <div className="text-center py-8 text-muted-foreground">
-                        <FileIcon className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                        <p>Nenhuma entrega registrada ainda</p>
-                      </div>
-                    )}
-                  </div>
+                    );
+                  })}
                 </CardContent>
               </Card>
+            )}
+          </section>
+        )}
 
-              {/* Content Fields from All Projects */}
-              {allProjects?.some(p => p.project_fields?.length > 0) && (
-                <Card className="border-border/50">
+        {/* ===== PROJECTS SECTION ===== */}
+        <section className="space-y-6">
+          {/* Section Header */}
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-secondary/50">
+              <Layers className="h-5 w-5 text-foreground" />
+            </div>
+            <h2 className="text-xl font-semibold">Projetos</h2>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {allProjects?.map((project, index) => {
+              const types = project.project_types || (project.project_type ? project.project_type.split(',') : []);
+              
+              return (
+                <Card key={project.id} className="border-border/50 overflow-hidden">
+                  <div 
+                    className="h-1.5"
+                    style={{ backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }}
+                  />
                   <CardHeader>
-                    <CardTitle>Conteúdos Entregues</CardTitle>
-                    <CardDescription>Materiais e arquivos de todos os projetos</CardDescription>
+                    <div className="flex items-start justify-between">
+                      <CardTitle className="text-base">{project.name}</CardTitle>
+                      <Badge variant={
+                        project.status === 'completed' ? 'default' : 
+                        project.status === 'active' ? 'secondary' : 
+                        'destructive'
+                      }>
+                        {project.status === 'completed' ? 'Concluído' : 
+                         project.status === 'active' ? 'Ativo' : 
+                         'Cancelado'}
+                      </Badge>
+                    </div>
+                    {/* Project type badges */}
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {types.map((type: string, i: number) => {
+                        const config = projectTypeConfig[type.trim()];
+                        if (!config) return null;
+                        const Icon = config.icon;
+                        return (
+                          <Badge key={i} variant="outline" className="text-xs">
+                            <Icon className={`h-3 w-3 mr-1 ${config.color}`} />
+                            {config.label}
+                          </Badge>
+                        );
+                      })}
+                    </div>
                   </CardHeader>
-                  <CardContent>
-                    <div className="grid md:grid-cols-2 gap-4">
-                      {allProjects?.flatMap(project => 
-                        (project.project_fields || []).map((field: any, fieldIndex: number) => {
-                          if (!field.content && (!field.attachments || field.attachments.length === 0)) return null;
-                          
-                          const fieldIcons: Record<string, any> = {
-                            design: { icon: Palette, color: 'text-pink-500', label: 'Design' },
-                            copy: { icon: FileText, color: 'text-blue-500', label: 'Copywriting' },
-                            traffic: { icon: TrendingUp, color: 'text-green-500', label: 'Tráfego' },
-                            social_media: { icon: MessageSquare, color: 'text-purple-500', label: 'Social Media' },
-                          };
-                          
-                          const fieldInfo = fieldIcons[field.field_type] || { icon: FileIcon, color: 'text-muted-foreground', label: field.field_type };
-                          const Icon = fieldInfo.icon;
+                  <CardContent className="space-y-4">
+                    {/* Value and Payment Info */}
+                    {project.total_value > 0 && (
+                      <div className="p-3 bg-muted/30 rounded-lg">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-muted-foreground">Valor do Projeto</span>
+                          <span className="font-bold">
+                            {project.currency === 'BRL' ? 'R$' : '$'} {Number(project.total_value).toLocaleString('pt-BR')}
+                          </span>
+                        </div>
+                        {project.advance_payment && project.advance_percentage && (
+                          <div className="flex justify-between items-center mt-2 text-xs">
+                            <span className="text-muted-foreground">Entrada ({project.advance_percentage}%)</span>
+                            <span className="text-green-500">
+                              R$ {(Number(project.total_value) * Number(project.advance_percentage) / 100).toLocaleString('pt-BR')}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )}
 
-                          return (
-                            <div key={`${project.id}-${fieldIndex}`} className="p-4 bg-muted/30 rounded-lg">
-                              <div className="flex items-center gap-2 mb-2">
-                                <Icon className={`h-4 w-4 ${fieldInfo.color}`} />
-                                <span className="text-sm font-medium">{fieldInfo.label}</span>
-                                <span className="text-xs text-muted-foreground">• {project.name}</span>
-                              </div>
-                              {field.content && (
-                                <p className="text-sm text-muted-foreground line-clamp-2">{field.content}</p>
-                              )}
-                              {field.attachments && field.attachments.length > 0 && (
-                                <div className="flex flex-wrap gap-2 mt-2">
-                                  {field.attachments.slice(0, 4).map((url: string, i: number) => {
-                                    const ext = url.split('.').pop()?.toLowerCase();
-                                    const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext || '');
-                                    
-                                    return (
-                                      <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="block">
-                                        {isImage ? (
-                                          <img src={url} alt="" className="w-16 h-16 object-cover rounded-lg border" />
-                                        ) : (
-                                          <div className="flex items-center justify-center w-16 h-16 bg-muted rounded-lg border">
-                                            <FileIcon className="h-6 w-6 text-muted-foreground" />
-                                          </div>
-                                        )}
-                                      </a>
-                                    );
-                                  })}
-                                  {field.attachments.length > 4 && (
-                                    <div className="flex items-center justify-center w-16 h-16 bg-muted rounded-lg border">
-                                      <span className="text-xs text-muted-foreground">+{field.attachments.length - 4}</span>
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })
-                      ).filter(Boolean)}
+                    {/* Creatives Count - only if has design */}
+                    {((project.static_creatives || 0) + (project.carousel_creatives || 0) > 0) && (
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="p-3 bg-muted/30 rounded-lg text-center">
+                          <Image className="h-4 w-4 text-pink-500 mx-auto mb-1" />
+                          <p className="text-xs text-muted-foreground">Estáticos</p>
+                          <p className="font-bold">{project.static_creatives || 0}</p>
+                        </div>
+                        <div className="p-3 bg-muted/30 rounded-lg text-center">
+                          <Layers className="h-4 w-4 text-blue-500 mx-auto mb-1" />
+                          <p className="text-xs text-muted-foreground">Carrosséis</p>
+                          <p className="font-bold">{project.carousel_creatives || 0}</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Dates */}
+                    <div className="space-y-1.5 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-3.5 w-3.5" />
+                        <span>Criado em {format(new Date(project.created_at), 'dd/MM/yyyy', { locale: ptBR })}</span>
+                      </div>
+                      {project.deadline && (
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-3.5 w-3.5" />
+                          <span>Prazo: {format(new Date(project.deadline), 'dd/MM/yyyy', { locale: ptBR })}</span>
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
-              )}
-            </TabsContent>
-          )}
-        </Tabs>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* ===== DELIVERABLES SECTION ===== */}
+        {(hasDesign || hasCreatives) && (
+          <section className="space-y-6">
+            {/* Section Header */}
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-pink-500/10">
+                <Palette className="h-5 w-5 text-pink-500" />
+              </div>
+              <h2 className="text-xl font-semibold">Entregas</h2>
+            </div>
+
+            {/* Summary Cards */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Card className="border-border/50">
+                <CardContent className="p-6 text-center">
+                  <Image className="h-8 w-8 text-pink-500 mx-auto mb-3" />
+                  <p className="text-3xl font-bold">{lifetimeTotals.totalStatic}</p>
+                  <p className="text-sm text-muted-foreground mt-1">Criativos Estáticos</p>
+                </CardContent>
+              </Card>
+              <Card className="border-border/50">
+                <CardContent className="p-6 text-center">
+                  <Layers className="h-8 w-8 text-blue-500 mx-auto mb-3" />
+                  <p className="text-3xl font-bold">{lifetimeTotals.totalCarousel}</p>
+                  <p className="text-sm text-muted-foreground mt-1">Carrosséis</p>
+                </CardContent>
+              </Card>
+              <Card className="border-border/50">
+                <CardContent className="p-6 text-center">
+                  <Sparkles className="h-8 w-8 text-primary mx-auto mb-3" />
+                  <p className="text-3xl font-bold">{lifetimeTotals.totalStatic + lifetimeTotals.totalCarousel}</p>
+                  <p className="text-sm text-muted-foreground mt-1">Total de Peças</p>
+                </CardContent>
+              </Card>
+              <Card className="border-border/50">
+                <CardContent className="p-6 text-center">
+                  <Award className="h-8 w-8 text-yellow-500 mx-auto mb-3" />
+                  <p className="text-3xl font-bold">{lifetimeTotals.completedProjects}</p>
+                  <p className="text-sm text-muted-foreground mt-1">Projetos Finalizados</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Projects with Deliverables */}
+            <Card className="border-border/50">
+              <CardHeader>
+                <CardTitle>Entregas por Projeto</CardTitle>
+                <CardDescription>Detalhamento de criativos entregues em cada projeto</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {allProjects?.filter(p => (p.static_creatives || 0) + (p.carousel_creatives || 0) > 0).map((project, index) => {
+                    const total = (project.static_creatives || 0) + (project.carousel_creatives || 0);
+                    
+                    return (
+                      <div key={project.id} className="p-4 bg-muted/30 rounded-lg">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-3">
+                            <div 
+                              className="w-3 h-3 rounded-full"
+                              style={{ backgroundColor: CHART_COLORS[index % CHART_COLORS.length] }}
+                            />
+                            <span className="font-medium">{project.name}</span>
+                            <Badge variant={project.status === 'completed' ? 'default' : 'secondary'} className="text-xs">
+                              {project.status === 'completed' ? 'Concluído' : 'Ativo'}
+                            </Badge>
+                          </div>
+                          <span className="font-bold">{total} peças</span>
+                        </div>
+                        <div className="h-2 bg-muted rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-gradient-to-r from-pink-500 to-blue-500"
+                            style={{ width: '100%' }}
+                          />
+                        </div>
+                        <div className="flex justify-between text-xs text-muted-foreground mt-2">
+                          <span className="flex items-center gap-1">
+                            <Image className="h-3 w-3 text-pink-500" />
+                            {project.static_creatives || 0} estáticos
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Layers className="h-3 w-3 text-blue-500" />
+                            {project.carousel_creatives || 0} carrosséis
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  
+                  {!allProjects?.some(p => (p.static_creatives || 0) + (p.carousel_creatives || 0) > 0) && (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <FileIcon className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>Nenhuma entrega registrada ainda</p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Content Fields from All Projects */}
+            {allProjects?.some(p => p.project_fields?.length > 0) && (
+              <Card className="border-border/50">
+                <CardHeader>
+                  <CardTitle>Conteúdos Entregues</CardTitle>
+                  <CardDescription>Materiais e arquivos de todos os projetos</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    {allProjects?.flatMap(project => 
+                      (project.project_fields || []).map((field: any, fieldIndex: number) => {
+                        if (!field.content && (!field.attachments || field.attachments.length === 0)) return null;
+                        
+                        const fieldIcons: Record<string, any> = {
+                          design: { icon: Palette, color: 'text-pink-500', label: 'Design' },
+                          copy: { icon: FileText, color: 'text-blue-500', label: 'Copywriting' },
+                          traffic: { icon: TrendingUp, color: 'text-green-500', label: 'Tráfego' },
+                          social_media: { icon: MessageSquare, color: 'text-purple-500', label: 'Social Media' },
+                        };
+                        
+                        const fieldInfo = fieldIcons[field.field_type] || { icon: FileIcon, color: 'text-muted-foreground', label: field.field_type };
+                        const Icon = fieldInfo.icon;
+
+                        return (
+                          <div key={`${project.id}-${fieldIndex}`} className="p-4 bg-muted/30 rounded-lg">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Icon className={`h-4 w-4 ${fieldInfo.color}`} />
+                              <span className="text-sm font-medium">{fieldInfo.label}</span>
+                              <span className="text-xs text-muted-foreground">• {project.name}</span>
+                            </div>
+                            {field.content && (
+                              <p className="text-sm text-muted-foreground line-clamp-2">{field.content}</p>
+                            )}
+                            {field.attachments && field.attachments.length > 0 && (
+                              <div className="flex flex-wrap gap-2 mt-2">
+                                {field.attachments.slice(0, 4).map((url: string, i: number) => {
+                                  const ext = url.split('.').pop()?.toLowerCase();
+                                  const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext || '');
+                                  
+                                  return (
+                                    <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="block">
+                                      {isImage ? (
+                                        <img src={url} alt="" className="w-16 h-16 object-cover rounded-lg border" />
+                                      ) : (
+                                        <div className="flex items-center justify-center w-16 h-16 bg-muted rounded-lg border">
+                                          <FileIcon className="h-6 w-6 text-muted-foreground" />
+                                        </div>
+                                      )}
+                                    </a>
+                                  );
+                                })}
+                                {field.attachments.length > 4 && (
+                                  <div className="flex items-center justify-center w-16 h-16 bg-muted rounded-lg border">
+                                    <span className="text-xs text-muted-foreground">+{field.attachments.length - 4}</span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })
+                    ).filter(Boolean)}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </section>
+        )}
       </main>
 
       {/* Footer */}
