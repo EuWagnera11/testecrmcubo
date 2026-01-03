@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Trash2, TrendingUp, Target, DollarSign, MousePointer, Eye, Users, BarChart3, Calendar, Edit2 } from 'lucide-react';
+import { Plus, Trash2, TrendingUp, Target, DollarSign, MousePointer, Eye, Users, BarChart3, Calendar, Edit2, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -47,9 +47,20 @@ export function CampaignMetricsManager({ projectId, currency }: CampaignMetricsM
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
   const [isNewCampaignOpen, setIsNewCampaignOpen] = useState(false);
   const [isMetricsOpen, setIsMetricsOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null);
   const [activeTab, setActiveTab] = useState('campaigns');
 
   const [newCampaign, setNewCampaign] = useState({
+    name: '',
+    platforms: [] as string[],
+    objective: '',
+    start_date: '',
+    end_date: '',
+    budget: 0,
+  });
+
+  const [editCampaign, setEditCampaign] = useState({
     name: '',
     platforms: [] as string[],
     objective: '',
@@ -88,6 +99,43 @@ export function CampaignMetricsManager({ projectId, currency }: CampaignMetricsM
     });
     setIsNewCampaignOpen(false);
     setNewCampaign({ name: '', platforms: [], objective: '', start_date: '', end_date: '', budget: 0 });
+  };
+
+  const handleOpenEdit = (campaign: Campaign) => {
+    setEditingCampaign(campaign);
+    setEditCampaign({
+      name: campaign.name,
+      platforms: campaign.platform ? campaign.platform.split(',').map(p => p.trim()) : [],
+      objective: campaign.objective || '',
+      start_date: campaign.start_date || '',
+      end_date: campaign.end_date || '',
+      budget: campaign.budget || 0,
+    });
+    setIsEditOpen(true);
+  };
+
+  const toggleEditPlatform = (platform: string) => {
+    setEditCampaign(prev => ({
+      ...prev,
+      platforms: prev.platforms.includes(platform)
+        ? prev.platforms.filter(p => p !== platform)
+        : [...prev.platforms, platform]
+    }));
+  };
+
+  const handleUpdateCampaign = async () => {
+    if (!editingCampaign) return;
+    await updateCampaign.mutateAsync({
+      id: editingCampaign.id,
+      name: editCampaign.name,
+      platform: editCampaign.platforms.length > 0 ? editCampaign.platforms.join(',') : null,
+      objective: editCampaign.objective || null,
+      start_date: editCampaign.start_date || null,
+      end_date: editCampaign.end_date || null,
+      budget: editCampaign.budget,
+    });
+    setIsEditOpen(false);
+    setEditingCampaign(null);
   };
 
   const formatCurrency = (value: number) => {
@@ -227,6 +275,7 @@ export function CampaignMetricsManager({ projectId, currency }: CampaignMetricsM
                     setSelectedCampaign(campaign);
                     setIsMetricsOpen(true);
                   }}
+                  onEdit={() => handleOpenEdit(campaign)}
                   onDelete={() => deleteCampaign.mutate(campaign.id)}
                   onStatusChange={(status) => updateCampaign.mutate({ id: campaign.id, status })}
                 />
@@ -249,6 +298,95 @@ export function CampaignMetricsManager({ projectId, currency }: CampaignMetricsM
           if (!open) setSelectedCampaign(null);
         }}
       />
+
+      {/* Edit Campaign Dialog */}
+      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Campanha</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Nome da Campanha</Label>
+              <Input
+                value={editCampaign.name}
+                onChange={(e) => setEditCampaign({ ...editCampaign, name: e.target.value })}
+                placeholder="Ex: Black Friday 2024"
+              />
+            </div>
+            <div>
+              <Label>Plataformas</Label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-2">
+                {platformOptions.map((platform) => (
+                  <div
+                    key={platform.value}
+                    className={`flex items-center gap-2 p-2 rounded-md border cursor-pointer transition-colors ${
+                      editCampaign.platforms.includes(platform.value)
+                        ? 'bg-primary/10 border-primary'
+                        : 'bg-muted/30 border-border hover:border-primary/50'
+                    }`}
+                    onClick={() => toggleEditPlatform(platform.value)}
+                  >
+                    <Checkbox
+                      checked={editCampaign.platforms.includes(platform.value)}
+                      onCheckedChange={() => toggleEditPlatform(platform.value)}
+                    />
+                    <span className="text-sm">{platform.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div>
+              <Label>Objetivo</Label>
+              <Select
+                value={editCampaign.objective}
+                onValueChange={(v) => setEditCampaign({ ...editCampaign, objective: v })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="conversions">Conversões</SelectItem>
+                  <SelectItem value="leads">Leads</SelectItem>
+                  <SelectItem value="traffic">Tráfego</SelectItem>
+                  <SelectItem value="awareness">Reconhecimento</SelectItem>
+                  <SelectItem value="engagement">Engajamento</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Data Início</Label>
+                <Input
+                  type="date"
+                  value={editCampaign.start_date}
+                  onChange={(e) => setEditCampaign({ ...editCampaign, start_date: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label>Data Fim</Label>
+                <Input
+                  type="date"
+                  value={editCampaign.end_date}
+                  onChange={(e) => setEditCampaign({ ...editCampaign, end_date: e.target.value })}
+                />
+              </div>
+            </div>
+            <div>
+              <Label>Orçamento Diário</Label>
+              <Input
+                type="number"
+                value={editCampaign.budget}
+                onChange={(e) => setEditCampaign({ ...editCampaign, budget: parseFloat(e.target.value) || 0 })}
+                placeholder="0.00"
+              />
+            </div>
+            <Button onClick={handleUpdateCampaign} disabled={!editCampaign.name} className="w-full">
+              Salvar Alterações
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -257,11 +395,12 @@ interface CampaignCardProps {
   campaign: Campaign;
   currency: string;
   onSelect: () => void;
+  onEdit: () => void;
   onDelete: () => void;
   onStatusChange: (status: string) => void;
 }
 
-function CampaignCard({ campaign, currency, onSelect, onDelete, onStatusChange }: CampaignCardProps) {
+function CampaignCard({ campaign, currency, onSelect, onEdit, onDelete, onStatusChange }: CampaignCardProps) {
   const { metrics } = useCampaignMetrics(campaign.id);
 
   const totals = metrics.reduce(
@@ -348,6 +487,9 @@ function CampaignCard({ campaign, currency, onSelect, onDelete, onStatusChange }
           <Button variant="outline" size="sm" className="flex-1" onClick={onSelect}>
             <Edit2 className="w-3.5 h-3.5 mr-1.5" />
             Métricas
+          </Button>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onEdit}>
+            <Pencil className="w-4 h-4" />
           </Button>
           <Select value={campaign.status} onValueChange={onStatusChange}>
             <SelectTrigger className="w-24 h-8 text-xs">
