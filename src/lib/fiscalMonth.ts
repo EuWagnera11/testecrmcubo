@@ -46,10 +46,11 @@ export function getFiscalMonthFromDate(date: Date | string): Date {
 
 /**
  * Client-specific fiscal month logic with custom billing day
- * Example: billingDay = 12 means the cycle runs from day 12 of month X-1 to day 11 of month X
- * Example: billingDay = 20 means the cycle runs from day 20 of month X-1 to day 19 of month X
+ * The billing month is named after the month it ENDS in (the month the client pays)
+ * Example: billingDay = 12, "December 2025" = Dec 12 to Jan 11 (closes/bills in January, named December)
+ * Example: billingDay = 20, "December 2025" = Dec 20 to Jan 19
  * 
- * @param referenceDate - The month we want data for (e.g., January 2025)
+ * @param referenceDate - The month we want data for (e.g., December 2025)
  * @param billingDay - The client's billing day (1-28). Default is 1 (standard calendar month)
  */
 export function getClientFiscalMonthRange(referenceDate: Date, billingDay: number = 1): { start: Date; end: Date } {
@@ -64,9 +65,10 @@ export function getClientFiscalMonthRange(referenceDate: Date, billingDay: numbe
     start = new Date(referenceDate.getFullYear(), referenceDate.getMonth(), 1);
     end = new Date(referenceDate.getFullYear(), referenceDate.getMonth() + 1, 0);
   } else {
-    // Custom billing cycle: starts on billingDay of previous month, ends on billingDay-1 of current month
-    start = setDate(subMonths(referenceDate, 1), validBillingDay);
-    end = setDate(referenceDate, validBillingDay - 1);
+    // Custom billing cycle: starts on billingDay of CURRENT month, ends on billingDay-1 of NEXT month
+    // This way "December" with billingDay=12 means Dec 12 to Jan 11
+    start = setDate(referenceDate, validBillingDay);
+    end = setDate(addMonths(referenceDate, 1), validBillingDay - 1);
   }
   
   // Set time to beginning and end of day
@@ -89,6 +91,8 @@ export function isWithinClientFiscalMonth(date: Date | string, referenceDate: Da
 
 /**
  * Given a date, determine which client fiscal month it belongs to
+ * Returns the month that the date's billing period is NAMED after
+ * Example: Jan 3 with billingDay=12 → still in December's period (Dec 12 - Jan 11)
  */
 export function getClientFiscalMonthFromDate(date: Date | string, billingDay: number = 1): Date {
   const parsedDate = typeof date === 'string' ? parseISO(date) : date;
@@ -102,9 +106,9 @@ export function getClientFiscalMonthFromDate(date: Date | string, billingDay: nu
   const day = parsedDate.getDate();
   
   if (day >= validBillingDay) {
-    // Belongs to next month's fiscal period
-    return addMonths(parsedDate, 1);
+    // On or after billing day = current month's fiscal period
+    return parsedDate;
   }
-  // Belongs to current month's fiscal period
-  return parsedDate;
+  // Before billing day = still in previous month's fiscal period
+  return subMonths(parsedDate, 1);
 }

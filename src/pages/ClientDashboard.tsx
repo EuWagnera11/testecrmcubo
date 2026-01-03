@@ -1,7 +1,7 @@
 import { useRef, useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { format, subMonths, isWithinInterval } from 'date-fns';
-import { getClientFiscalMonthRange } from '@/lib/fiscalMonth';
+import { getClientFiscalMonthRange, getClientFiscalMonthFromDate } from '@/lib/fiscalMonth';
 import { PDFExport } from '@/components/PDFExport';
 import { ClientMonthHistory } from '@/components/ClientMonthHistory';
 import { useClientClosures } from '@/hooks/useClientClosures';
@@ -525,6 +525,15 @@ export default function ClientDashboard() {
 
   // Get client billing day (default to 1 = standard calendar month)
   const clientBillingDay = clientData?.plan_billing_day || 1;
+
+  // Update selectedMonth when clientData loads to reflect the correct fiscal month
+  useEffect(() => {
+    if (clientData?.plan_billing_day && clientData.plan_billing_day > 1) {
+      const currentFiscalMonth = getClientFiscalMonthFromDate(new Date(), clientData.plan_billing_day);
+      setSelectedMonth(format(currentFiscalMonth, 'yyyy-MM'));
+    }
+  }, [clientData?.plan_billing_day]);
+
 
   const campaignsForSelectedMonth = useMemo(() => {
     if (!allCampaigns?.length) return [];
