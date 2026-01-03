@@ -519,7 +519,8 @@ interface MetricsDialogProps {
 
 function MetricsDialog({ campaign, currency, open, onOpenChange }: MetricsDialogProps) {
   const campaignId = campaign?.id || '';
-  const { metrics, addMetric, deleteMetric } = useCampaignMetrics(campaignId || undefined);
+  const { metrics, addMetric, updateMetric, deleteMetric } = useCampaignMetrics(campaignId || undefined);
+  const [editingMetric, setEditingMetric] = useState<CampaignMetric | null>(null);
   const [newMetric, setNewMetric] = useState<Partial<CampaignMetric>>({
     date: new Date().toISOString().split('T')[0],
     impressions: 0,
@@ -774,14 +775,24 @@ function MetricsDialog({ campaign, currency, open, onOpenChange }: MetricsDialog
                           <td className="text-right py-2 px-1">{m.leads}</td>
                           <td className="text-right py-2 px-1">{m.roas}x</td>
                           <td className="py-2 px-1">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-6 w-6 text-destructive"
-                              onClick={() => deleteMetric.mutate(m.id)}
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </Button>
+                            <div className="flex gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6"
+                                onClick={() => setEditingMetric(m)}
+                              >
+                                <Pencil className="w-3 h-3" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 text-destructive"
+                                onClick={() => deleteMetric.mutate(m.id)}
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -792,6 +803,125 @@ function MetricsDialog({ campaign, currency, open, onOpenChange }: MetricsDialog
             </CardContent>
           </Card>
         </div>
+
+        {/* Edit Metric Dialog */}
+        <Dialog open={!!editingMetric} onOpenChange={(open) => !open && setEditingMetric(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Editar Métrica - {editingMetric && format(new Date(editingMetric.date), "dd/MM/yyyy", { locale: ptBR })}</DialogTitle>
+            </DialogHeader>
+            {editingMetric && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs">Impressões</Label>
+                    <Input
+                      type="number"
+                      value={editingMetric.impressions || ''}
+                      onChange={(e) => setEditingMetric({ ...editingMetric, impressions: parseInt(e.target.value) || 0 })}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Alcance</Label>
+                    <Input
+                      type="number"
+                      value={editingMetric.reach || ''}
+                      onChange={(e) => setEditingMetric({ ...editingMetric, reach: parseInt(e.target.value) || 0 })}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Cliques</Label>
+                    <Input
+                      type="number"
+                      value={editingMetric.clicks || ''}
+                      onChange={(e) => setEditingMetric({ ...editingMetric, clicks: parseInt(e.target.value) || 0 })}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Valor Gasto</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={editingMetric.spend || ''}
+                      onChange={(e) => setEditingMetric({ ...editingMetric, spend: parseFloat(e.target.value) || 0 })}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Conversões</Label>
+                    <Input
+                      type="number"
+                      value={editingMetric.conversions || ''}
+                      onChange={(e) => setEditingMetric({ ...editingMetric, conversions: parseInt(e.target.value) || 0 })}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Leads</Label>
+                    <Input
+                      type="number"
+                      value={editingMetric.leads || ''}
+                      onChange={(e) => setEditingMetric({ ...editingMetric, leads: parseInt(e.target.value) || 0 })}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Receita</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={editingMetric.revenue || ''}
+                      onChange={(e) => setEditingMetric({ ...editingMetric, revenue: parseFloat(e.target.value) || 0 })}
+                    />
+                  </div>
+                </div>
+                <Button 
+                  className="w-full" 
+                  onClick={async () => {
+                    // Auto-calculate derived metrics
+                    let ctr = 0, cpc = 0, cpm = 0, cost_per_conversion = 0, cost_per_lead = 0, roas = 0;
+                    
+                    if (editingMetric.impressions && editingMetric.clicks) {
+                      ctr = (editingMetric.clicks / editingMetric.impressions) * 100;
+                    }
+                    if (editingMetric.spend && editingMetric.clicks) {
+                      cpc = editingMetric.spend / editingMetric.clicks;
+                    }
+                    if (editingMetric.spend && editingMetric.impressions) {
+                      cpm = (editingMetric.spend / editingMetric.impressions) * 1000;
+                    }
+                    if (editingMetric.spend && editingMetric.conversions) {
+                      cost_per_conversion = editingMetric.spend / editingMetric.conversions;
+                    }
+                    if (editingMetric.spend && editingMetric.leads) {
+                      cost_per_lead = editingMetric.spend / editingMetric.leads;
+                    }
+                    if (editingMetric.revenue && editingMetric.spend) {
+                      roas = editingMetric.revenue / editingMetric.spend;
+                    }
+
+                    await updateMetric.mutateAsync({
+                      id: editingMetric.id,
+                      impressions: editingMetric.impressions,
+                      reach: editingMetric.reach,
+                      clicks: editingMetric.clicks,
+                      spend: editingMetric.spend,
+                      conversions: editingMetric.conversions,
+                      leads: editingMetric.leads,
+                      revenue: editingMetric.revenue,
+                      ctr: Math.round(ctr * 100) / 100,
+                      cpc: Math.round(cpc * 100) / 100,
+                      cpm: Math.round(cpm * 100) / 100,
+                      cost_per_conversion: Math.round(cost_per_conversion * 100) / 100,
+                      cost_per_lead: Math.round(cost_per_lead * 100) / 100,
+                      roas: Math.round(roas * 100) / 100,
+                    });
+                    setEditingMetric(null);
+                  }}
+                >
+                  Salvar Alterações
+                </Button>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </DialogContent>
     </Dialog>
   );

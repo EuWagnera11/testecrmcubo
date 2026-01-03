@@ -188,6 +188,32 @@ export function useCampaignMetrics(campaignId?: string) {
     },
   });
 
+  const updateMetric = useMutation({
+    mutationFn: async (metric: Partial<CampaignMetric> & { id: string }) => {
+      const { id, ...updates } = metric;
+      const { data, error } = await supabase
+        .from('campaign_metrics')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['campaign-metrics', campaignId] });
+      toast({ title: 'Métrica atualizada!' });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Erro ao atualizar métrica',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
   const deleteMetric = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
@@ -215,6 +241,7 @@ export function useCampaignMetrics(campaignId?: string) {
     isLoading: metricsQuery.isLoading,
     error: metricsQuery.error,
     addMetric,
+    updateMetric,
     deleteMetric,
   };
 }
