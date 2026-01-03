@@ -419,7 +419,7 @@ export default function Projects() {
       </div>
 
       {/* Search & Filter */}
-      <div className="flex flex-col sm:flex-row gap-4">
+      <div className="flex flex-col gap-4">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input 
@@ -430,11 +430,11 @@ export default function Projects() {
           />
         </div>
         <Tabs value={filter} onValueChange={setFilter}>
-          <TabsList className="h-11">
-            <TabsTrigger value="all" className="px-4">Todos</TabsTrigger>
-            <TabsTrigger value="active" className="px-4">Ativos</TabsTrigger>
-            <TabsTrigger value="completed" className="px-4">Concluídos</TabsTrigger>
-            <TabsTrigger value="inactive" className="px-4">Inativos</TabsTrigger>
+          <TabsList className="h-11 w-full sm:w-auto flex-wrap">
+            <TabsTrigger value="all" className="flex-1 sm:flex-none px-3 sm:px-4 text-xs sm:text-sm">Todos</TabsTrigger>
+            <TabsTrigger value="active" className="flex-1 sm:flex-none px-3 sm:px-4 text-xs sm:text-sm">Ativos</TabsTrigger>
+            <TabsTrigger value="completed" className="flex-1 sm:flex-none px-3 sm:px-4 text-xs sm:text-sm">Concluídos</TabsTrigger>
+            <TabsTrigger value="inactive" className="flex-1 sm:flex-none px-3 sm:px-4 text-xs sm:text-sm">Inativos</TabsTrigger>
           </TabsList>
         </Tabs>
       </div>

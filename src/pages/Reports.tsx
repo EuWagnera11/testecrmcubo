@@ -133,15 +133,15 @@ export default function Reports() {
   return (
     <div className="space-y-8 animate-fade-in">
       {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+      <div className="flex flex-col gap-4">
         <div>
           <p className="text-muted-foreground text-sm uppercase tracking-wider mb-1">Análise</p>
           <h1 className="text-3xl font-bold tracking-tight">Relatórios</h1>
-          <p className="text-muted-foreground mt-2">Gere relatórios consolidados com métricas do seu negócio.</p>
+          <p className="text-muted-foreground mt-2 text-sm sm:text-base">Gere relatórios consolidados com métricas do seu negócio.</p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex flex-col sm:flex-row gap-3">
           <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-            <SelectTrigger className="w-48 h-11">
+            <SelectTrigger className="w-full sm:w-48 h-11">
               <Calendar className="h-4 w-4 mr-2" />
               <SelectValue placeholder="Período" />
             </SelectTrigger>
@@ -163,71 +163,71 @@ export default function Reports() {
       </div>
 
       {/* Report Content */}
-      <div ref={reportRef} className="space-y-6 bg-background p-6 rounded-xl">
+      <div ref={reportRef} className="space-y-6 bg-background p-4 sm:p-6 rounded-xl">
         {/* Report Header */}
-        <div className="flex items-center justify-between border-b border-border pb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-border pb-4 gap-3">
           <div className="flex items-center gap-4">
-            <img src={refineLogo} alt="Logo" className="h-10" />
+            <img src={refineLogo} alt="Logo" className="h-8 sm:h-10" />
             <div>
-              <h2 className="text-xl font-bold">Relatório Gerencial</h2>
-              <p className="text-sm text-muted-foreground">{dateRange.label}</p>
+              <h2 className="text-lg sm:text-xl font-bold">Relatório Gerencial</h2>
+              <p className="text-xs sm:text-sm text-muted-foreground">{dateRange.label}</p>
             </div>
           </div>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-xs sm:text-sm text-muted-foreground">
             Gerado em {format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
           </p>
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4">
           <Card className="border-border/50">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <DollarSign className="h-5 w-5 text-primary" />
+            <CardContent className="p-3 sm:p-4">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Receita</p>
-                  <p className="text-xl font-bold text-green-500">{formatCurrency(periodIncome)}</p>
+                <div className="min-w-0">
+                  <p className="text-xs sm:text-sm text-muted-foreground">Receita</p>
+                  <p className="text-base sm:text-xl font-bold text-green-500 truncate">{formatCurrency(periodIncome)}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
           <Card className="border-border/50">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-destructive/10 flex items-center justify-center">
-                  <TrendingUp className="h-5 w-5 text-destructive" />
+            <CardContent className="p-3 sm:p-4">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg bg-destructive/10 flex items-center justify-center shrink-0">
+                  <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-destructive" />
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Despesas</p>
-                  <p className="text-xl font-bold text-red-500">{formatCurrency(periodExpenses)}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="border-border/50">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-accent/10 flex items-center justify-center">
-                  <FolderKanban className="h-5 w-5 text-accent" />
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Projetos</p>
-                  <p className="text-xl font-bold">{filteredProjects.length}</p>
+                <div className="min-w-0">
+                  <p className="text-xs sm:text-sm text-muted-foreground">Despesas</p>
+                  <p className="text-base sm:text-xl font-bold text-red-500 truncate">{formatCurrency(periodExpenses)}</p>
                 </div>
               </div>
             </CardContent>
           </Card>
           <Card className="border-border/50">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-lg bg-green-500/10 flex items-center justify-center">
-                  <Users className="h-5 w-5 text-green-500" />
+            <CardContent className="p-3 sm:p-4">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg bg-accent/10 flex items-center justify-center shrink-0">
+                  <FolderKanban className="h-4 w-4 sm:h-5 sm:w-5 text-accent" />
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Lucro Líquido</p>
-                  <p className="text-xl font-bold">{formatCurrency(periodIncome - periodExpenses)}</p>
+                <div className="min-w-0">
+                  <p className="text-xs sm:text-sm text-muted-foreground">Projetos</p>
+                  <p className="text-base sm:text-xl font-bold">{filteredProjects.length}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="border-border/50">
+            <CardContent className="p-3 sm:p-4">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg bg-green-500/10 flex items-center justify-center shrink-0">
+                  <Users className="h-4 w-4 sm:h-5 sm:w-5 text-green-500" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs sm:text-sm text-muted-foreground">Lucro</p>
+                  <p className="text-base sm:text-xl font-bold truncate">{formatCurrency(periodIncome - periodExpenses)}</p>
                 </div>
               </div>
             </CardContent>
@@ -235,7 +235,7 @@ export default function Reports() {
         </div>
 
         {/* Charts */}
-        <div className="grid lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Revenue by Category */}
           <Card className="border-border/50">
             <CardHeader>
