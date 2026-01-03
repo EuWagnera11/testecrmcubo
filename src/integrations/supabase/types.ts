@@ -411,6 +411,111 @@ export type Database = {
           },
         ]
       }
+      client_month_closures: {
+        Row: {
+          avg_cpc: number | null
+          avg_cpl: number | null
+          avg_ctr: number | null
+          campaigns_count: number | null
+          client_id: string
+          closed_at: string | null
+          created_at: string | null
+          error_message: string | null
+          id: string
+          pdf_url: string | null
+          period_end: string
+          period_key: string
+          period_start: string
+          projects_count: number | null
+          snapshot_data: Json
+          status: string | null
+          total_carousel_creatives: number | null
+          total_clicks: number | null
+          total_conversions: number | null
+          total_impressions: number | null
+          total_leads: number | null
+          total_reach: number | null
+          total_revenue: number | null
+          total_roas: number | null
+          total_spend: number | null
+          total_static_creatives: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          avg_cpc?: number | null
+          avg_cpl?: number | null
+          avg_ctr?: number | null
+          campaigns_count?: number | null
+          client_id: string
+          closed_at?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          pdf_url?: string | null
+          period_end: string
+          period_key: string
+          period_start: string
+          projects_count?: number | null
+          snapshot_data?: Json
+          status?: string | null
+          total_carousel_creatives?: number | null
+          total_clicks?: number | null
+          total_conversions?: number | null
+          total_impressions?: number | null
+          total_leads?: number | null
+          total_reach?: number | null
+          total_revenue?: number | null
+          total_roas?: number | null
+          total_spend?: number | null
+          total_static_creatives?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          avg_cpc?: number | null
+          avg_cpl?: number | null
+          avg_ctr?: number | null
+          campaigns_count?: number | null
+          client_id?: string
+          closed_at?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          pdf_url?: string | null
+          period_end?: string
+          period_key?: string
+          period_start?: string
+          projects_count?: number | null
+          snapshot_data?: Json
+          status?: string | null
+          total_carousel_creatives?: number | null
+          total_clicks?: number | null
+          total_conversions?: number | null
+          total_impressions?: number | null
+          total_leads?: number | null
+          total_reach?: number | null
+          total_revenue?: number | null
+          total_roas?: number | null
+          total_spend?: number | null
+          total_static_creatives?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_month_closures_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_month_closures_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "shared_project_clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           birthday: string | null
@@ -468,6 +573,111 @@ export type Database = {
           status?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      closure_commissions: {
+        Row: {
+          amount: number
+          base_value: number
+          closure_id: string
+          created_at: string | null
+          description: string | null
+          id: string
+          paid: boolean | null
+          paid_at: string | null
+          percentage: number | null
+          rule_id: string | null
+          user_id: string
+          user_name: string | null
+        }
+        Insert: {
+          amount: number
+          base_value: number
+          closure_id: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          paid?: boolean | null
+          paid_at?: string | null
+          percentage?: number | null
+          rule_id?: string | null
+          user_id: string
+          user_name?: string | null
+        }
+        Update: {
+          amount?: number
+          base_value?: number
+          closure_id?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          paid?: boolean | null
+          paid_at?: string | null
+          percentage?: number | null
+          rule_id?: string | null
+          user_id?: string
+          user_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "closure_commissions_closure_id_fkey"
+            columns: ["closure_id"]
+            isOneToOne: false
+            referencedRelation: "client_month_closures"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "closure_commissions_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "commission_rules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      commission_rules: {
+        Row: {
+          base_field: string | null
+          calc_type: string
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          target_role: string | null
+          target_user_id: string | null
+          updated_at: string | null
+          value: number
+        }
+        Insert: {
+          base_field?: string | null
+          calc_type: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          target_role?: string | null
+          target_user_id?: string | null
+          updated_at?: string | null
+          value: number
+        }
+        Update: {
+          base_field?: string | null
+          calc_type?: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          target_role?: string | null
+          target_user_id?: string | null
+          updated_at?: string | null
+          value?: number
         }
         Relationships: []
       }
