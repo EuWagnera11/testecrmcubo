@@ -61,12 +61,12 @@ export function PDFExport({
       const element = contentRef.current;
       const scale = getScaleForQuality();
       
-      // Create canvas with high quality settings
+      // Create canvas with dark background
       const canvas = await html2canvas(element, {
         scale,
         useCORS: true,
         logging: false,
-        backgroundColor: '#ffffff',
+        backgroundColor: '#0a0a0a',
         allowTaint: true,
         imageTimeout: 15000,
       });
@@ -101,41 +101,45 @@ export function PDFExport({
         creator: 'PDF Export',
       });
 
+      // Set dark page background
+      const setPageBackground = () => {
+        pdf.setFillColor(10, 10, 10);
+        pdf.rect(0, 0, pageWidth, pageHeight, 'F');
+      };
+
       let heightLeft = imgHeight;
       let position = marginTop;
       let pageNumber = 1;
 
       const addHeaderFooter = (pageNum: number, totalPages: number) => {
-        // Header
+        // Dark theme colors
+        const textColor = 220;
+        const mutedColor = 150;
+
+        // Header text only
         if (includeHeader) {
-          pdf.setFillColor(250, 250, 250);
-          pdf.rect(0, 0, pageWidth, 20, 'F');
-          
           pdf.setFontSize(12);
-          pdf.setTextColor(50, 50, 50);
+          pdf.setTextColor(textColor, textColor, textColor);
           pdf.text(title, marginX, 12);
           
           if (subtitle) {
             pdf.setFontSize(9);
-            pdf.setTextColor(100, 100, 100);
+            pdf.setTextColor(mutedColor, mutedColor, mutedColor);
             pdf.text(subtitle, marginX, 17);
           }
           
           // Date on the right
           pdf.setFontSize(8);
-          pdf.setTextColor(120, 120, 120);
+          pdf.setTextColor(mutedColor, mutedColor, mutedColor);
           const dateText = format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR });
           const dateWidth = pdf.getTextWidth(dateText);
           pdf.text(dateText, pageWidth - marginX - dateWidth, 12);
         }
 
-        // Footer
+        // Footer text only
         if (includeFooter) {
-          pdf.setFillColor(250, 250, 250);
-          pdf.rect(0, pageHeight - 15, pageWidth, 15, 'F');
-          
           pdf.setFontSize(8);
-          pdf.setTextColor(120, 120, 120);
+          pdf.setTextColor(mutedColor, mutedColor, mutedColor);
           
           const pageText = `Página ${pageNum} de ${totalPages}`;
           const textWidth = pdf.getTextWidth(pageText);
@@ -150,6 +154,7 @@ export function PDFExport({
       const totalPages = Math.ceil(imgHeight / contentHeight);
 
       // First page
+      setPageBackground();
       pdf.addImage(imgData, 'PNG', marginX, position, contentWidth, imgHeight);
       addHeaderFooter(pageNumber, totalPages);
       heightLeft -= contentHeight;
@@ -159,6 +164,7 @@ export function PDFExport({
         position = heightLeft - imgHeight + marginTop;
         pdf.addPage();
         pageNumber++;
+        setPageBackground();
         pdf.addImage(imgData, 'PNG', marginX, position, contentWidth, imgHeight);
         addHeaderFooter(pageNumber, totalPages);
         heightLeft -= contentHeight;

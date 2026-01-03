@@ -170,7 +170,7 @@ export function PDFExportDialog({
         creator: 'PDF Export',
       });
 
-      // Set dark background for each page
+      // Set dark background for entire page
       const setPageBackground = () => {
         pdf.setFillColor(10, 10, 10);
         pdf.rect(0, 0, pageWidth, pageHeight, 'F');
@@ -181,16 +181,12 @@ export function PDFExportDialog({
       let pageNumber = 1;
 
       const addHeaderFooter = (pageNum: number, totalPages: number) => {
-        // Always dark theme colors
-        const textColor = 200;
+        // Dark theme colors - no background rectangles, just text
+        const textColor = 220;
         const mutedColor = 150;
-        const bgFill = [20, 20, 20];
 
-        // Header
+        // Header text only (background already dark from setPageBackground)
         if (options.includeHeader && options.margins) {
-          pdf.setFillColor(bgFill[0], bgFill[1], bgFill[2]);
-          pdf.rect(0, 0, pageWidth, 20, 'F');
-          
           pdf.setFontSize(12);
           pdf.setTextColor(textColor, textColor, textColor);
           pdf.text(title, marginX, 12);
@@ -209,11 +205,8 @@ export function PDFExportDialog({
           pdf.text(dateText, pageWidth - marginX - dateWidth, 12);
         }
 
-        // Footer
+        // Footer text only
         if (options.includeFooter && options.margins) {
-          pdf.setFillColor(bgFill[0], bgFill[1], bgFill[2]);
-          pdf.rect(0, pageHeight - 15, pageWidth, 15, 'F');
-          
           pdf.setFontSize(8);
           pdf.setTextColor(mutedColor, mutedColor, mutedColor);
           
