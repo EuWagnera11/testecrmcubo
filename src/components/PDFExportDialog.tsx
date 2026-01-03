@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Download, Loader2, FileText, Settings2, Eye, EyeOff, Moon, Sun } from 'lucide-react';
+import { Download, Loader2, FileText, Settings2, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
@@ -40,7 +40,7 @@ const defaultOptions: PDFExportOptions = {
   includeFooter: true,
   includePageNumbers: true,
   margins: true,
-  theme: 'dark',
+  theme: 'dark', // Always dark
 };
 
 export function PDFExportDialog({ 
@@ -71,11 +71,8 @@ export function PDFExportDialog({
   };
 
   const getBackgroundColor = () => {
-    switch (options.theme) {
-      case 'light': return '#ffffff';
-      case 'dark': return '#0a0a0a';
-      case 'auto': return null; // Will capture the actual background
-    }
+    // Always use dark background
+    return '#0a0a0a';
   };
 
   const generatePreview = useCallback(async () => {
@@ -102,7 +99,7 @@ export function PDFExportDialog({
     } finally {
       setIsGeneratingPreview(false);
     }
-  }, [contentRef, isOpen, options.theme]);
+  }, [contentRef, isOpen]);
 
   // Generate preview when dialog opens or theme changes
   useEffect(() => {
@@ -173,15 +170,10 @@ export function PDFExportDialog({
         creator: 'PDF Export',
       });
 
-      // Set background for each page based on theme
+      // Set dark background for each page
       const setPageBackground = () => {
-        if (options.theme === 'dark') {
-          pdf.setFillColor(10, 10, 10);
-          pdf.rect(0, 0, pageWidth, pageHeight, 'F');
-        } else if (options.theme === 'light') {
-          pdf.setFillColor(255, 255, 255);
-          pdf.rect(0, 0, pageWidth, pageHeight, 'F');
-        }
+        pdf.setFillColor(10, 10, 10);
+        pdf.rect(0, 0, pageWidth, pageHeight, 'F');
       };
 
       let heightLeft = imgHeight;
@@ -189,10 +181,10 @@ export function PDFExportDialog({
       let pageNumber = 1;
 
       const addHeaderFooter = (pageNum: number, totalPages: number) => {
-        const isDark = options.theme === 'dark';
-        const textColor = isDark ? 200 : 50;
-        const mutedColor = isDark ? 150 : 120;
-        const bgFill = isDark ? [20, 20, 20] : [250, 250, 250];
+        // Always dark theme colors
+        const textColor = 200;
+        const mutedColor = 150;
+        const bgFill = [20, 20, 20];
 
         // Header
         if (options.includeHeader && options.margins) {
@@ -341,34 +333,24 @@ export function PDFExportDialog({
               />
             </div>
 
-            {/* Theme */}
+            {/* Orientation */}
             <div className="space-y-3">
-              <Label>Tema do PDF</Label>
+              <Label>Orientação</Label>
               <RadioGroup
-                value={options.theme}
-                onValueChange={(v) => setOptions({ ...options, theme: v as 'light' | 'dark' | 'auto' })}
-                className="flex gap-3"
+                value={options.orientation}
+                onValueChange={(v) => setOptions({ ...options, orientation: v as 'portrait' | 'landscape' })}
+                className="flex gap-4"
               >
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="dark" id="dark" />
-                  <Label htmlFor="dark" className="cursor-pointer flex items-center gap-1">
-                    <Moon className="h-3 w-3" /> Escuro
-                  </Label>
+                  <RadioGroupItem value="portrait" id="portrait" />
+                  <Label htmlFor="portrait" className="cursor-pointer">Retrato</Label>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="light" id="light" />
-                  <Label htmlFor="light" className="cursor-pointer flex items-center gap-1">
-                    <Sun className="h-3 w-3" /> Claro
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="auto" id="auto" />
-                  <Label htmlFor="auto" className="cursor-pointer">Auto</Label>
+                  <RadioGroupItem value="landscape" id="landscape" />
+                  <Label htmlFor="landscape" className="cursor-pointer">Paisagem</Label>
                 </div>
               </RadioGroup>
             </div>
-
-            {/* Orientation */}
             <div className="space-y-3">
               <Label>Orientação</Label>
               <RadioGroup
