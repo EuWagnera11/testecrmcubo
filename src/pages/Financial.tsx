@@ -160,8 +160,8 @@ export default function Financial() {
   };
 
   const PayoutCard = ({ payout, showPaidAction }: { payout: PayoutWithProject; showPaidAction: boolean }) => (
-    <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50 hover:bg-muted/70 transition-colors">
-      <div className="flex items-center gap-4 flex-1 min-w-0">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-lg bg-muted/50 hover:bg-muted/70 transition-colors gap-3">
+      <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
         <div className={cn(
           "h-10 w-10 rounded-full flex items-center justify-center shrink-0",
           payout.paid ? "bg-success/10" : "bg-warning/10"
@@ -173,12 +173,12 @@ export default function Financial() {
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="font-medium truncate">{payout.member_name || 'Membro'}</p>
+            <p className="font-medium truncate text-sm sm:text-base">{payout.member_name || 'Membro'}</p>
             <Badge variant="outline" className="text-xs shrink-0">
               {roleLabels[payout.role] || payout.role}
             </Badge>
           </div>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground flex-wrap">
             <Link 
               to={`/projetos/${payout.project_id}`} 
               className="hover:text-primary hover:underline truncate"
@@ -187,8 +187,8 @@ export default function Financial() {
             </Link>
             {payout.description && (
               <>
-                <span>•</span>
-                <span className="truncate">{payout.description}</span>
+                <span className="hidden sm:inline">•</span>
+                <span className="truncate hidden sm:inline">{payout.description}</span>
               </>
             )}
           </div>
@@ -200,26 +200,26 @@ export default function Financial() {
         </div>
       </div>
       
-      <div className="flex items-center gap-3 ml-4">
-        <p className="font-bold text-lg">{formatCurrency(Number(payout.amount))}</p>
+      <div className="flex items-center justify-between sm:justify-end gap-3 sm:ml-4">
+        <p className="font-bold text-base sm:text-lg">{formatCurrency(Number(payout.amount))}</p>
         
         <div className="flex items-center gap-1">
           {showPaidAction ? (
             <Button
               size="sm"
               variant="outline"
-              className="h-8 text-success border-success hover:bg-success hover:text-success-foreground"
+              className="h-8 text-success border-success hover:bg-success hover:text-success-foreground text-xs sm:text-sm"
               onClick={() => handleMarkAsPaid(payout)}
               disabled={updatePayout.isPending}
             >
-              <CheckCircle2 className="h-4 w-4 mr-1" />
-              Pagar
+              <CheckCircle2 className="h-4 w-4 sm:mr-1" />
+              <span className="hidden sm:inline">Pagar</span>
             </Button>
           ) : (
             <Button
               size="sm"
               variant="ghost"
-              className="h-8 text-muted-foreground"
+              className="h-8 text-muted-foreground text-xs sm:text-sm"
               onClick={() => handleMarkAsUnpaid(payout)}
               disabled={updatePayout.isPending}
             >
@@ -380,37 +380,39 @@ export default function Financial() {
           {/* Filter by period */}
           <Card className="border-border/50">
             <CardContent className="p-4">
-              <div className="flex flex-wrap items-center gap-4">
+              <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3 sm:gap-4">
                 <div className="flex items-center gap-2">
                   <Filter className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">Filtrar por período:</span>
+                  <span className="text-sm font-medium">Filtrar:</span>
                 </div>
-                <Select value={filterMonth || "all"} onValueChange={(v) => setFilterMonth(v === "all" ? "" : v)}>
-                  <SelectTrigger className="w-40 h-10">
-                    <SelectValue placeholder="Mês" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos</SelectItem>
-                    {months.map(m => (
-                      <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select value={filterYear} onValueChange={setFilterYear}>
-                  <SelectTrigger className="w-28 h-10">
-                    <SelectValue placeholder="Ano" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {years.map(y => (
-                      <SelectItem key={y} value={y}>{y}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {filterMonth && (
-                  <Button variant="ghost" size="sm" onClick={() => setFilterMonth('')}>
-                    Limpar
-                  </Button>
-                )}
+                <div className="flex flex-wrap items-center gap-2">
+                  <Select value={filterMonth || "all"} onValueChange={(v) => setFilterMonth(v === "all" ? "" : v)}>
+                    <SelectTrigger className="w-32 sm:w-40 h-10">
+                      <SelectValue placeholder="Mês" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      {months.map(m => (
+                        <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select value={filterYear} onValueChange={setFilterYear}>
+                    <SelectTrigger className="w-24 sm:w-28 h-10">
+                      <SelectValue placeholder="Ano" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {years.map(y => (
+                        <SelectItem key={y} value={y}>{y}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {filterMonth && (
+                    <Button variant="ghost" size="sm" onClick={() => setFilterMonth('')}>
+                      Limpar
+                    </Button>
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -477,27 +479,27 @@ export default function Financial() {
               ) : (
                 <div className="space-y-3">
                   {filteredTransactions.map((t) => (
-                    <div key={t.id} className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
-                      <div className="flex items-center gap-4">
+                    <div key={t.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 rounded-lg bg-muted/50 gap-2 sm:gap-4">
+                      <div className="flex items-center gap-3 sm:gap-4">
                         <div className={cn(
-                          "h-10 w-10 rounded-full flex items-center justify-center",
+                          "h-8 w-8 sm:h-10 sm:w-10 rounded-full flex items-center justify-center shrink-0",
                           t.type === 'income' ? "bg-success/10" : "bg-destructive/10"
                         )}>
                           {t.type === 'income' 
-                            ? <ArrowUpRight className="h-5 w-5 text-success" />
-                            : <ArrowDownRight className="h-5 w-5 text-destructive" />
+                            ? <ArrowUpRight className="h-4 w-4 sm:h-5 sm:w-5 text-success" />
+                            : <ArrowDownRight className="h-4 w-4 sm:h-5 sm:w-5 text-destructive" />
                           }
                         </div>
-                        <div>
-                          <p className="font-medium">{t.category}</p>
-                          <p className="text-sm text-muted-foreground">
+                        <div className="min-w-0">
+                          <p className="font-medium text-sm sm:text-base truncate">{t.category}</p>
+                          <p className="text-xs sm:text-sm text-muted-foreground truncate">
                             {t.description || format(new Date(t.date), 'dd/MM/yyyy')}
                           </p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-4">
+                      <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-4 ml-11 sm:ml-0">
                         <p className={cn(
-                          "font-bold",
+                          "font-bold text-sm sm:text-base",
                           t.type === 'income' ? "text-success" : "text-destructive"
                         )}>
                           {t.type === 'income' ? '+' : '-'} {formatCurrency(Number(t.amount))}
@@ -505,7 +507,7 @@ export default function Financial() {
                         <Button
                           size="icon"
                           variant="ghost"
-                          className="text-muted-foreground hover:text-destructive"
+                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
                           onClick={() => deleteTransaction.mutate(t.id)}
                         >
                           <Trash2 className="h-4 w-4" />
