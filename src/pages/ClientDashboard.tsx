@@ -848,13 +848,10 @@ export default function ClientDashboard() {
     return result;
   }, [hasTraffic, hasCampaigns, hasMetrics, hasDesign, hasCreatives]);
 
-  // Determine the default tab
-  const defaultTab = useMemo(() => {
-    if (isTrafficMajority && hasTraffic && (hasCampaigns || hasMetrics)) {
-      return 'traffic';
-    }
-    return tabs[0]?.id || 'projects';
-  }, [isTrafficMajority, hasTraffic, hasCampaigns, hasMetrics, tabs]);
+  // Determine the default tab - traffic first if it's the majority type
+  const defaultTab = isTrafficMajority && hasTraffic && (hasCampaigns || hasMetrics) 
+    ? 'traffic' 
+    : (tabs[0]?.id || 'projects');
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/30">
