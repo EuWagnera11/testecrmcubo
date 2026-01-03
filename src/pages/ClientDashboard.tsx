@@ -863,13 +863,13 @@ export default function ClientDashboard() {
                        Cliente desde {format(new Date(clientData.created_at), 'MMMM yyyy', { locale: ptBR })}
                      </span>
                    )}
-                  {clientData.email && (
+                  {clientData?.email && (
                     <span className="flex items-center gap-1.5">
                       <Mail className="h-4 w-4" />
                       {clientData.email}
                     </span>
                   )}
-                  {clientData.phone && (
+                  {clientData?.phone && (
                     <span className="flex items-center gap-1.5">
                       <Phone className="h-4 w-4" />
                       {clientData.phone}
