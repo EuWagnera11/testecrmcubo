@@ -70,6 +70,8 @@ export function useCampaigns(projectId?: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['campaigns', projectId] });
+      queryClient.invalidateQueries({ queryKey: ['all-client-campaigns'] });
+      queryClient.invalidateQueries({ queryKey: ['all-campaign-metrics'] });
       toast({ title: 'Campanha criada!' });
     },
     onError: (error) => {
@@ -95,6 +97,8 @@ export function useCampaigns(projectId?: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['campaigns', projectId] });
+      queryClient.invalidateQueries({ queryKey: ['all-client-campaigns'] });
+      queryClient.invalidateQueries({ queryKey: ['all-campaign-metrics'] });
       toast({ title: 'Campanha atualizada!' });
     },
     onError: (error) => {
@@ -117,6 +121,8 @@ export function useCampaigns(projectId?: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['campaigns', projectId] });
+      queryClient.invalidateQueries({ queryKey: ['all-client-campaigns'] });
+      queryClient.invalidateQueries({ queryKey: ['all-campaign-metrics'] });
       toast({ title: 'Campanha excluída!' });
     },
     onError: (error) => {

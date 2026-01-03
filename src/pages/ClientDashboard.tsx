@@ -331,7 +331,7 @@ export default function ClientDashboard() {
 
   // Get all campaigns for all projects (only if has traffic)
   const { data: allCampaigns } = useQuery({
-    queryKey: ['all-client-campaigns', allProjects?.map(p => p.id)],
+    queryKey: ['all-client-campaigns', initialProject?.client_id],
     queryFn: async () => {
       if (!allProjects?.length) return [];
       
@@ -346,11 +346,13 @@ export default function ClientDashboard() {
       return data || [];
     },
     enabled: !!allProjects?.length && hasTraffic,
+    staleTime: 1000 * 30,
+    refetchOnWindowFocus: true,
   });
 
   // Get all campaign metrics (only if has traffic)
   const { data: allMetrics } = useQuery({
-    queryKey: ['all-campaign-metrics', allCampaigns?.map(c => c.id)],
+    queryKey: ['all-campaign-metrics', initialProject?.client_id],
     queryFn: async () => {
       if (!allCampaigns?.length) return [];
       
@@ -365,6 +367,8 @@ export default function ClientDashboard() {
       return data || [];
     },
     enabled: !!allCampaigns?.length && hasTraffic,
+    staleTime: 1000 * 30,
+    refetchOnWindowFocus: true,
   });
 
   // Log access
