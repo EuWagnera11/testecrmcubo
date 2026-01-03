@@ -808,21 +808,53 @@ export default function ClientDashboard() {
     );
   };
 
+  // Determine if traffic is the majority project type
+  const isTrafficMajority = useMemo(() => {
+    if (!allProjects?.length) return false;
+    
+    let trafficCount = 0;
+    let totalTypeCount = 0;
+    
+    allProjects.forEach(project => {
+      const types = project.project_types || (project.project_type ? project.project_type.split(',').map((t: string) => t.trim()) : []);
+      types.forEach((type: string) => {
+        totalTypeCount++;
+        if (type === 'traffic' || type === 'trafego_pago' || type === 'trafego') {
+          trafficCount++;
+        }
+      });
+    });
+    
+    return totalTypeCount > 0 && trafficCount / totalTypeCount >= 0.5;
+  }, [allProjects]);
+
   // Build dynamic tabs based on client project types
-  const tabs = [];
-  
-  // Always show projects tab
-  tabs.push({ id: 'projects', label: 'Projetos' });
-  
-  // Show traffic tab only if client has traffic projects
-  if (hasTraffic && (hasCampaigns || hasMetrics)) {
-    tabs.unshift({ id: 'traffic', label: 'Tráfego Pago' });
-  }
-  
-  // Show deliverables tab if has design/creative work
-  if (hasDesign || hasCreatives) {
-    tabs.push({ id: 'deliverables', label: 'Entregas' });
-  }
+  const tabs = useMemo(() => {
+    const result = [];
+    
+    // Show traffic tab only if client has traffic projects
+    if (hasTraffic && (hasCampaigns || hasMetrics)) {
+      result.push({ id: 'traffic', label: 'Tráfego Pago' });
+    }
+    
+    // Always show projects tab
+    result.push({ id: 'projects', label: 'Projetos' });
+    
+    // Show deliverables tab if has design/creative work
+    if (hasDesign || hasCreatives) {
+      result.push({ id: 'deliverables', label: 'Entregas' });
+    }
+    
+    return result;
+  }, [hasTraffic, hasCampaigns, hasMetrics, hasDesign, hasCreatives]);
+
+  // Determine the default tab
+  const defaultTab = useMemo(() => {
+    if (isTrafficMajority && hasTraffic && (hasCampaigns || hasMetrics)) {
+      return 'traffic';
+    }
+    return tabs[0]?.id || 'projects';
+  }, [isTrafficMajority, hasTraffic, hasCampaigns, hasMetrics, tabs]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/30">
@@ -1018,7 +1050,7 @@ export default function ClientDashboard() {
         )}
 
         {/* Main Tabs - Dynamic based on project types */}
-        <Tabs defaultValue={tabs[0]?.id || 'projects'} className="space-y-6">
+        <Tabs defaultValue={defaultTab} className="space-y-6">
           <TabsList className="bg-card border border-border/50 p-1">
             {tabs.map(tab => (
               <TabsTrigger 
