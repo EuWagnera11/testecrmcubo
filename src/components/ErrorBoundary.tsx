@@ -11,16 +11,17 @@ interface Props {
 interface State {
   hasError: boolean;
   error: Error | null;
+  showDetails: boolean;
 }
 
 export class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { hasError: false, error: null, showDetails: false };
   }
 
   static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, error };
+    return { hasError: true, error, showDetails: false };
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
@@ -29,6 +30,10 @@ export class ErrorBoundary extends Component<Props, State> {
 
   handleReload = () => {
     window.location.reload();
+  };
+
+  toggleDetails = () => {
+    this.setState((s) => ({ ...s, showDetails: !s.showDetails }));
   };
 
   render() {
@@ -48,14 +53,24 @@ export class ErrorBoundary extends Component<Props, State> {
               <p className="text-muted-foreground">
                 Algo inesperado aconteceu ao carregar esta página.
               </p>
-              {process.env.NODE_ENV === 'development' && this.state.error && (
-                <div className="bg-muted p-3 rounded-lg text-left">
-                  <p className="text-xs font-mono text-destructive break-all">
-                    {this.state.error.message}
-                  </p>
+
+              {this.state.error && (
+                <div className="space-y-2">
+                  <Button variant="outline" onClick={this.toggleDetails} className="w-full">
+                    {this.state.showDetails ? 'Ocultar detalhes' : 'Ver detalhes'}
+                  </Button>
+                  {this.state.showDetails && (
+                    <div className="bg-muted p-3 rounded-lg text-left">
+                      <pre className="text-xs font-mono text-foreground whitespace-pre-wrap break-words">
+                        {this.state.error.message}
+                        {this.state.error.stack ? `\n\n${this.state.error.stack}` : ''}
+                      </pre>
+                    </div>
+                  )}
                 </div>
               )}
-              <Button onClick={this.handleReload} className="gap-2">
+
+              <Button onClick={this.handleReload} className="gap-2 w-full">
                 <RefreshCw className="h-4 w-4" />
                 Recarregar página
               </Button>
