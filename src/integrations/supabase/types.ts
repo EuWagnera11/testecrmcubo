@@ -2909,6 +2909,10 @@ export type Database = {
       }
       sales_pipeline: {
         Row: {
+          asaas_customer_id: string | null
+          asaas_invoice_url: string | null
+          asaas_payment_id: string | null
+          asaas_payment_status: string | null
           assigned_to: string | null
           client_id: string | null
           contact_email: string | null
@@ -2928,6 +2932,10 @@ export type Database = {
           won_at: string | null
         }
         Insert: {
+          asaas_customer_id?: string | null
+          asaas_invoice_url?: string | null
+          asaas_payment_id?: string | null
+          asaas_payment_status?: string | null
           assigned_to?: string | null
           client_id?: string | null
           contact_email?: string | null
@@ -2947,6 +2955,10 @@ export type Database = {
           won_at?: string | null
         }
         Update: {
+          asaas_customer_id?: string | null
+          asaas_invoice_url?: string | null
+          asaas_payment_id?: string | null
+          asaas_payment_status?: string | null
           assigned_to?: string | null
           client_id?: string | null
           contact_email?: string | null
@@ -3234,6 +3246,56 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      webhook_leads: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          extra_data: Json | null
+          id: string
+          imported: boolean | null
+          message: string | null
+          name: string
+          phone: string | null
+          pipeline_item_id: string | null
+          source: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          extra_data?: Json | null
+          id?: string
+          imported?: boolean | null
+          message?: string | null
+          name: string
+          phone?: string | null
+          pipeline_item_id?: string | null
+          source?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          extra_data?: Json | null
+          id?: string
+          imported?: boolean | null
+          message?: string | null
+          name?: string
+          phone?: string | null
+          pipeline_item_id?: string | null
+          source?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webhook_leads_pipeline_item_id_fkey"
+            columns: ["pipeline_item_id"]
+            isOneToOne: false
+            referencedRelation: "sales_pipeline"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       whatsapp_contacts: {
         Row: {
