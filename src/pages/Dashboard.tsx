@@ -224,7 +224,7 @@ export default function Dashboard() {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">{metric.title}</p>
-                  <p className="text-2xl lg:text-3xl font-serif mt-1">{metric.value}</p>
+                  <p className="text-2xl lg:text-3xl font-bold mt-1">{metric.value}</p>
                   <p className="text-[11px] text-muted-foreground mt-1">{metric.description}</p>
                 </div>
                 <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center">

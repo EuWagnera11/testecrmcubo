@@ -154,7 +154,7 @@ export default function Auth() {
           </div>
 
           <div>
-            <h2 className="text-3xl font-serif font-semibold tracking-tight">Bem-vindo</h2>
+            <h2 className="text-3xl font-bold tracking-tight">Bem-vindo</h2>
             <p className="text-muted-foreground mt-2">
               Entre ou crie sua conta para continuar.
             </p>
