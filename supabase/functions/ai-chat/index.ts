@@ -1037,12 +1037,12 @@ const tools = [
     type: "function",
     function: {
       name: "upsert_project_field",
-      description: "Create or update a project field (Campo). Use field_type as the key identifier (e.g. 'briefing', 'landing_page', 'drive', 'observacoes', 'referencias', or any custom name). You can set content (text), link_url (a URL/link), and attachments (array of URLs).",
+      description: "Create or update a project field (Campo). Use field_type as the key identifier. ALLOWED field_type values: 'design', 'copy', 'traffic', 'social_media', 'general', 'briefing', 'landing_page', 'drive', 'observacoes', 'referencias', 'logo', 'branding', 'estrategia', 'conteudo', 'midia', 'documentos', 'outros'. You can set content (text), link_url (a URL/link), and attachments (array of URLs).",
       parameters: {
         type: "object",
         properties: {
           project_id: { type: "string" },
-          field_type: { type: "string", description: "Field identifier, e.g. 'briefing', 'landing_page', 'drive', 'observacoes', 'referencias', 'logo', etc." },
+          field_type: { type: "string", enum: ["design", "copy", "traffic", "social_media", "general", "briefing", "landing_page", "drive", "observacoes", "referencias", "logo", "branding", "estrategia", "conteudo", "midia", "documentos", "outros"], description: "Field type identifier. Must be one of the allowed values." },
           content: { type: "string", description: "Text content for this field" },
           link_url: { type: "string", description: "URL/link to attach to this field" },
           attachments: { type: "array", items: { type: "string" }, description: "Array of file/image URLs" },
@@ -2075,8 +2075,9 @@ INSTRUÇÕES:
 - Para qualquer ação que exija project_id, use o projeto em contexto atual quando disponível
 - Quando pedir informações de subcategorias, use as ferramentas get_project_* para buscar dados REAIS
 - Quando pedirem para colar um link em "Campos", use upsert_project_field com o field_type adequado e o link_url
+- IMPORTANTE: os field_type permitidos para upsert_project_field são APENAS: 'design', 'copy', 'traffic', 'social_media', 'general', 'briefing', 'landing_page', 'drive', 'observacoes', 'referencias', 'logo', 'branding', 'estrategia', 'conteudo', 'midia', 'documentos', 'outros'. NUNCA use outro valor!
 - Quando o usuário ANEXAR ARQUIVOS na mensagem (formato "[Arquivo anexado: nome](url)"), extraia as URLs dos arquivos e:
-  - Se pedirem para adicionar nos "Campos" do projeto, use upsert_project_field com attachments contendo as URLs extraídas
+  - Se pedirem para adicionar nos "Campos" do projeto, use upsert_project_field com attachments contendo as URLs extraídas. Escolha o field_type mais adequado da lista permitida (ex: 'design' para imagens, 'documentos' para PDFs, 'general' se não souber)
   - Se pedirem para salvar como arquivo do cliente, use create_client_file com a URL
   - Se não especificarem onde salvar, pergunte se querem salvar nos Campos do projeto ou como arquivo do cliente
 - Para upsert_project_field com attachments: primeiro use list_project_fields para ver se já existem attachments no campo, e MERGE os novos com os existentes (não sobrescreva)
