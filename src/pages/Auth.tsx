@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, ArrowRight } from 'lucide-react';
 import { signInSchema, signUpSchema } from '@/lib/validation';
 import { logAuditEvent } from '@/hooks/useAuditLog';
+import { supabase } from '@/integrations/supabase/client';
 import refineLogo from '@/assets/refine-logo.png';
 
 export default function Auth() {
@@ -19,6 +20,22 @@ export default function Auth() {
   const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  const handleForgotPassword = async () => {
+    const email = (document.getElementById('login-email') as HTMLInputElement)?.value;
+    if (!email) {
+      toast({ title: 'Informe seu email', description: 'Preencha o campo de email antes.', variant: 'destructive' });
+      return;
+    }
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    if (error) {
+      toast({ title: 'Erro', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Email enviado!', description: 'Verifique sua caixa de entrada para redefinir a senha.' });
+    }
+  };
 
   const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -184,6 +201,13 @@ export default function Auth() {
                         </>
                       )}
                     </Button>
+                    <button
+                      type="button"
+                      onClick={handleForgotPassword}
+                      className="w-full text-sm text-muted-foreground hover:text-primary transition-colors mt-2"
+                    >
+                      Esqueceu sua senha?
+                    </button>
                   </form>
                 </TabsContent>
 
