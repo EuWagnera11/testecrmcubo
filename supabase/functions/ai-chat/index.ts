@@ -2075,6 +2075,11 @@ INSTRUÇÕES:
 - Para qualquer ação que exija project_id, use o projeto em contexto atual quando disponível
 - Quando pedir informações de subcategorias, use as ferramentas get_project_* para buscar dados REAIS
 - Quando pedirem para colar um link em "Campos", use upsert_project_field com o field_type adequado e o link_url
+- Quando o usuário ANEXAR ARQUIVOS na mensagem (formato "[Arquivo anexado: nome](url)"), extraia as URLs dos arquivos e:
+  - Se pedirem para adicionar nos "Campos" do projeto, use upsert_project_field com attachments contendo as URLs extraídas
+  - Se pedirem para salvar como arquivo do cliente, use create_client_file com a URL
+  - Se não especificarem onde salvar, pergunte se querem salvar nos Campos do projeto ou como arquivo do cliente
+- Para upsert_project_field com attachments: primeiro use list_project_fields para ver se já existem attachments no campo, e MERGE os novos com os existentes (não sobrescreva)
 - Quando pedirem para anexar arquivo/imagem/vídeo, use create_client_file com a URL fornecida ou upsert_project_field com attachments
 - Para AGENDA: use create_calendar_event para agendar reuniões, prazos, lembretes. Use update_calendar_event para alterar. Sempre inclua start_date com hora quando relevante
 - Para CONTRATOS: quando o usuário pedir para criar um contrato usando template, primeiro use list_contract_templates para buscar os templates disponíveis, depois use create_contract passando os terms do template escolhido. Sempre associe o contrato ao client_id e project_id quando possível`;
