@@ -967,6 +967,78 @@ const tools = [
       parameters: { type: "object", properties: { project_id: { type: "string" } }, required: ["project_id"] },
     },
   },
+
+  // ─── PROJECT FIELDS (Campos tab) ──────────────────────────────────────
+  {
+    type: "function",
+    function: {
+      name: "list_project_fields",
+      description: "List all fields (Campos) for a project. Each has: field_type, content, link_url, attachments.",
+      parameters: { type: "object", properties: { project_id: { type: "string" } }, required: ["project_id"] },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "upsert_project_field",
+      description: "Create or update a project field (Campo). Use field_type as the key identifier (e.g. 'briefing', 'landing_page', 'drive', 'observacoes', 'referencias', or any custom name). You can set content (text), link_url (a URL/link), and attachments (array of URLs).",
+      parameters: {
+        type: "object",
+        properties: {
+          project_id: { type: "string" },
+          field_type: { type: "string", description: "Field identifier, e.g. 'briefing', 'landing_page', 'drive', 'observacoes', 'referencias', 'logo', etc." },
+          content: { type: "string", description: "Text content for this field" },
+          link_url: { type: "string", description: "URL/link to attach to this field" },
+          attachments: { type: "array", items: { type: "string" }, description: "Array of file/image URLs" },
+        },
+        required: ["project_id", "field_type"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "delete_project_field",
+      description: "Delete a project field by ID.",
+      parameters: { type: "object", properties: { field_id: { type: "string" } }, required: ["field_id"] },
+    },
+  },
+
+  // ─── CLIENT FILES ─────────────────────────────────────────────────────
+  {
+    type: "function",
+    function: {
+      name: "list_client_files",
+      description: "List files attached to a client.",
+      parameters: {
+        type: "object",
+        properties: {
+          client_id: { type: "string" },
+          project_id: { type: "string", description: "Optional: filter by project" },
+        },
+        required: ["client_id"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "create_client_file",
+      description: "Attach a file reference to a client. Provide a title and URL (link to Drive, Dropbox, or any external file).",
+      parameters: {
+        type: "object",
+        properties: {
+          client_id: { type: "string" },
+          project_id: { type: "string" },
+          title: { type: "string" },
+          url: { type: "string", description: "File URL (Google Drive, Dropbox, direct link, etc.)" },
+          description: { type: "string" },
+          file_type: { type: "string", description: "image, video, document, spreadsheet, presentation, other" },
+        },
+        required: ["client_id", "title", "url"],
+      },
+    },
+  },
 ];
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -1006,6 +1078,11 @@ const PROJECT_SCOPED_TOOLS = new Set([
   "list_project_optimization_log",
   "create_project_optimization_log",
   "list_project_members",
+  "list_project_fields",
+  "upsert_project_field",
+  "delete_project_field",
+  "list_client_files",
+  "create_client_file",
 ]);
 
 async function resolveProjectId(
@@ -1619,6 +1696,57 @@ async function executeTool(
       return data.map((m: any) => ({ ...m, full_name: pm.get(m.user_id) || "Sem nome" }));
     }
 
+    // ── PROJECT FIELDS (Campos) ─────────────────────────────
+    case "list_project_fields": {
+      const { data, error } = await supabase.from("project_fields").select("id, field_type, content, link_url, attachments, created_at, updated_at").eq("project_id", args.project_id).order("created_at");
+      if (error) throw error;
+      return data || [];
+    }
+    case "upsert_project_field": {
+      const fields: Record<string, unknown> = {};
+      if (args.content !== undefined) fields.content = args.content;
+      if (args.link_url !== undefined) fields.link_url = args.link_url;
+      if (args.attachments !== undefined) fields.attachments = args.attachments;
+      fields.last_edited_by = userId;
+      const { data: existing } = await supabase.from("project_fields").select("id").eq("project_id", args.project_id).eq("field_type", args.field_type).maybeSingle();
+      if (existing) {
+        const { data, error } = await supabase.from("project_fields").update({ ...fields, updated_at: new Date().toISOString() }).eq("id", existing.id).select().single();
+        if (error) throw error;
+        return { success: true, field: data };
+      } else {
+        const { data, error } = await supabase.from("project_fields").insert({ project_id: args.project_id, field_type: args.field_type as string, ...fields }).select().single();
+        if (error) throw error;
+        return { success: true, field: data };
+      }
+    }
+    case "delete_project_field": {
+      const { error } = await supabase.from("project_fields").delete().eq("id", args.field_id);
+      if (error) throw error;
+      return { success: true, message: "Campo deletado." };
+    }
+
+    // ── CLIENT FILES ─────────────────────────────────────────
+    case "list_client_files": {
+      let q = supabase.from("client_files").select("id, title, url, description, file_type, project_id, created_at").eq("client_id", args.client_id).order("created_at", { ascending: false });
+      if (args.project_id) q = q.eq("project_id", args.project_id);
+      const { data, error } = await q;
+      if (error) throw error;
+      return data || [];
+    }
+    case "create_client_file": {
+      const { data, error } = await supabase.from("client_files").insert({
+        client_id: args.client_id as string,
+        project_id: args.project_id || null,
+        title: args.title as string,
+        url: args.url as string,
+        description: args.description || null,
+        file_type: args.file_type || "document",
+        user_id: userId,
+      }).select().single();
+      if (error) throw error;
+      return { success: true, file: data };
+    }
+
     default:
       return { error: `Tool '${name}' não encontrada.` };
   }
@@ -1765,6 +1893,18 @@ SUBCATEGORIAS DE PROJETO (campos reais do sistema — use SOMENTE estes):
   - action_description: Descrição da ação
   - reason: Motivo/razão
 
+📋 Campos do Projeto (project_fields) — campos personalizados com links e conteúdo:
+  - field_type: Identificador do campo (ex: "briefing", "landing_page", "drive", "observacoes", "referencias", "logo")
+  - content: Conteúdo de texto do campo
+  - link_url: URL/link associado ao campo
+  - attachments: Array de URLs de arquivos/imagens anexados
+
+📎 Arquivos do Cliente (client_files) — anexos e documentos:
+  - title: Título do arquivo
+  - url: URL do arquivo (Google Drive, Dropbox, link direto, etc.)
+  - description: Descrição do arquivo
+  - file_type: Tipo (image, video, document, spreadsheet, presentation, other)
+
 INSTRUÇÕES:
 - Responda SEMPRE em português do Brasil
 - Seja conciso e direto
@@ -1778,7 +1918,9 @@ INSTRUÇÕES:
 - Quando pedir para atribuir tarefa, use list_team_members para achar o user_id
 - Nunca use IDs fictícios como PRJ-XXXX, CLI-XXXX, USER-XXXX
 - Para qualquer ação que exija project_id, use o projeto em contexto atual quando disponível
-- Quando pedir informações de subcategorias, use as ferramentas get_project_* para buscar dados REAIS`;
+- Quando pedir informações de subcategorias, use as ferramentas get_project_* para buscar dados REAIS
+- Quando pedirem para colar um link em "Campos", use upsert_project_field com o field_type adequado e o link_url
+- Quando pedirem para anexar arquivo/imagem/vídeo, use create_client_file com a URL fornecida ou upsert_project_field com attachments`;
 
     const apiMessages = [{ role: "system", content: systemPrompt }, ...messages];
 
