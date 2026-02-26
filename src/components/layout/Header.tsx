@@ -1,4 +1,4 @@
-import { Menu, User } from 'lucide-react';
+import { Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -24,32 +24,31 @@ export function Header({ onMenuClick }: HeaderProps) {
   };
 
   return (
-    <header className="sticky top-0 z-50 h-16 border-b border-border bg-card">
-      <div className="flex h-full items-center justify-between px-4 lg:px-8">
-        <div className="flex items-center gap-4">
+    <header className="sticky top-0 z-50 h-14 border-b border-border/60 bg-background/80 backdrop-blur-md">
+      <div className="flex h-full items-center justify-between px-4 lg:px-6">
+        <div className="flex items-center gap-3">
           <Button
             variant="ghost"
             size="icon"
-            className="lg:hidden"
+            className="lg:hidden h-9 w-9"
             onClick={onMenuClick}
           >
-            <Menu className="h-5 w-5" />
+            <Menu className="h-4 w-4" />
           </Button>
           
           <div className="flex items-center gap-1 lg:hidden">
-            <span className="text-primary font-medium italic text-lg">refine</span>
-            <span className="font-black text-xl tracking-tighter">CUBO</span>
+            <span className="font-bold tracking-widest text-sm">CUBO</span>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <NotificationDropdown />
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                <Avatar className="h-10 w-10">
-                  <AvatarFallback className="bg-primary text-primary-foreground font-semibold">
+              <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+                <Avatar className="h-9 w-9">
+                  <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
                     {getInitials(user?.user_metadata?.full_name)}
                   </AvatarFallback>
                 </Avatar>
@@ -57,21 +56,16 @@ export function Header({ onMenuClick }: HeaderProps) {
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56" align="end">
               <div className="flex items-center gap-3 p-3">
-                <Avatar className="h-10 w-10">
-                  <AvatarFallback className="bg-primary text-primary-foreground font-semibold">
+                <Avatar className="h-9 w-9">
+                  <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
                     {getInitials(user?.user_metadata?.full_name)}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col">
-                  <span className="font-semibold">{user?.user_metadata?.full_name || 'Usuário'}</span>
+                  <span className="text-sm font-semibold">{user?.user_metadata?.full_name || 'Usuário'}</span>
                   <span className="text-xs text-muted-foreground">{user?.email}</span>
                 </div>
               </div>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>
-                <User className="mr-2 h-4 w-4" />
-                Perfil
-              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={signOut} className="text-destructive">
                 Sair

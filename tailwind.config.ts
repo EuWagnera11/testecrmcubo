@@ -14,17 +14,10 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['Manrope', 'system-ui', '-apple-system', 'sans-serif'],
-        body: ['Manrope', 'system-ui', '-apple-system', 'sans-serif'],
-        display: ['Bebas Neue', 'sans-serif'],
-        elegant: ['Cormorant Garamond', 'serif'],
-        playfair: ['Playfair Display', 'serif'],
-        baskerville: ['Libre Baskerville', 'serif'],
-        lora: ['Lora', 'serif'],
-        crimson: ['Crimson Text', 'serif'],
-        'dm-serif': ['DM Serif Display', 'serif'],
-        merriweather: ['Merriweather', 'serif'],
-        'source-serif': ['Source Serif 4', 'serif'],
+        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        body: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        serif: ['Cormorant Garamond', 'serif'],
+        display: ['Cormorant Garamond', 'serif'],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -70,6 +63,7 @@ export default {
         },
         cubo: {
           orange: "hsl(var(--cubo-orange))",
+          "orange-light": "hsl(var(--cubo-orange-light))",
           "orange-glow": "hsl(var(--cubo-orange-glow))",
           charcoal: "hsl(var(--cubo-charcoal))",
           cream: "hsl(var(--cubo-cream))",
@@ -93,9 +87,10 @@ export default {
         "2xl": "calc(var(--radius) + 8px)",
       },
       boxShadow: {
-        elegant: "0 10px 30px -10px hsl(var(--primary) / 0.3)",
-        glow: "0 0 40px hsl(var(--primary) / 0.4)",
-        card: "0 4px 30px rgba(0, 0, 0, 0.1)",
+        elegant: "0 10px 30px -10px hsl(var(--primary) / 0.2)",
+        glow: "0 0 40px hsl(var(--primary) / 0.3)",
+        card: "0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 20px rgba(0, 0, 0, 0.03)",
+        "card-hover": "0 4px 20px rgba(0, 0, 0, 0.08)",
       },
       keyframes: {
         "accordion-down": {
@@ -123,8 +118,8 @@ export default {
           to: { opacity: "1", transform: "scale(1)" },
         },
         "pulse-glow": {
-          "0%, 100%": { boxShadow: "0 0 20px hsl(var(--accent) / 0.4)" },
-          "50%": { boxShadow: "0 0 40px hsl(var(--accent) / 0.6)" },
+          "0%, 100%": { boxShadow: "0 0 20px hsl(var(--accent) / 0.3)" },
+          "50%": { boxShadow: "0 0 40px hsl(var(--accent) / 0.5)" },
         },
       },
       animation: {
