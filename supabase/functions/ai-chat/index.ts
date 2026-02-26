@@ -302,6 +302,27 @@ const tools = [
   {
     type: "function",
     function: {
+      name: "update_calendar_event",
+      description: "Update a calendar event (title, description, start_date, end_date, event_type, color, all_day).",
+      parameters: {
+        type: "object",
+        properties: {
+          event_id: { type: "string" },
+          title: { type: "string" },
+          description: { type: "string" },
+          start_date: { type: "string", description: "ISO datetime" },
+          end_date: { type: "string", description: "ISO datetime" },
+          event_type: { type: "string", description: "meeting, deadline, reminder, other" },
+          color: { type: "string", description: "Hex color e.g. #3b82f6" },
+          all_day: { type: "boolean" },
+        },
+        required: ["event_id"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "delete_calendar_event",
       description: "Delete a calendar event by ID.",
       parameters: { type: "object", properties: { event_id: { type: "string" } }, required: ["event_id"] },
@@ -309,6 +330,14 @@ const tools = [
   },
 
   // ─── CONTRACTS ────────────────────────────────────────────────────────
+  {
+    type: "function",
+    function: {
+      name: "list_contract_templates",
+      description: "List available contract templates. Use to find a template before creating a contract with its terms.",
+      parameters: { type: "object", properties: {} },
+    },
+  },
   {
     type: "function",
     function: {
@@ -326,7 +355,7 @@ const tools = [
     type: "function",
     function: {
       name: "create_contract",
-      description: "Create a new contract.",
+      description: "Create a new contract. Use list_contract_templates first if user wants to use a template, then pass the template terms.",
       parameters: {
         type: "object",
         properties: {
@@ -1393,6 +1422,15 @@ async function executeTool(
       return { success: true, event: data };
     }
 
+    case "update_calendar_event": {
+      const ud: Record<string, unknown> = {};
+      for (const k of ["title", "description", "start_date", "end_date", "event_type", "color", "all_day"]) if (args[k] !== undefined) ud[k] = args[k];
+      if (!Object.keys(ud).length) return { error: "Nenhum campo para atualizar." };
+      const { data, error } = await supabase.from("calendar_events").update(ud).eq("id", args.event_id).select().single();
+      if (error) throw error;
+      return { success: true, event: data };
+    }
+
     case "delete_calendar_event": {
       const { error } = await supabase.from("calendar_events").delete().eq("id", args.event_id);
       if (error) throw error;
@@ -1400,6 +1438,12 @@ async function executeTool(
     }
 
     // ── CONTRACTS ────────────────────────────────────────────
+    case "list_contract_templates": {
+      const { data, error } = await supabase.from("contract_templates").select("id, name, description, contract_type, terms, created_at").order("created_at", { ascending: false });
+      if (error) throw error;
+      return data || [];
+    }
+
     case "list_contracts": {
       const { data, error } = await supabase.from("contracts").select("id, title, status, contract_type, expiry_date, client_id, created_at, clients(name, company)").order("created_at", { ascending: false }).limit(20);
       if (error) {
@@ -1907,8 +1951,8 @@ MÓDULOS DISPONÍVEIS (você pode fazer TUDO):
 👥 Clientes — criar, listar, editar, deletar, interações, fechamentos mensais
 ✅ Tarefas — criar, listar, editar status/prioridade/responsável, deletar
 💰 Financeiro — resumo, listar transações, criar receita/despesa, deletar
-📅 Agenda — listar, criar, deletar eventos
-📄 Contratos — listar, criar, editar status/termos
+📅 Agenda — listar, criar, editar, deletar eventos (reuniões, prazos, lembretes)
+📄 Contratos — listar, criar (com templates), editar status/termos, listar templates
 📢 Campanhas — listar, criar, ver métricas de performance (spend, clicks, leads, ROAS, CPC, CPL, CTR)
 💵 Comissões — resumo por período
 👔 Equipe — listar membros e cargos (global e por projeto)
@@ -2031,7 +2075,9 @@ INSTRUÇÕES:
 - Para qualquer ação que exija project_id, use o projeto em contexto atual quando disponível
 - Quando pedir informações de subcategorias, use as ferramentas get_project_* para buscar dados REAIS
 - Quando pedirem para colar um link em "Campos", use upsert_project_field com o field_type adequado e o link_url
-- Quando pedirem para anexar arquivo/imagem/vídeo, use create_client_file com a URL fornecida ou upsert_project_field com attachments`;
+- Quando pedirem para anexar arquivo/imagem/vídeo, use create_client_file com a URL fornecida ou upsert_project_field com attachments
+- Para AGENDA: use create_calendar_event para agendar reuniões, prazos, lembretes. Use update_calendar_event para alterar. Sempre inclua start_date com hora quando relevante
+- Para CONTRATOS: quando o usuário pedir para criar um contrato usando template, primeiro use list_contract_templates para buscar os templates disponíveis, depois use create_contract passando os terms do template escolhido. Sempre associe o contrato ao client_id e project_id quando possível`;
 
     const apiMessages = [{ role: "system", content: systemPrompt }, ...messages];
 
