@@ -65,17 +65,27 @@ Deno.serve(async (req) => {
 
     const baseUrl = toHttp(instance.api_url);
     const apiUrl = `${baseUrl}/message/sendText/${instance.instance_name}`;
-    const response = await fetch(apiUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        apikey: instance.api_key,
-      },
-      body: JSON.stringify({
-        number: phone,
-        text: message,
-      }),
+    const httpClient = Deno.createHttpClient({
+      unsafelyIgnoreCertificateErrors: true,
     });
+    let response: Response;
+    try {
+      response = await fetch(apiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: instance.api_key,
+        },
+        body: JSON.stringify({
+          number: phone,
+          text: message,
+        }),
+        client: httpClient,
+      });
+    } catch (e) {
+      httpClient.close();
+      throw e;
+    }
 
     const result = await response.json();
 
