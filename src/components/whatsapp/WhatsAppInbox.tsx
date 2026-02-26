@@ -1,34 +1,133 @@
-import { useState, useRef, useEffect } from 'react';
-import { useWhatsAppConversations, useWhatsAppMessages, useWhatsAppInstances, useSendWhatsAppMessage, useMarkConversationRead, WhatsAppConversation, WhatsAppContact } from '@/hooks/useWhatsApp';
+import { useState, useRef, useEffect, useMemo } from 'react';
+import {
+  useWhatsAppConversations,
+  useWhatsAppMessages,
+  useWhatsAppInstances,
+  useSendWhatsAppMessage,
+  useMarkConversationRead,
+  useWhatsAppUnreadCounts,
+  WhatsAppConversation,
+  WhatsAppContact,
+  WhatsAppInstance,
+} from '@/hooks/useWhatsApp';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Send, Search, Phone, User, MessageSquare } from 'lucide-react';
+import { Send, Search, Phone, User, MessageSquare, Inbox } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { WhatsAppNewChat } from './WhatsAppNewChat';
 
+const INSTANCE_COLORS = [
+  'bg-blue-500',
+  'bg-emerald-500',
+  'bg-amber-500',
+  'bg-rose-500',
+  'bg-violet-500',
+];
+
+function getInstanceColor(index: number) {
+  return INSTANCE_COLORS[index % INSTANCE_COLORS.length];
+}
+
 export function WhatsAppInbox() {
   const { instances } = useWhatsAppInstances();
-  const activeInstanceId = instances?.[0]?.id;
-  const { conversations, isLoading } = useWhatsAppConversations(activeInstanceId);
+  const [activeInstanceId, setActiveInstanceId] = useState<string | null>(null);
+  const { data: unreadCounts } = useWhatsAppUnreadCounts();
+
+  // "null" means unified view (all instances)
+  const filterInstanceId = activeInstanceId ?? undefined;
+  const { conversations, isLoading } = useWhatsAppConversations(filterInstanceId);
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
 
+  const isUnified = activeInstanceId === null;
+
+  const instanceMap = useMemo(() => {
+    const map: Record<string, { instance: WhatsAppInstance; colorIndex: number }> = {};
+    instances.forEach((inst, i) => {
+      map[inst.id] = { instance: inst, colorIndex: i };
+    });
+    return map;
+  }, [instances]);
+
   const selectedConv = conversations.find(c => c.id === selectedConversation);
+  const selectedInstance = selectedConv ? instanceMap[selectedConv.instance_id] : undefined;
 
   const filteredConversations = conversations.filter(c => {
     const name = c.contact?.name || c.contact?.phone || '';
     return name.toLowerCase().includes(searchTerm.toLowerCase());
   });
 
+  const totalUnread = useMemo(() => {
+    if (!unreadCounts) return 0;
+    return Object.values(unreadCounts).reduce((a, b) => a + b, 0);
+  }, [unreadCounts]);
+
+  // Reset selected conversation when switching instance
+  useEffect(() => {
+    setSelectedConversation(null);
+  }, [activeInstanceId]);
+
   return (
     <div className="flex h-full">
       {/* Conversation list */}
       <div className="w-80 border-r flex flex-col">
+        {/* Instance selector */}
+        {instances.length > 1 && (
+          <div className="p-2 border-b">
+            <ScrollArea className="w-full">
+              <div className="flex gap-1.5 pb-1">
+                <button
+                  onClick={() => setActiveInstanceId(null)}
+                  className={cn(
+                    'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors whitespace-nowrap',
+                    isUnified
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted text-muted-foreground hover:bg-accent'
+                  )}
+                >
+                  <Inbox className="h-3 w-3" />
+                  Todas
+                  {totalUnread > 0 && (
+                    <Badge variant="secondary" className="h-4 min-w-4 rounded-full px-1 text-[10px] ml-0.5">
+                      {totalUnread}
+                    </Badge>
+                  )}
+                </button>
+
+                {instances.map((inst, idx) => {
+                  const count = unreadCounts?.[inst.id] || 0;
+                  const isActive = activeInstanceId === inst.id;
+                  return (
+                    <button
+                      key={inst.id}
+                      onClick={() => setActiveInstanceId(inst.id)}
+                      className={cn(
+                        'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors whitespace-nowrap',
+                        isActive
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-muted text-muted-foreground hover:bg-accent'
+                      )}
+                    >
+                      <span className={cn('h-2 w-2 rounded-full flex-shrink-0', getInstanceColor(idx))} />
+                      {inst.name}
+                      {count > 0 && (
+                        <Badge variant="secondary" className="h-4 min-w-4 rounded-full px-1 text-[10px] ml-0.5">
+                          {count}
+                        </Badge>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </ScrollArea>
+          </div>
+        )}
+
         <div className="p-3 space-y-2">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -39,7 +138,9 @@ export function WhatsAppInbox() {
               className="pl-9 h-9"
             />
           </div>
-          {activeInstanceId && <WhatsAppNewChat instanceId={activeInstanceId} />}
+          {(activeInstanceId || instances?.[0]?.id) && (
+            <WhatsAppNewChat instanceId={activeInstanceId || instances[0].id} />
+          )}
         </div>
 
         <ScrollArea className="flex-1">
@@ -56,6 +157,8 @@ export function WhatsAppInbox() {
                 conversation={conv}
                 isActive={selectedConversation === conv.id}
                 onClick={() => setSelectedConversation(conv.id)}
+                showInstanceBadge={isUnified}
+                instanceInfo={instanceMap[conv.instance_id]}
               />
             ))
           )}
@@ -65,7 +168,12 @@ export function WhatsAppInbox() {
       {/* Chat area */}
       <div className="flex-1 flex flex-col">
         {selectedConv ? (
-          <ChatArea conversation={selectedConv} instanceId={activeInstanceId!} />
+          <ChatArea
+            conversation={selectedConv}
+            instanceId={selectedConv.instance_id}
+            instanceName={selectedInstance?.instance.name}
+            instanceColorIndex={selectedInstance?.colorIndex ?? 0}
+          />
         ) : (
           <div className="flex-1 flex items-center justify-center text-muted-foreground">
             <div className="text-center space-y-2">
@@ -83,10 +191,14 @@ function ConversationItem({
   conversation,
   isActive,
   onClick,
+  showInstanceBadge,
+  instanceInfo,
 }: {
   conversation: WhatsAppConversation & { contact: WhatsAppContact };
   isActive: boolean;
   onClick: () => void;
+  showInstanceBadge?: boolean;
+  instanceInfo?: { instance: WhatsAppInstance; colorIndex: number };
 }) {
   const name = conversation.contact?.name || conversation.contact?.phone || 'Desconhecido';
   const initials = name.slice(0, 2).toUpperCase();
@@ -111,10 +223,15 @@ function ConversationItem({
             </span>
           )}
         </div>
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-muted-foreground truncate">
-            {conversation.contact?.phone}
-          </span>
+        <div className="flex items-center justify-between gap-1">
+          <div className="flex items-center gap-1 min-w-0">
+            {showInstanceBadge && instanceInfo && (
+              <span className={cn('h-2 w-2 rounded-full flex-shrink-0', getInstanceColor(instanceInfo.colorIndex))} />
+            )}
+            <span className="text-xs text-muted-foreground truncate">
+              {conversation.contact?.phone}
+            </span>
+          </div>
           {conversation.unread_count > 0 && (
             <Badge variant="default" className="h-5 w-5 rounded-full p-0 flex items-center justify-center text-[10px]">
               {conversation.unread_count}
@@ -129,9 +246,13 @@ function ConversationItem({
 function ChatArea({
   conversation,
   instanceId,
+  instanceName,
+  instanceColorIndex,
 }: {
   conversation: WhatsAppConversation & { contact: WhatsAppContact };
   instanceId: string;
+  instanceName?: string;
+  instanceColorIndex: number;
 }) {
   const { messages, isLoading } = useWhatsAppMessages(conversation.id);
   const sendMessage = useSendWhatsAppMessage();
@@ -178,12 +299,20 @@ function ChatArea({
             {conversation.contact?.phone}
           </p>
         </div>
-        {conversation.assigned_to && (
-          <Badge variant="outline" className="gap-1">
-            <User className="h-3 w-3" />
-            Atribuído
-          </Badge>
-        )}
+        <div className="flex items-center gap-2">
+          {instanceName && (
+            <Badge variant="outline" className="gap-1.5">
+              <span className={cn('h-2 w-2 rounded-full', getInstanceColor(instanceColorIndex))} />
+              {instanceName}
+            </Badge>
+          )}
+          {conversation.assigned_to && (
+            <Badge variant="outline" className="gap-1">
+              <User className="h-3 w-3" />
+              Atribuído
+            </Badge>
+          )}
+        </div>
       </div>
 
       {/* Messages */}
