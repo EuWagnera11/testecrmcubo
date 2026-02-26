@@ -108,12 +108,12 @@ export default function Contracts() {
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
             <Button className="h-11">
-              <Plus className="h-4 w-4 mr-2" /> Nova Proposta
+              <Plus className="h-4 w-4 mr-2" /> Novo Contrato
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-lg">
+          <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle className="text-xl">Criar Nova Proposta</DialogTitle>
+              <DialogTitle className="text-xl">Criar Novo Contrato</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4 mt-4">
               {/* Template Selector */}
