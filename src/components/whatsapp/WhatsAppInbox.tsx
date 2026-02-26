@@ -20,6 +20,9 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { WhatsAppNewChat } from './WhatsAppNewChat';
+import { WhatsAppTagManager } from './WhatsAppTagManager';
+import { WhatsAppConversationTagSelector, ConversationTagBadges } from './WhatsAppConversationTagSelector';
+import { useAllConversationTags } from '@/hooks/useWhatsAppTags';
 
 const INSTANCE_COLORS = [
   'bg-blue-500',
@@ -45,6 +48,7 @@ export function WhatsAppInbox() {
   const [searchTerm, setSearchTerm] = useState('');
 
   const isUnified = activeInstanceId === null;
+  const { data: allConversationTags } = useAllConversationTags();
 
   const instanceMap = useMemo(() => {
     const map: Record<string, { instance: WhatsAppInstance; colorIndex: number }> = {};
@@ -143,9 +147,12 @@ export function WhatsAppInbox() {
               className="pl-9 h-9"
             />
           </div>
-          {(activeInstanceId || instances?.[0]?.id) && (
-            <WhatsAppNewChat instanceId={activeInstanceId || instances[0].id} />
-          )}
+          <div className="flex gap-2">
+            {(activeInstanceId || instances?.[0]?.id) && (
+              <WhatsAppNewChat instanceId={activeInstanceId || instances[0].id} />
+            )}
+            <WhatsAppTagManager />
+          </div>
         </div>
 
         <ScrollArea className="flex-1">
@@ -167,6 +174,7 @@ export function WhatsAppInbox() {
                 }}
                 showInstanceBadge={isUnified}
                 instanceInfo={instanceMap[conv.instance_id]}
+                tags={allConversationTags?.[conv.id] ?? []}
               />
             ))
           )}
@@ -205,12 +213,14 @@ function ConversationItem({
   onClick,
   showInstanceBadge,
   instanceInfo,
+  tags,
 }: {
   conversation: WhatsAppConversation & { contact: WhatsAppContact };
   isActive: boolean;
   onClick: () => void;
   showInstanceBadge?: boolean;
   instanceInfo?: { instance: WhatsAppInstance; colorIndex: number };
+  tags?: Array<{ id: string; name: string; color: string }>;
 }) {
   const name = conversation.contact?.name || conversation.contact?.phone || 'Desconhecido';
   const initials = name.slice(0, 2).toUpperCase();
@@ -250,6 +260,7 @@ function ConversationItem({
             </Badge>
           )}
         </div>
+        <ConversationTagBadges tags={tags ?? []} />
       </div>
     </button>
   );
@@ -331,6 +342,7 @@ function ChatArea({
               Atribuído
             </Badge>
           )}
+          <WhatsAppConversationTagSelector conversationId={conversation.id} />
         </div>
       </div>
 
