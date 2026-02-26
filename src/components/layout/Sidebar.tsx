@@ -9,7 +9,8 @@ import {
   ChevronLeft,
   Wallet,
   BarChart3,
-  GraduationCap
+  GraduationCap,
+  MessageCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -27,6 +28,7 @@ const navItems = [
   { icon: BarChart3, label: 'Relatórios', path: '/relatorios', directorOnly: true },
   { icon: Users, label: 'Clínicas', path: '/clientes' },
   { icon: FolderKanban, label: 'Projetos', path: '/projetos' },
+  { icon: MessageCircle, label: 'WhatsApp', path: '/whatsapp' },
   { icon: FileText, label: 'Contratos', path: '/contratos' },
   { icon: Wallet, label: 'Financeiro', path: '/financeiro', directorOnly: true },
   { icon: GraduationCap, label: 'Estudos', path: '/estudos' },

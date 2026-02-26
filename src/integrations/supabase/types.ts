@@ -2653,6 +2653,209 @@ export type Database = {
         }
         Relationships: []
       }
+      whatsapp_contacts: {
+        Row: {
+          assigned_to: string | null
+          created_at: string
+          id: string
+          name: string | null
+          notes: string | null
+          phone: string
+          profile_pic_url: string | null
+          source: string | null
+          tags: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          created_at?: string
+          id?: string
+          name?: string | null
+          notes?: string | null
+          phone: string
+          profile_pic_url?: string | null
+          source?: string | null
+          tags?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          created_at?: string
+          id?: string
+          name?: string | null
+          notes?: string | null
+          phone?: string
+          profile_pic_url?: string | null
+          source?: string | null
+          tags?: string[] | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      whatsapp_conversations: {
+        Row: {
+          assigned_to: string | null
+          contact_id: string
+          created_at: string
+          id: string
+          instance_id: string
+          last_message_at: string | null
+          status: string
+          unread_count: number | null
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          contact_id: string
+          created_at?: string
+          id?: string
+          instance_id: string
+          last_message_at?: string | null
+          status?: string
+          unread_count?: number | null
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          contact_id?: string
+          created_at?: string
+          id?: string
+          instance_id?: string
+          last_message_at?: string | null
+          status?: string
+          unread_count?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_conversations_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_conversations_instance_id_fkey"
+            columns: ["instance_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_instances"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_instances: {
+        Row: {
+          api_key: string
+          api_url: string
+          created_at: string
+          created_by: string
+          id: string
+          instance_name: string
+          name: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          api_key: string
+          api_url: string
+          created_at?: string
+          created_by: string
+          id?: string
+          instance_name: string
+          name: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          api_key?: string
+          api_url?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          instance_name?: string
+          name?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      whatsapp_messages: {
+        Row: {
+          content: string | null
+          conversation_id: string
+          created_at: string
+          external_id: string | null
+          id: string
+          media_type: string | null
+          media_url: string | null
+          sender_type: string
+          sent_by: string | null
+          status: string | null
+        }
+        Insert: {
+          content?: string | null
+          conversation_id: string
+          created_at?: string
+          external_id?: string | null
+          id?: string
+          media_type?: string | null
+          media_url?: string | null
+          sender_type?: string
+          sent_by?: string | null
+          status?: string | null
+        }
+        Update: {
+          content?: string | null
+          conversation_id?: string
+          created_at?: string
+          external_id?: string | null
+          id?: string
+          media_type?: string | null
+          media_url?: string | null
+          sender_type?: string
+          sent_by?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_templates: {
+        Row: {
+          category: string | null
+          content: string
+          created_at: string
+          created_by: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          content: string
+          created_at?: string
+          created_by: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          content?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       shared_project_clients: {
