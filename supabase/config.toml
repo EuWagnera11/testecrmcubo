@@ -1,7 +1,1 @@
-project_id = "lmtbdajtqdjypibatvrf"
-
-[functions.close-client-month]
-verify_jwt = true
-
-[functions.auto-close-months]
-verify_jwt = false
+project_id = "ognblcupazzctxxhsyau"
