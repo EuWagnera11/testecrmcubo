@@ -3,14 +3,16 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const httpClient = Deno.createHttpClient({ caCerts: [] });
+function toHttp(url: string): string {
+  return url.replace(/^https:\/\//, "http://");
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response("ok", { headers: corsHeaders });
   }
 
   try {
@@ -18,7 +20,7 @@ Deno.serve(async (req) => {
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
-        headers: corsHeaders,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
@@ -29,26 +31,25 @@ Deno.serve(async (req) => {
     );
 
     const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } =
+    const { data: userData, error: userError } =
       await supabase.auth.getUser(token);
-    if (claimsError || !claimsData?.user) {
+    if (userError || !userData?.user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
-        headers: corsHeaders,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const userId = claimsData.user.id;
+    const userId = userData.user.id;
     const { instanceId, phone, message } = await req.json();
 
     if (!instanceId || !phone || !message) {
       return new Response(
         JSON.stringify({ error: "instanceId, phone and message are required" }),
-        { status: 400, headers: corsHeaders }
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Get instance details
     const { data: instance, error: instanceError } = await supabase
       .from("whatsapp_instances")
       .select("*")
@@ -58,12 +59,12 @@ Deno.serve(async (req) => {
     if (instanceError || !instance) {
       return new Response(
         JSON.stringify({ error: "Instance not found" }),
-        { status: 404, headers: corsHeaders }
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Send message via Evolution API
-    const apiUrl = `${instance.api_url}/message/sendText/${instance.instance_name}`;
+    const baseUrl = toHttp(instance.api_url);
+    const apiUrl = `${baseUrl}/message/sendText/${instance.instance_name}`;
     const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
@@ -74,7 +75,6 @@ Deno.serve(async (req) => {
         number: phone,
         text: message,
       }),
-      client: httpClient,
     });
 
     const result = await response.json();
@@ -93,7 +93,6 @@ Deno.serve(async (req) => {
       .single();
 
     if (contact) {
-      // Upsert conversation
       const { data: conversation } = await supabase
         .from("whatsapp_conversations")
         .upsert(
