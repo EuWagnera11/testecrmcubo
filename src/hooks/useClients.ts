@@ -95,13 +95,13 @@ export function useClients() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       toast({
-        title: 'Cliente criado!',
-        description: 'O cliente foi adicionado com sucesso.',
+        title: 'Clínica cadastrada!',
+        description: 'A clínica foi adicionada com sucesso.',
       });
     },
     onError: (error) => {
       toast({
-        title: 'Erro ao criar cliente',
+        title: 'Erro ao cadastrar clínica',
         description: error.message,
         variant: 'destructive',
       });
@@ -144,13 +144,13 @@ export function useClients() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       toast({
-        title: 'Cliente atualizado!',
+        title: 'Clínica atualizada!',
         description: 'As informações foram salvas.',
       });
     },
     onError: (error) => {
       toast({
-        title: 'Erro ao atualizar cliente',
+        title: 'Erro ao atualizar clínica',
         description: error.message,
         variant: 'destructive',
       });
@@ -175,13 +175,13 @@ export function useClients() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['clients'] });
       toast({
-        title: 'Cliente removido',
-        description: 'O cliente foi removido com sucesso.',
+        title: 'Clínica removida',
+        description: 'A clínica foi removida com sucesso.',
       });
     },
     onError: (error) => {
       toast({
-        title: 'Erro ao remover cliente',
+        title: 'Erro ao remover clínica',
         description: error.message,
         variant: 'destructive',
       });

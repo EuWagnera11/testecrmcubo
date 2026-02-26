@@ -26,7 +26,7 @@ interface SidebarProps {
 const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
   { icon: BarChart3, label: 'Relatórios', path: '/relatorios', directorOnly: true },
-  { icon: Users, label: 'Clientes', path: '/clientes' },
+  { icon: Users, label: 'Clínicas', path: '/clientes' },
   { icon: FolderKanban, label: 'Projetos', path: '/projetos' },
   { icon: FileText, label: 'Contratos', path: '/contratos' },
   { icon: Wallet, label: 'Financeiro', path: '/financeiro', directorOnly: true },

@@ -104,7 +104,7 @@ export function useGlobalNotifications() {
           }
 
           toast({
-            title: `Novo cliente cadastrado`,
+            title: `Nova clínica cadastrada`,
             description: `${creatorName} cadastrou "${payload.new?.name}"`,
           });
 

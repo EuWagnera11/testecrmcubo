@@ -156,7 +156,7 @@ export default function Dashboard() {
   };
 
   const baseMetrics = [
-    { title: 'Clientes', value: filteredClients.length, icon: Users, description: 'Ativos no mês' },
+    { title: 'Clínicas', value: filteredClients.length, icon: Users, description: 'Ativas no mês' },
     { title: 'Projetos', value: filteredProjects.length, icon: FolderKanban, description: 'No mês selecionado' },
     { title: 'Ativos', value: activeProjects.length, icon: TrendingUp, description: 'Projetos ativos' },
   ];
@@ -174,12 +174,12 @@ export default function Dashboard() {
           <h1 className="text-3xl lg:text-4xl font-display tracking-wide">
             {greeting()}, <span className="text-accent">{user?.user_metadata?.full_name?.split(' ')[0] || 'Usuário'}</span>
           </h1>
-          <p className="text-muted-foreground mt-2 font-body">Aqui está o resumo da sua consultoria.</p>
+          <p className="text-muted-foreground mt-2 font-body">Aqui está o resumo do motor de crescimento.</p>
         </div>
         <div className="flex gap-3">
           <Button asChild variant="outline" className="h-11">
             <Link to="/clientes">
-              <Plus className="h-4 w-4 mr-2" /> Novo Cliente
+              <Plus className="h-4 w-4 mr-2" /> Nova Clínica
             </Link>
           </Button>
           <Button asChild className="h-11">
@@ -328,7 +328,7 @@ export default function Dashboard() {
                           {projectTypeLabels[project.project_type || 'one_time']}
                         </Badge>
                       </div>
-                      <p className="text-xs sm:text-sm text-muted-foreground font-body truncate">{project.clients?.name || 'Sem cliente'}</p>
+                      <p className="text-xs sm:text-sm text-muted-foreground font-body truncate">{project.clients?.name || 'Sem clínica'}</p>
                     </div>
                     {canSeeFinancials && (
                       <span className="font-display text-primary text-sm sm:text-base whitespace-nowrap">{formatCurrency(Number(project.total_value))}</span>
