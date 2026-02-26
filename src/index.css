@@ -8,25 +8,25 @@
 
 @layer base {
   :root {
-    /* Light Mode — Warm cream like institutional site body sections */
-    --background: 30 25% 96%;
-    --foreground: 24 10% 20%;
+    /* Light Mode — Off-white quente como site institucional */
+    --background: 35 30% 96%;
+    --foreground: 30 8% 22%;
 
-    --card: 30 20% 99%;
-    --card-foreground: 24 10% 20%;
+    --card: 36 30% 98%;
+    --card-foreground: 30 8% 22%;
 
-    --popover: 30 20% 99%;
-    --popover-foreground: 24 10% 20%;
+    --popover: 36 30% 98%;
+    --popover-foreground: 30 8% 22%;
 
-    /* Primary Orange — #FF6B00 exact from institutional site */
+    /* Primary Orange — #FF6B00 */
     --primary: 25 100% 50%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 30 15% 92%;
-    --secondary-foreground: 24 10% 20%;
+    --secondary: 35 18% 91%;
+    --secondary-foreground: 30 8% 22%;
 
-    --muted: 30 12% 92%;
-    --muted-foreground: 24 8% 50%;
+    --muted: 35 15% 91%;
+    --muted-foreground: 30 6% 48%;
 
     --accent: 25 100% 50%;
     --accent-foreground: 0 0% 100%;
@@ -38,31 +38,32 @@
     --success-foreground: 0 0% 100%;
 
     --warning: 38 92% 50%;
-    --warning-foreground: 24 10% 10%;
+    --warning-foreground: 30 8% 10%;
 
-    --border: 30 12% 87%;
-    --input: 30 12% 91%;
+    --border: 35 15% 88%;
+    --input: 35 15% 90%;
     --ring: 25 100% 50%;
 
     --radius: 0.75rem;
 
-    /* Custom tokens matching institutional site palette */
+    /* Custom tokens */
     --cubo-orange: 25 100% 50%;
     --cubo-orange-dark: 20 100% 45%;
     --cubo-orange-light: 30 100% 58%;
     --cubo-orange-glow: 30 100% 65%;
-    --cubo-charcoal: 24 10% 20%;
-    --cubo-cream: 30 25% 96%;
-    --cubo-warm-white: 30 20% 98%;
+    --cubo-charcoal: 30 8% 22%;
+    --cubo-cream: 35 30% 96%;
+    --cubo-warm-white: 36 30% 98%;
+    --cubo-gray: 30 5% 55%;
 
-    /* Sidebar — Warm dark (matching site nav dark bg) */
-    --sidebar-background: 24 20% 8%;
-    --sidebar-foreground: 30 12% 88%;
+    /* Sidebar — Dark warm charcoal */
+    --sidebar-background: 28 18% 10%;
+    --sidebar-foreground: 35 12% 88%;
     --sidebar-primary: 25 100% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 24 18% 14%;
-    --sidebar-accent-foreground: 30 12% 95%;
-    --sidebar-border: 24 15% 14%;
+    --sidebar-accent: 28 15% 15%;
+    --sidebar-accent-foreground: 35 12% 95%;
+    --sidebar-border: 28 12% 15%;
     --sidebar-ring: 25 100% 50%;
   }
 
