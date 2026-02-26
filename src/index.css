@@ -4,29 +4,29 @@
 @tailwind components;
 @tailwind utilities;
 
-/* CUBO Design System — Matching institutional site */
+/* CUBO Design System — Faithful to institutional site */
 
 @layer base {
   :root {
-    /* Light Mode — Warm cream/white inspired by institutional site */
-    --background: 30 20% 97%;
-    --foreground: 220 15% 18%;
+    /* Light Mode — Warm cream like institutional site body sections */
+    --background: 30 25% 96%;
+    --foreground: 24 10% 20%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 220 15% 18%;
+    --card: 30 20% 99%;
+    --card-foreground: 24 10% 20%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 220 15% 18%;
+    --popover: 30 20% 99%;
+    --popover-foreground: 24 10% 20%;
 
-    /* Primary Orange — #FF6B00 exact match */
+    /* Primary Orange — #FF6B00 exact from institutional site */
     --primary: 25 100% 50%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 30 10% 93%;
-    --secondary-foreground: 220 15% 18%;
+    --secondary: 30 15% 92%;
+    --secondary-foreground: 24 10% 20%;
 
-    --muted: 30 10% 93%;
-    --muted-foreground: 220 8% 46%;
+    --muted: 30 12% 92%;
+    --muted-foreground: 24 8% 50%;
 
     --accent: 25 100% 50%;
     --accent-foreground: 0 0% 100%;
@@ -38,54 +38,53 @@
     --success-foreground: 0 0% 100%;
 
     --warning: 38 92% 50%;
-    --warning-foreground: 220 20% 10%;
+    --warning-foreground: 24 10% 10%;
 
-    --border: 30 10% 88%;
-    --input: 30 10% 91%;
+    --border: 30 12% 87%;
+    --input: 30 12% 91%;
     --ring: 25 100% 50%;
 
     --radius: 0.75rem;
 
-    /* Custom tokens */
+    /* Custom tokens matching institutional site palette */
     --cubo-orange: 25 100% 50%;
-    --cubo-orange-light: 25 100% 60%;
+    --cubo-orange-dark: 20 100% 45%;
+    --cubo-orange-light: 30 100% 58%;
     --cubo-orange-glow: 30 100% 65%;
-    --cubo-charcoal: 220 15% 18%;
-    --cubo-cream: 30 20% 97%;
-    --cubo-warm-white: 30 15% 96%;
+    --cubo-charcoal: 24 10% 20%;
+    --cubo-cream: 30 25% 96%;
+    --cubo-warm-white: 30 20% 98%;
 
-    /* Orange Gradient matching institutional site hero */
-    --gradient-hero: linear-gradient(135deg, hsl(20 100% 45%) 0%, hsl(25 100% 50%) 40%, hsl(30 100% 58%) 100%);
-
-    /* Sidebar — Dark charcoal for contrast */
-    --sidebar-background: 220 18% 10%;
-    --sidebar-foreground: 30 10% 90%;
+    /* Sidebar — Warm dark (matching site nav dark bg) */
+    --sidebar-background: 24 20% 8%;
+    --sidebar-foreground: 30 12% 88%;
     --sidebar-primary: 25 100% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 15% 15%;
-    --sidebar-accent-foreground: 30 10% 95%;
-    --sidebar-border: 220 15% 15%;
+    --sidebar-accent: 24 18% 14%;
+    --sidebar-accent-foreground: 30 12% 95%;
+    --sidebar-border: 24 15% 14%;
     --sidebar-ring: 25 100% 50%;
   }
 
   .dark {
-    --background: 220 18% 7%;
-    --foreground: 30 10% 96%;
+    /* Dark Mode — Warm dark browns/charcoal, NOT blue-gray */
+    --background: 24 15% 7%;
+    --foreground: 30 12% 94%;
     
-    --card: 220 18% 11%;
-    --card-foreground: 30 10% 96%;
+    --card: 24 14% 11%;
+    --card-foreground: 30 12% 94%;
     
-    --popover: 220 18% 11%;
-    --popover-foreground: 30 10% 96%;
+    --popover: 24 14% 11%;
+    --popover-foreground: 30 12% 94%;
     
     --primary: 25 100% 50%;
     --primary-foreground: 0 0% 100%;
     
-    --secondary: 220 18% 15%;
-    --secondary-foreground: 30 10% 96%;
+    --secondary: 24 14% 16%;
+    --secondary-foreground: 30 12% 94%;
     
-    --muted: 220 18% 15%;
-    --muted-foreground: 220 10% 50%;
+    --muted: 24 12% 16%;
+    --muted-foreground: 24 8% 50%;
     
     --accent: 25 100% 50%;
     --accent-foreground: 0 0% 100%;
@@ -97,20 +96,20 @@
     --success-foreground: 0 0% 100%;
     
     --warning: 38 92% 50%;
-    --warning-foreground: 220 20% 10%;
+    --warning-foreground: 24 10% 10%;
     
-    --border: 220 18% 16%;
-    --input: 220 18% 15%;
+    --border: 24 12% 16%;
+    --input: 24 12% 15%;
     --ring: 25 100% 50%;
 
-    --cubo-cream: 220 18% 7%;
-    --cubo-warm-white: 220 18% 9%;
+    --cubo-cream: 24 15% 7%;
+    --cubo-warm-white: 24 14% 9%;
 
-    --sidebar-background: 220 20% 5%;
-    --sidebar-foreground: 30 10% 90%;
-    --sidebar-accent: 220 18% 10%;
-    --sidebar-accent-foreground: 30 10% 95%;
-    --sidebar-border: 220 18% 10%;
+    --sidebar-background: 24 18% 5%;
+    --sidebar-foreground: 30 12% 88%;
+    --sidebar-accent: 24 14% 10%;
+    --sidebar-accent-foreground: 30 12% 95%;
+    --sidebar-border: 24 14% 10%;
   }
 }
 
@@ -123,23 +122,23 @@
     @apply bg-background text-foreground antialiased;
     font-family: 'Manrope', system-ui, -apple-system, sans-serif;
   }
-
-  /* Serif headings for special display elements */
-  h1 {
-    font-family: 'Cormorant Garamond', serif;
-  }
 }
 
 @layer utilities {
-  /* Glass Card Effect */
+  /* Glass Card — Warm subtle shadow like institutional site cards */
   .glass-card {
-    @apply bg-card border border-border/40;
+    @apply bg-card border border-border/40 rounded-xl;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 20px rgba(0, 0, 0, 0.03);
   }
 
-  /* Orange gradient matching institutional site hero */
+  /* Orange gradient matching institutional site hero exactly */
   .bg-cubo-gradient {
-    background: linear-gradient(135deg, hsl(20 100% 45%) 0%, hsl(25 100% 50%) 40%, hsl(30 100% 58%) 100%);
+    background: linear-gradient(135deg, hsl(18 100% 42%) 0%, hsl(22 100% 48%) 25%, hsl(25 100% 50%) 50%, hsl(28 100% 55%) 75%, hsl(32 95% 60%) 100%);
+  }
+
+  /* Lighter orange gradient for accents */
+  .bg-cubo-gradient-light {
+    background: linear-gradient(135deg, hsl(25 100% 50% / 0.08) 0%, hsl(30 100% 58% / 0.04) 100%);
   }
 
   /* Text Gradient */
@@ -157,7 +156,7 @@
   
   .card-hover:hover {
     @apply -translate-y-0.5;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
   }
 
   /* Hover Lift */
@@ -184,9 +183,19 @@
     animation: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
 
-  /* Watermark text decoration like institutional site */
-  .watermark-text {
-    @apply absolute text-[12rem] font-serif font-bold text-primary/[0.04] select-none pointer-events-none leading-none;
+  /* Watermark text — like "Cubo" / "Refine" on institutional site */
+  .watermark {
+    @apply absolute select-none pointer-events-none leading-none;
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-weight: 600;
+  }
+
+  /* Cross decorative element — like institutional site + symbols */
+  .cross-decoration::before {
+    content: '+';
+    @apply absolute text-primary/[0.06] font-light select-none pointer-events-none;
+    font-size: 5rem;
   }
 }
 

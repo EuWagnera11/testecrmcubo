@@ -166,13 +166,21 @@ export default function Dashboard() {
     : baseMetrics;
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in relative overflow-hidden">
+      {/* Watermark decorations like institutional site */}
+      <span className="watermark -top-8 -right-12 text-[14rem] text-primary/[0.03]">Cubo</span>
+      <span className="watermark bottom-20 -left-16 text-[10rem] text-primary/[0.025]">Cubo</span>
+      
+      {/* Cross decorations like institutional site */}
+      <span className="absolute top-16 right-32 text-primary/[0.06] text-6xl font-light select-none pointer-events-none">+</span>
+      <span className="absolute bottom-40 left-24 text-primary/[0.05] text-4xl font-light select-none pointer-events-none hidden lg:block">+</span>
+
       {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+      <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 relative z-10">
         <div>
           <p className="text-muted-foreground text-xs uppercase tracking-[0.2em] mb-1">Dashboard</p>
-          <h1 className="text-3xl lg:text-4xl font-serif">
-            {greeting()}, <span className="text-primary italic">{user?.user_metadata?.full_name?.split(' ')[0] || 'Usuário'}</span>
+          <h1 className="text-3xl lg:text-4xl font-bold tracking-tight">
+            {greeting()}, <span className="text-gradient">{user?.user_metadata?.full_name?.split(' ')[0] || 'Usuário'}</span>
           </h1>
           <p className="text-muted-foreground mt-1 text-sm">Resumo do motor de crescimento das suas clínicas.</p>
         </div>

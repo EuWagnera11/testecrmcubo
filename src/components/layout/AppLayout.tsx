@@ -22,10 +22,13 @@ export function AppLayout() {
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
       />
       
-      <div className="flex-1 flex flex-col min-h-screen overflow-x-hidden">
+      <div className="flex-1 flex flex-col min-h-screen overflow-x-hidden relative">
+        {/* Subtle warm gradient overlay at top — matching institutional site sections */}
+        <div className="absolute top-0 left-0 right-0 h-64 bg-cubo-gradient-light pointer-events-none z-0" />
+        
         <Header onMenuClick={() => setSidebarOpen(true)} />
         
-        <main className="flex-1 p-4 md:p-6 lg:p-8">
+        <main className="flex-1 p-4 md:p-6 lg:p-8 relative z-10">
           <Outlet />
         </main>
       </div>
