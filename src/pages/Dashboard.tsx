@@ -245,51 +245,52 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Revenue Goal - Only for directors+ */}
-        {canSeeFinancials && (
-          <Card className="border-border/50 glass-card">
+        <Card className="border-border/50 glass-card">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base sm:text-lg font-semibold flex items-center gap-2">
                   <Target className="h-5 w-5 text-primary" />
                   Meta de Receita
                 </CardTitle>
-                <Dialog open={goalDialogOpen} onOpenChange={setGoalDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button variant="ghost" size="sm" className="h-8">
-                      <Pencil className="h-4 w-4 mr-1" />
-                      <span className="hidden sm:inline">Editar</span>
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle className="text-xl">
-                        Meta de {format(selectedDate, 'MMMM yyyy', { locale: ptBR })}
-                      </DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4 mt-4">
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">Valor da meta</label>
-                        <Input
-                          type="text"
-                          placeholder="R$ 10.000,00"
-                          value={newGoalValue}
-                          onChange={(e) => setNewGoalValue(e.target.value)}
-                          className="h-11"
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          Meta atual: {formatCurrency(revenueGoal)}
-                        </p>
-                      </div>
-                      <Button 
-                        onClick={handleSaveGoal} 
-                        className="w-full h-11"
-                        disabled={upsertGoal.isPending}
-                      >
-                        {upsertGoal.isPending ? 'Salvando...' : 'Salvar Meta'}
+                {canSeeFinancials && (
+                  <Dialog open={goalDialogOpen} onOpenChange={setGoalDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="ghost" size="sm" className="h-8">
+                        <Pencil className="h-4 w-4 mr-1" />
+                        <span className="hidden sm:inline">Editar</span>
                       </Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle className="text-xl">
+                          Meta de {format(selectedDate, 'MMMM yyyy', { locale: ptBR })}
+                        </DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4 mt-4">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium">Valor da meta</label>
+                          <Input
+                            type="text"
+                            placeholder="R$ 10.000,00"
+                            value={newGoalValue}
+                            onChange={(e) => setNewGoalValue(e.target.value)}
+                            className="h-11"
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Meta atual: {formatCurrency(revenueGoal)}
+                          </p>
+                        </div>
+                        <Button 
+                          onClick={handleSaveGoal} 
+                          className="w-full h-11"
+                          disabled={upsertGoal.isPending}
+                        >
+                          {upsertGoal.isPending ? 'Salvando...' : 'Salvar Meta'}
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                )}
               </div>
             </CardHeader>
             <CardContent className="pt-4">
@@ -307,7 +308,6 @@ export default function Dashboard() {
               )}
             </CardContent>
           </Card>
-        )}
 
         {/* Projects for this month */}
         <Card className={cn("border-border/50 glass-card", !canSeeFinancials && "lg:col-span-2")}>
