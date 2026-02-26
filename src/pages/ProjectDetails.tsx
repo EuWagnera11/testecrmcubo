@@ -39,6 +39,7 @@ import { BrandingModule } from '@/components/project/BrandingModule';
 import { GMBModule } from '@/components/project/GMBModule';
 import { CRMIntegrationModule } from '@/components/project/CRMIntegrationModule';
 import { SocialAIModule } from '@/components/project/SocialAIModule';
+import { AutomationsModule } from '@/components/project/AutomationsModule';
 
 const fieldConfig = {
   design: { label: 'Design', icon: Palette, color: 'text-pink-500', role: 'designer' as ProjectRole },
@@ -335,6 +336,9 @@ export default function ProjectDetails() {
             </TabsTrigger>
           )}
           <TabsTrigger value="fields" className="px-4">Campos</TabsTrigger>
+          <TabsTrigger value="automations" className="px-4 gap-1">
+            <Bot className="h-4 w-4" /> Automações
+          </TabsTrigger>
           <TabsTrigger value="tasks" className="px-4">Tarefas</TabsTrigger>
           <TabsTrigger value="team" className="px-4">Equipe</TabsTrigger>
           {canSeeFinancials && <TabsTrigger value="financials" className="px-4">Financeiro</TabsTrigger>}
@@ -508,6 +512,11 @@ export default function ProjectDetails() {
           
           {/* Change Requests Section */}
           <ProjectChangeRequests projectId={id!} />
+        </TabsContent>
+
+        {/* Automations Tab */}
+        <TabsContent value="automations" className="space-y-4">
+          <AutomationsModule projectId={id!} />
         </TabsContent>
 
         {/* Tasks Tab - Kanban */}

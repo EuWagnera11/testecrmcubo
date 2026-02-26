@@ -135,6 +135,7 @@ export type Database = {
           name: string
           notes: string | null
           priority: string | null
+          project_id: string | null
           status: string
           updated_at: string
         }
@@ -150,6 +151,7 @@ export type Database = {
           name: string
           notes?: string | null
           priority?: string | null
+          project_id?: string | null
           status?: string
           updated_at?: string
         }
@@ -165,6 +167,7 @@ export type Database = {
           name?: string
           notes?: string | null
           priority?: string | null
+          project_id?: string | null
           status?: string
           updated_at?: string
         }
@@ -182,6 +185,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "shared_project_clients"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "automation_flows_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "automation_flows_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "shared_project_clients"
+            referencedColumns: ["project_id"]
           },
         ]
       }

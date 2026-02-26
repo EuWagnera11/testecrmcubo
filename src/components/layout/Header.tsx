@@ -8,8 +8,9 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { NotificationDropdown } from '@/components/NotificationDropdown';
+import { useProfile } from '@/hooks/useProfile';
 
 interface HeaderProps {
   onMenuClick: () => void;
@@ -17,11 +18,14 @@ interface HeaderProps {
 
 export function Header({ onMenuClick }: HeaderProps) {
   const { user, signOut } = useAuth();
+  const { profile } = useProfile();
 
   const getInitials = (name: string | undefined) => {
     if (!name) return 'U';
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
+
+  const avatarUrl = profile?.avatar_url || undefined;
 
   return (
     <header className="sticky top-0 z-50 h-14 border-b border-border/60 bg-background/80 backdrop-blur-md">
@@ -48,6 +52,7 @@ export function Header({ onMenuClick }: HeaderProps) {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-9 w-9 rounded-full">
                 <Avatar className="h-9 w-9">
+                  <AvatarImage src={avatarUrl} alt="Avatar" />
                   <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
                     {getInitials(user?.user_metadata?.full_name)}
                   </AvatarFallback>
@@ -57,6 +62,7 @@ export function Header({ onMenuClick }: HeaderProps) {
             <DropdownMenuContent className="w-56" align="end">
               <div className="flex items-center gap-3 p-3">
                 <Avatar className="h-9 w-9">
+                  <AvatarImage src={avatarUrl} alt="Avatar" />
                   <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
                     {getInitials(user?.user_metadata?.full_name)}
                   </AvatarFallback>
