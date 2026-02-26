@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, forwardRef } from 'react';
 import { Plus, ListTodo, Clock, Eye, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,7 +19,7 @@ const columns: { status: TaskStatus; label: string; icon: React.ReactNode; color
   { status: 'done', label: 'Concluído', icon: <CheckCircle2 className="h-4 w-4" />, color: 'text-success' },
 ];
 
-export function KanbanBoard({ projectId }: KanbanBoardProps) {
+export const KanbanBoard = forwardRef<HTMLDivElement, KanbanBoardProps>(function KanbanBoard({ projectId }, ref) {
   const { tasks, isLoading, createTask, updateTask, deleteTask, moveTask } = useProjectTasks(projectId);
   const { members } = useProjectMembers(projectId);
   
@@ -98,7 +98,7 @@ export function KanbanBoard({ projectId }: KanbanBoardProps) {
   }
 
   return (
-    <div className="space-y-4">
+    <div ref={ref} className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold font-display">Quadro de Tarefas</h2>
         <Button size="sm" onClick={handleOpenNewTask}>
@@ -172,4 +172,4 @@ export function KanbanBoard({ projectId }: KanbanBoardProps) {
       />
     </div>
   );
-}
+});
