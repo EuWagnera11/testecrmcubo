@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.auto-close-months]
 verify_jwt = false
+
+[functions.asaas-proxy]
+verify_jwt = false
