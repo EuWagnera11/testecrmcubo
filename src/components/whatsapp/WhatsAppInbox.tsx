@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Send, Search, Phone, User, MessageSquare, Inbox } from 'lucide-react';
+import { Send, Search, Phone, User, MessageSquare, Inbox, ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -72,10 +72,15 @@ export function WhatsAppInbox() {
     setSelectedConversation(null);
   }, [activeInstanceId]);
 
+  const [showChat, setShowChat] = useState(false);
+
   return (
     <div className="flex h-full">
       {/* Conversation list */}
-      <div className="w-80 border-r flex flex-col">
+      <div className={cn(
+        "w-full md:w-80 border-r flex flex-col",
+        showChat && "hidden md:flex"
+      )}>
         {/* Instance selector */}
         {instances.length > 1 && (
           <div className="p-2 border-b">
@@ -156,7 +161,10 @@ export function WhatsAppInbox() {
                 key={conv.id}
                 conversation={conv}
                 isActive={selectedConversation === conv.id}
-                onClick={() => setSelectedConversation(conv.id)}
+                onClick={() => {
+                  setSelectedConversation(conv.id);
+                  setShowChat(true);
+                }}
                 showInstanceBadge={isUnified}
                 instanceInfo={instanceMap[conv.instance_id]}
               />
@@ -166,13 +174,17 @@ export function WhatsAppInbox() {
       </div>
 
       {/* Chat area */}
-      <div className="flex-1 flex flex-col">
+      <div className={cn(
+        "flex-1 flex flex-col",
+        !showChat && "hidden md:flex"
+      )}>
         {selectedConv ? (
           <ChatArea
             conversation={selectedConv}
             instanceId={selectedConv.instance_id}
             instanceName={selectedInstance?.instance.name}
             instanceColorIndex={selectedInstance?.colorIndex ?? 0}
+            onBack={() => setShowChat(false)}
           />
         ) : (
           <div className="flex-1 flex items-center justify-center text-muted-foreground">
@@ -248,11 +260,13 @@ function ChatArea({
   instanceId,
   instanceName,
   instanceColorIndex,
+  onBack,
 }: {
   conversation: WhatsAppConversation & { contact: WhatsAppContact };
   instanceId: string;
   instanceName?: string;
   instanceColorIndex: number;
+  onBack?: () => void;
 }) {
   const { messages, isLoading } = useWhatsAppMessages(conversation.id);
   const sendMessage = useSendWhatsAppMessage();
@@ -287,6 +301,11 @@ function ChatArea({
     <>
       {/* Chat header */}
       <div className="flex items-center gap-3 px-4 py-3 border-b bg-card">
+        {onBack && (
+          <Button variant="ghost" size="icon" className="md:hidden h-8 w-8 flex-shrink-0" onClick={onBack}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+        )}
         <Avatar className="h-9 w-9">
           <AvatarFallback className="bg-primary/10 text-primary text-xs">
             {name.slice(0, 2).toUpperCase()}

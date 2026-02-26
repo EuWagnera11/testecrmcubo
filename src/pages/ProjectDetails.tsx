@@ -279,7 +279,8 @@ export default function ProjectDetails() {
       </div>
 
       <Tabs defaultValue={hasTraffic ? "traffic" : hasSocialMedia ? "social_media" : hasAudiovisual ? "audiovisual" : showStrategy ? "strategy" : "fields"}>
-        <TabsList className="h-11 mb-6 flex-wrap">
+        <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
+          <TabsList className="h-11 mb-6 inline-flex w-auto min-w-full md:min-w-0 md:flex-wrap">
           {hasTraffic && (
             <TabsTrigger value="traffic" className="px-4 gap-1">
               <TrendingUp className="h-4 w-4" /> Tráfego
@@ -343,7 +344,8 @@ export default function ProjectDetails() {
           <TabsTrigger value="team" className="px-4">Equipe</TabsTrigger>
           {canSeeFinancials && <TabsTrigger value="financials" className="px-4">Financeiro</TabsTrigger>}
           {hasTraffic && <TabsTrigger value="metrics" className="px-4">Métricas</TabsTrigger>}
-        </TabsList>
+          </TabsList>
+        </div>
 
         {/* Traffic Module Tab */}
         {hasTraffic && (
