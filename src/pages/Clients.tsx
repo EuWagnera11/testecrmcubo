@@ -99,23 +99,23 @@ export default function Clients() {
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
           <p className="text-muted-foreground text-sm uppercase tracking-wider mb-1">Gestão</p>
-          <h1 className="text-3xl font-bold tracking-tight">Clientes</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Clínicas</h1>
         </div>
         {canManageClients && (
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
             <DialogTrigger asChild>
               <Button className="h-11">
-                <Plus className="h-4 w-4 mr-2" /> Novo Cliente
+                <Plus className="h-4 w-4 mr-2" /> Nova Clínica
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle className="text-xl">Adicionar Cliente</DialogTitle>
+                <DialogTitle className="text-xl">Adicionar Clínica</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-4 mt-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Nome *</Label>
-                  <Input id="name" name="name" required placeholder="Nome do cliente" className="h-11" />
+                  <Label htmlFor="name">Nome da Clínica *</Label>
+                  <Input id="name" name="name" required placeholder="Nome da clínica" className="h-11" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
@@ -126,8 +126,8 @@ export default function Clients() {
                   <Input id="phone" name="phone" placeholder="(11) 99999-9999" className="h-11" />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="company">Empresa</Label>
-                  <Input id="company" name="company" placeholder="Nome da empresa" className="h-11" />
+                  <Label htmlFor="company">Responsável / Dr(a)</Label>
+                  <Input id="company" name="company" placeholder="Dr(a) Nome" className="h-11" />
                 </div>
 
                 {/* Monthly Plan Toggle */}
@@ -140,7 +140,7 @@ export default function Clients() {
                   />
                   <Label htmlFor="has_plan" className="text-sm font-normal cursor-pointer flex items-center gap-2">
                     <CreditCard className="h-4 w-4 text-primary" />
-                    Cliente com plano mensal
+                    Clínica com plano mensal
                   </Label>
                 </div>
 
@@ -200,7 +200,7 @@ export default function Clients() {
                 )}
 
                 <Button type="submit" className="w-full h-11 mt-2" disabled={createClient.isPending}>
-                  {createClient.isPending ? 'Salvando...' : 'Salvar Cliente'}
+                  {createClient.isPending ? 'Salvando...' : 'Salvar Clínica'}
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </form>
@@ -220,16 +220,16 @@ export default function Clients() {
       }}>
         <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-xl">Editar Cliente</DialogTitle>
+            <DialogTitle className="text-xl">Editar Clínica</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleEditSubmit} className="space-y-4 mt-4">
             <div className="space-y-2">
-              <Label htmlFor="edit-name">Nome *</Label>
+              <Label htmlFor="edit-name">Nome da Clínica *</Label>
               <Input 
                 id="edit-name" 
                 name="name" 
                 required 
-                placeholder="Nome do cliente" 
+                placeholder="Nome da clínica"
                 className="h-11"
                 defaultValue={editClient?.name}
               />
@@ -256,11 +256,11 @@ export default function Clients() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="edit-company">Empresa</Label>
+              <Label htmlFor="edit-company">Responsável / Dr(a)</Label>
               <Input 
                 id="edit-company" 
                 name="company" 
-                placeholder="Nome da empresa" 
+                placeholder="Dr(a) Nome"
                 className="h-11"
                 defaultValue={editClient?.company || ''}
               />
@@ -276,7 +276,7 @@ export default function Clients() {
               />
               <Label htmlFor="edit_has_plan" className="text-sm font-normal cursor-pointer flex items-center gap-2">
                 <CreditCard className="h-4 w-4 text-primary" />
-                Cliente com plano mensal
+                Clínica com plano mensal
               </Label>
             </div>
 
@@ -426,7 +426,7 @@ export default function Clients() {
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input 
-            placeholder="Buscar clientes..." 
+            placeholder="Buscar clínicas..." 
             value={search} 
             onChange={(e) => setSearch(e.target.value)} 
             className="pl-11 h-11" 
@@ -451,10 +451,10 @@ export default function Clients() {
               <Users className="h-8 w-8 text-muted-foreground" />
             </div>
             <h3 className="font-semibold text-lg mb-1">
-              {search ? 'Nenhum cliente encontrado' : 'Nenhum cliente cadastrado'}
+              {search ? 'Nenhuma clínica encontrada' : 'Nenhuma clínica cadastrada'}
             </h3>
             <p className="text-muted-foreground text-sm">
-              {search ? 'Tente buscar por outro termo.' : 'Adicione seu primeiro cliente para começar.'}
+              {search ? 'Tente buscar por outro termo.' : 'Adicione sua primeira clínica para começar.'}
             </p>
           </CardContent>
         </Card>
@@ -509,9 +509,9 @@ export default function Clients() {
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
-                            <AlertDialogTitle>Remover cliente?</AlertDialogTitle>
+                            <AlertDialogTitle>Remover clínica?</AlertDialogTitle>
                             <AlertDialogDescription>
-                              Esta ação não pode ser desfeita. O cliente será removido permanentemente.
+                              Esta ação não pode ser desfeita. A clínica será removida permanentemente.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
