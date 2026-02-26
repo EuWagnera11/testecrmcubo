@@ -1,7 +1,5 @@
 // Cargos do Sistema (globais unificados)
-// Cada usuário tem um cargo fixo que define suas permissões e função
-
-export type AppRole = 'admin' | 'director' | 'team_leader' | 'user' | 'designer' | 'copywriter' | 'traffic_manager' | 'social_media';
+export type AppRole = 'admin' | 'director' | 'team_leader' | 'user' | 'designer' | 'copywriter' | 'traffic_manager' | 'social_media' | 'programmer' | 'sdr' | 'closer' | 'video_editor';
 
 export const appRoleLabels: Record<AppRole, string> = {
   admin: 'Administrador',
@@ -12,6 +10,10 @@ export const appRoleLabels: Record<AppRole, string> = {
   copywriter: 'Copywriter',
   traffic_manager: 'Gestor de Tráfego',
   social_media: 'Social Media',
+  programmer: 'Programador',
+  sdr: 'SDR',
+  closer: 'Closer',
+  video_editor: 'Editor de Vídeo',
 };
 
 export const appRoleDescriptions: Record<AppRole, string> = {
@@ -23,9 +25,12 @@ export const appRoleDescriptions: Record<AppRole, string> = {
   copywriter: 'Responsável pelos textos e conteúdo',
   traffic_manager: 'Gerencia campanhas de tráfego pago',
   social_media: 'Gerencia redes sociais',
+  programmer: 'Desenvolvimento e implementações técnicas',
+  sdr: 'Prospecção e qualificação de leads',
+  closer: 'Fechamento de vendas e negociações',
+  video_editor: 'Edição e produção de vídeos',
 };
 
-// Ícones para cada cargo (usando lucide-react)
 export const appRoleIcons: Record<AppRole, string> = {
   admin: 'Shield',
   director: 'Crown',
@@ -35,9 +40,12 @@ export const appRoleIcons: Record<AppRole, string> = {
   copywriter: 'PenTool',
   traffic_manager: 'TrendingUp',
   social_media: 'Share2',
+  programmer: 'Code',
+  sdr: 'PhoneCall',
+  closer: 'Handshake',
+  video_editor: 'Film',
 };
 
-// Cores para badges de cada cargo
 export const appRoleColors: Record<AppRole, string> = {
   admin: 'bg-red-500/15 text-red-500 border-red-500/30',
   director: 'bg-amber-500/15 text-amber-500 border-amber-500/30',
@@ -47,9 +55,12 @@ export const appRoleColors: Record<AppRole, string> = {
   copywriter: 'bg-blue-500/15 text-blue-500 border-blue-500/30',
   traffic_manager: 'bg-green-500/15 text-green-500 border-green-500/30',
   social_media: 'bg-pink-500/15 text-pink-500 border-pink-500/30',
+  programmer: 'bg-indigo-500/15 text-indigo-500 border-indigo-500/30',
+  sdr: 'bg-orange-500/15 text-orange-500 border-orange-500/30',
+  closer: 'bg-emerald-500/15 text-emerald-500 border-emerald-500/30',
+  video_editor: 'bg-violet-500/15 text-violet-500 border-violet-500/30',
 };
 
-// Permissões por cargo
 export const rolePermissions: Record<AppRole, {
   canCreateProjects: boolean;
   canCreateClients: boolean;
@@ -149,14 +160,60 @@ export const rolePermissions: Record<AppRole, {
     canEditTraffic: false,
     canEditSocialMedia: true,
   },
+  programmer: {
+    canCreateProjects: false,
+    canCreateClients: false,
+    canManageUsers: false,
+    canViewFinancials: false,
+    canSetGoals: false,
+    canEditDesign: false,
+    canEditCopy: false,
+    canEditTraffic: false,
+    canEditSocialMedia: false,
+  },
+  sdr: {
+    canCreateProjects: false,
+    canCreateClients: false,
+    canManageUsers: false,
+    canViewFinancials: false,
+    canSetGoals: false,
+    canEditDesign: false,
+    canEditCopy: false,
+    canEditTraffic: false,
+    canEditSocialMedia: false,
+  },
+  closer: {
+    canCreateProjects: false,
+    canCreateClients: false,
+    canManageUsers: false,
+    canViewFinancials: false,
+    canSetGoals: false,
+    canEditDesign: false,
+    canEditCopy: false,
+    canEditTraffic: false,
+    canEditSocialMedia: false,
+  },
+  video_editor: {
+    canCreateProjects: false,
+    canCreateClients: false,
+    canManageUsers: false,
+    canViewFinancials: false,
+    canSetGoals: false,
+    canEditDesign: false,
+    canEditCopy: false,
+    canEditTraffic: false,
+    canEditSocialMedia: false,
+  },
 };
 
-// Helper para obter permissões do cargo
 export function getRolePermissions(role: AppRole) {
   return rolePermissions[role] || rolePermissions.user;
 }
 
-// Agrupar cargos por tipo
-export const managementRoles: AppRole[] = ['admin', 'director', 'team_leader'];
-export const functionalRoles: AppRole[] = ['designer', 'copywriter', 'traffic_manager', 'social_media'];
-export const allRoles: AppRole[] = [...managementRoles, ...functionalRoles, 'user'];
+// Cargos ativos do sistema (os que aparecem para seleção)
+export const activeRoles: AppRole[] = ['admin', 'director', 'traffic_manager', 'designer', 'social_media', 'programmer', 'sdr', 'closer', 'video_editor'];
+
+// Agrupamentos
+export const managementRoles: AppRole[] = ['admin', 'director'];
+export const functionalRoles: AppRole[] = ['traffic_manager', 'designer', 'social_media', 'programmer', 'sdr', 'closer', 'video_editor'];
+export const allRoles: AppRole[] = [...managementRoles, ...functionalRoles];

@@ -44,6 +44,10 @@ export function useUserRole() {
   const isCopywriter = roles.includes('copywriter');
   const isTrafficManager = roles.includes('traffic_manager');
   const isSocialMedia = roles.includes('social_media');
+  const isProgrammer = roles.includes('programmer');
+  const isSdr = roles.includes('sdr');
+  const isCloser = roles.includes('closer');
+  const isVideoEditor = roles.includes('video_editor');
   const isUser = roles.length === 0 || (roles.length === 1 && roles.includes('user'));
   
   const isApproved = statusQuery.data === 'approved';
@@ -71,6 +75,10 @@ export function useUserRole() {
     isCopywriter,
     isTrafficManager,
     isSocialMedia,
+    isProgrammer,
+    isSdr,
+    isCloser,
+    isVideoEditor,
     isUser,
     isApproved,
     isPending,
