@@ -18,6 +18,10 @@ export interface PipelineItem {
   won_at: string | null;
   lost_at: string | null;
   lost_reason: string | null;
+  asaas_customer_id: string | null;
+  asaas_payment_id: string | null;
+  asaas_payment_status: string | null;
+  asaas_invoice_url: string | null;
   created_at: string;
   updated_at: string;
 }
