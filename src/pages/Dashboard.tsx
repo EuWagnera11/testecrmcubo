@@ -204,13 +204,13 @@ export default function Dashboard() {
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <Calendar className="h-5 w-5 text-primary" />
-              <span className="text-sm text-muted-foreground font-body">Visualizando:</span>
+              <span className="text-sm text-muted-foreground">Visualizando:</span>
             </div>
             <div className="flex items-center gap-1 sm:gap-2">
               <Button variant="ghost" size="icon" onClick={goToPreviousMonth} className="h-8 w-8">
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <span className="font-display text-base sm:text-lg min-w-[140px] sm:min-w-[200px] text-center capitalize">
+              <span className="text-base sm:text-lg font-semibold min-w-[140px] sm:min-w-[200px] text-center capitalize">
                 {selectedMonthLabel}
               </span>
               <Button variant="ghost" size="icon" onClick={goToNextMonth} className="h-8 w-8">
@@ -250,7 +250,7 @@ export default function Dashboard() {
           <Card className="border-border/50 glass-card">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-base sm:text-lg font-semibold font-body flex items-center gap-2">
+                <CardTitle className="text-base sm:text-lg font-semibold flex items-center gap-2">
                   <Target className="h-5 w-5 text-primary" />
                   Meta de Receita
                 </CardTitle>
@@ -263,13 +263,13 @@ export default function Dashboard() {
                   </DialogTrigger>
                   <DialogContent>
                     <DialogHeader>
-                      <DialogTitle className="font-display text-xl">
+                      <DialogTitle className="text-xl">
                         Meta de {format(selectedDate, 'MMMM yyyy', { locale: ptBR })}
                       </DialogTitle>
                     </DialogHeader>
                     <div className="space-y-4 mt-4">
                       <div className="space-y-2">
-                        <label className="text-sm font-medium font-body">Valor da meta</label>
+                        <label className="text-sm font-medium">Valor da meta</label>
                         <Input
                           type="text"
                           placeholder="R$ 10.000,00"
@@ -295,16 +295,16 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent className="pt-4">
               <div className="flex justify-between text-sm mb-3">
-                <span className="text-muted-foreground font-body">Progresso do mês</span>
-                <span className="font-display text-lg">{progressPercent.toFixed(0)}%</span>
+                <span className="text-muted-foreground">Progresso do mês</span>
+                <span className="text-lg font-semibold">{progressPercent.toFixed(0)}%</span>
               </div>
               <Progress value={progressPercent} className="h-3" />
-              <div className="flex justify-between text-xs sm:text-sm text-muted-foreground mt-3 font-body">
+              <div className="flex justify-between text-xs sm:text-sm text-muted-foreground mt-3">
                 <span>{formatCurrency(monthlyIncome)}</span>
                 <span>Meta: {formatCurrency(revenueGoal)}</span>
               </div>
               {monthlyGoal && (
-                <p className="text-xs text-primary mt-2 font-body">Meta personalizada para este mês</p>
+                <p className="text-xs text-primary mt-2">Meta personalizada para este mês</p>
               )}
             </CardContent>
           </Card>
@@ -314,9 +314,9 @@ export default function Dashboard() {
         <Card className={cn("border-border/50 glass-card", !canSeeFinancials && "lg:col-span-2")}>
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-base sm:text-lg font-semibold font-body">Projetos do Mês</CardTitle>
+              <CardTitle className="text-base sm:text-lg font-semibold">Projetos do Mês</CardTitle>
               <Button variant="ghost" size="sm" asChild>
-                <Link to="/projetos" className="text-primary font-body text-xs sm:text-sm">
+                <Link to="/projetos" className="text-primary text-xs sm:text-sm">
                   Ver todos <ArrowRight className="ml-1 h-4 w-4" />
                 </Link>
               </Button>
@@ -324,22 +324,22 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent className="pt-2">
             {filteredProjects.length === 0 ? (
-              <p className="text-muted-foreground text-center py-8 font-body">Nenhum projeto neste mês.</p>
+              <p className="text-muted-foreground text-center py-8">Nenhum projeto neste mês.</p>
             ) : (
               <div className="space-y-3">
                 {filteredProjects.slice(0, 4).map((project) => (
                   <div key={project.id} className="flex items-center justify-between p-3 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors gap-2">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <p className="font-medium font-body truncate text-sm sm:text-base">{project.name}</p>
+                        <p className="font-medium truncate text-sm sm:text-base">{project.name}</p>
                         <Badge variant="outline" className="text-xs shrink-0">
                           {projectTypeLabels[project.project_type || 'one_time']}
                         </Badge>
                       </div>
-                      <p className="text-xs sm:text-sm text-muted-foreground font-body truncate">{project.clients?.name || 'Sem clínica'}</p>
+                      <p className="text-xs sm:text-sm text-muted-foreground truncate">{project.clients?.name || 'Sem clínica'}</p>
                     </div>
                     {canSeeFinancials && (
-                      <span className="font-display text-primary text-sm sm:text-base whitespace-nowrap">{formatCurrency(Number(project.total_value))}</span>
+                      <span className="font-semibold text-primary text-sm sm:text-base whitespace-nowrap">{formatCurrency(Number(project.total_value))}</span>
                     )}
                   </div>
                 ))}
@@ -353,7 +353,7 @@ export default function Dashboard() {
       {canSeeFinancials && monthlyChartData.length > 0 && (
         <Card className="border-border/50 glass-card">
           <CardHeader>
-            <CardTitle className="text-lg font-semibold font-body">Receitas vs Despesas</CardTitle>
+            <CardTitle className="text-lg font-semibold">Receitas vs Despesas</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-72">
@@ -396,8 +396,8 @@ export default function Dashboard() {
               <CardContent className="p-5">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground font-body">Receita Total</p>
-                    <p className="text-xl font-display mt-1">{formatCurrency(totalRevenue)}</p>
+                    <p className="text-sm text-muted-foreground">Receita Total</p>
+                    <p className="text-xl font-semibold mt-1">{formatCurrency(totalRevenue)}</p>
                   </div>
                   <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center">
                     <DollarSign className="h-4 w-4 text-primary" />
@@ -410,8 +410,8 @@ export default function Dashboard() {
               <CardContent className="p-5">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground font-body">Repasses Equipe</p>
-                    <p className="text-xl font-display mt-1 text-destructive">{formatCurrency(totalPayouts)}</p>
+                    <p className="text-sm text-muted-foreground">Repasses Equipe</p>
+                    <p className="text-xl font-semibold mt-1 text-destructive">{formatCurrency(totalPayouts)}</p>
                   </div>
                   <div className="h-9 w-9 rounded-lg bg-destructive/10 flex items-center justify-center">
                     <TrendingDown className="h-4 w-4 text-destructive" />
@@ -424,8 +424,8 @@ export default function Dashboard() {
               <CardContent className="p-5">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground font-body">Lucro Líquido</p>
-                    <p className={cn("text-xl font-display mt-1", totalProfit >= 0 ? "text-success" : "text-destructive")}>
+                    <p className="text-sm text-muted-foreground">Lucro Líquido</p>
+                    <p className={cn("text-xl font-semibold mt-1", totalProfit >= 0 ? "text-success" : "text-destructive")}>
                       {formatCurrency(totalProfit)}
                     </p>
                   </div>
@@ -440,8 +440,8 @@ export default function Dashboard() {
               <CardContent className="p-5">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground font-body">Margem Média</p>
-                    <p className={cn("text-xl font-display mt-1", averageMargin >= 0 ? "text-success" : "text-destructive")}>
+                    <p className="text-sm text-muted-foreground">Margem Média</p>
+                    <p className={cn("text-xl font-semibold mt-1", averageMargin >= 0 ? "text-success" : "text-destructive")}>
                       {averageMargin.toFixed(1)}%
                     </p>
                   </div>
@@ -457,8 +457,8 @@ export default function Dashboard() {
           <Card className="border-border/50 glass-card">
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle className="text-lg font-semibold font-body">Lucratividade por Projeto</CardTitle>
-                <Link to="/admin" className="text-sm text-primary hover:underline font-body">
+                <CardTitle className="text-lg font-semibold">Lucratividade por Projeto</CardTitle>
+                <Link to="/admin" className="text-sm text-primary hover:underline">
                   Ver relatório completo <ArrowRight className="inline h-4 w-4 ml-1" />
                 </Link>
               </div>

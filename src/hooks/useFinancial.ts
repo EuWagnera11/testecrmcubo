@@ -96,12 +96,16 @@ export function useFinancial() {
 
   const deleteTransaction = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
+      const { data, error, count } = await supabase
         .from('financial_transactions')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .select();
       
       if (error) throw error;
+      if (!data || data.length === 0) {
+        throw new Error('Transação não encontrada ou sem permissão para remover.');
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['financial-transactions'] });
