@@ -22,6 +22,7 @@ import Financial from "./pages/Financial";
 import Payouts from "./pages/Payouts";
 import Reports from "./pages/Reports";
 import Studies from "./pages/Studies";
+import WhatsApp from "./pages/WhatsApp";
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 
@@ -93,6 +94,7 @@ const AppRoutes = () => (
         <Route path="pagamentos" element={<Payouts />} />
         <Route path="relatorios" element={<Reports />} />
         <Route path="estudos" element={<Studies />} />
+        <Route path="whatsapp" element={<WhatsApp />} />
         <Route path="configuracoes" element={<Settings />} />
       </Route>
       <Route path="*" element={<NotFound />} />
