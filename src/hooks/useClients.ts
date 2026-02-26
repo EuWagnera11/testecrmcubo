@@ -110,18 +110,18 @@ export function useClients() {
 
   const updateClient = useMutation({
     mutationFn: async ({ id, ...clientData }: Partial<Client> & { id: string }) => {
-      // Sanitize input data
+      // Sanitize input data — use 'key in obj' to allow clearing fields with null/empty
       const sanitizedData: Record<string, unknown> = {};
-      if (clientData.name) sanitizedData.name = sanitizeForStorage(clientData.name, 100);
-      if (clientData.email) sanitizedData.email = sanitizeEmail(clientData.email);
-      if (clientData.phone) sanitizedData.phone = sanitizePhone(clientData.phone);
-      if (clientData.company) sanitizedData.company = sanitizeForStorage(clientData.company, 100);
-      if (clientData.country_code) sanitizedData.country_code = clientData.country_code;
-      if (clientData.status) sanitizedData.status = clientData.status;
-      if (clientData.monthly_plan_value !== undefined) sanitizedData.monthly_plan_value = clientData.monthly_plan_value;
-      if (clientData.plan_currency !== undefined) sanitizedData.plan_currency = clientData.plan_currency;
-      if (clientData.plan_start_date !== undefined) sanitizedData.plan_start_date = clientData.plan_start_date;
-      if (clientData.plan_billing_day !== undefined) sanitizedData.plan_billing_day = clientData.plan_billing_day;
+      if ('name' in clientData && clientData.name) sanitizedData.name = sanitizeForStorage(clientData.name, 100);
+      if ('email' in clientData) sanitizedData.email = clientData.email ? sanitizeEmail(clientData.email) : null;
+      if ('phone' in clientData) sanitizedData.phone = clientData.phone ? sanitizePhone(clientData.phone) : null;
+      if ('company' in clientData) sanitizedData.company = clientData.company ? sanitizeForStorage(clientData.company, 100) : null;
+      if ('country_code' in clientData) sanitizedData.country_code = clientData.country_code || '+55';
+      if ('status' in clientData) sanitizedData.status = clientData.status;
+      if ('monthly_plan_value' in clientData) sanitizedData.monthly_plan_value = clientData.monthly_plan_value;
+      if ('plan_currency' in clientData) sanitizedData.plan_currency = clientData.plan_currency;
+      if ('plan_start_date' in clientData) sanitizedData.plan_start_date = clientData.plan_start_date;
+      if ('plan_billing_day' in clientData) sanitizedData.plan_billing_day = clientData.plan_billing_day;
 
       const { data, error } = await supabase
         .from('clients')

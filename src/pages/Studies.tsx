@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -104,6 +104,13 @@ function CourseDialog({
   const [description, setDescription] = useState(course?.description || '');
   const [driveUrl, setDriveUrl] = useState(course?.drive_url || '');
   const [category, setCategory] = useState(course?.category || '');
+
+  useEffect(() => {
+    setTitle(course?.title || '');
+    setDescription(course?.description || '');
+    setDriveUrl(course?.drive_url || '');
+    setCategory(course?.category || '');
+  }, [course]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

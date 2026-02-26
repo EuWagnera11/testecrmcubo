@@ -61,6 +61,39 @@ export function useFinancial() {
     },
   });
 
+  const updateTransaction = useMutation({
+    mutationFn: async ({ id, ...data }: Partial<FinancialTransaction> & { id: string }) => {
+      const updateData: Record<string, unknown> = {};
+      if (data.type !== undefined) updateData.type = data.type;
+      if (data.category !== undefined) updateData.category = data.category;
+      if (data.description !== undefined) updateData.description = data.description;
+      if (data.amount !== undefined) updateData.amount = data.amount;
+      if (data.date !== undefined) updateData.date = data.date;
+      if (data.project_id !== undefined) updateData.project_id = data.project_id;
+
+      const { data: result, error } = await supabase
+        .from('financial_transactions')
+        .update(updateData)
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return result;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['financial-transactions'] });
+      toast({ title: 'Transação atualizada!' });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Erro ao atualizar transação',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
   const deleteTransaction = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
@@ -98,6 +131,7 @@ export function useFinancial() {
     isLoading: transactionsQuery.isLoading,
     error: transactionsQuery.error,
     addTransaction,
+    updateTransaction,
     deleteTransaction,
     totalIncome,
     totalExpenses,

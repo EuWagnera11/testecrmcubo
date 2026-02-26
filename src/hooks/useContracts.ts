@@ -42,6 +42,7 @@ export interface CreateContractData {
   project_id?: string;
   title: string;
   terms?: string;
+  contract_type?: string;
   signatories: Omit<Signatory, 'id' | 'contract_id' | 'signed_at' | 'created_at'>[];
 }
 
@@ -96,6 +97,7 @@ export function useContracts() {
         terms: contractData.terms ? sanitizeForStorage(contractData.terms, 50000) : null,
         client_id: contractData.client_id || null,
         project_id: contractData.project_id || null,
+        contract_type: contractData.contract_type || 'one_time',
         user_id: user!.id,
       };
 
