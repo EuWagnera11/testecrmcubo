@@ -182,8 +182,8 @@ export default function Projects() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
-          <p className="text-muted-foreground text-sm uppercase tracking-wider mb-1 font-body">Gestão</p>
-          <h1 className="text-3xl font-display tracking-wide">Projetos</h1>
+          <p className="text-muted-foreground text-sm uppercase tracking-wider mb-1">Gestão</p>
+          <h1 className="text-3xl font-bold tracking-tight">Projetos</h1>
         </div>
         {canCreateProjects && (
           <Dialog open={isOpen} onOpenChange={(open) => { setIsOpen(open); if (!open) setShowDesignFields(false); }}>
@@ -194,7 +194,7 @@ export default function Projects() {
             </DialogTrigger>
           <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle className="text-xl font-display">Novo Projeto</DialogTitle>
+              <DialogTitle className="text-xl">Novo Projeto</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4 mt-4">
               <div className="space-y-2">
@@ -326,7 +326,7 @@ export default function Projects() {
         <Dialog open={isEditOpen} onOpenChange={(open) => { setIsEditOpen(open); if (!open) setEditingProject(null); }}>
           <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle className="text-xl font-display">Editar Projeto</DialogTitle>
+              <DialogTitle className="text-xl">Editar Projeto</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleEdit} className="space-y-4 mt-4">
               <div className="space-y-2">
