@@ -860,6 +860,33 @@ const tools = [
   {
     type: "function",
     function: {
+      name: "get_project_financial_advisory",
+      description: "Get project financial advisory data: budget_analysis, cash_flow_notes, financial_goals, investment_recommendations, report_frequency.",
+      parameters: { type: "object", properties: { project_id: { type: "string" } }, required: ["project_id"] },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "upsert_project_financial_advisory",
+      description: "Create or update project financial advisory fields: budget_analysis, cash_flow_notes, financial_goals, investment_recommendations, report_frequency.",
+      parameters: {
+        type: "object",
+        properties: {
+          project_id: { type: "string" },
+          budget_analysis: { type: "string" },
+          cash_flow_notes: { type: "string" },
+          financial_goals: { type: "string" },
+          investment_recommendations: { type: "string" },
+          report_frequency: { type: "string" },
+        },
+        required: ["project_id"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "list_project_copy_bank",
       description: "List copy bank entries for a project. Each has: angle, content, status.",
       parameters: { type: "object", properties: { project_id: { type: "string" } }, required: ["project_id"] },
@@ -1102,6 +1129,8 @@ const PROJECT_SCOPED_TOOLS = new Set([
   "upsert_project_audiovisual",
   "get_project_crm_integration",
   "upsert_project_crm_integration",
+  "get_project_financial_advisory",
+  "upsert_project_financial_advisory",
   "list_project_copy_bank",
   "create_project_copy",
   "list_project_creatives",
@@ -1681,6 +1710,27 @@ async function executeTool(
         return { success: true, crm: data };
       }
     }
+    case "get_project_financial_advisory": {
+      const { data, error } = await supabase.from("project_financial_advisory").select("*").eq("project_id", args.project_id).maybeSingle();
+      if (error) throw error;
+      return data || { message: "Nenhum financeiro do projeto cadastrado ainda." };
+    }
+    case "upsert_project_financial_advisory": {
+      const fields: Record<string, unknown> = {};
+      for (const k of ["budget_analysis", "cash_flow_notes", "financial_goals", "investment_recommendations", "report_frequency"]) {
+        if (args[k] !== undefined) fields[k] = args[k];
+      }
+      const { data: existing } = await supabase.from("project_financial_advisory").select("id").eq("project_id", args.project_id).maybeSingle();
+      if (existing) {
+        const { data, error } = await supabase.from("project_financial_advisory").update({ ...fields, updated_at: new Date().toISOString() }).eq("id", existing.id).select().single();
+        if (error) throw error;
+        return { success: true, financial_advisory: data };
+      } else {
+        const { data, error } = await supabase.from("project_financial_advisory").insert({ project_id: args.project_id, ...fields }).select().single();
+        if (error) throw error;
+        return { success: true, financial_advisory: data };
+      }
+    }
     case "list_project_copy_bank": {
       const { data, error } = await supabase.from("project_copy_bank").select("id, angle, content, status, created_at").eq("project_id", args.project_id).order("created_at", { ascending: false });
       if (error) throw error;
@@ -1920,6 +1970,13 @@ SUBCATEGORIAS DE PROJETO (campos reais do sistema — use SOMENTE estes):
   - integration_status: Status da integração
   - sync_frequency: Frequência de sincronização
   - notes: Notas adicionais
+
+💸 Financeiro do Projeto (project_financial_advisory):
+  - budget_analysis: Análise de orçamento
+  - cash_flow_notes: Notas de fluxo de caixa
+  - financial_goals: Metas financeiras
+  - investment_recommendations: Recomendações de investimento
+  - report_frequency: Frequência de relatórios
 
 ✍️ Copy Bank (project_copy_bank) — lista de copies:
   - angle: Ângulo/abordagem da copy
