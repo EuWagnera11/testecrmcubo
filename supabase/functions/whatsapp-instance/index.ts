@@ -6,9 +6,109 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// Workaround: Evolution API with misconfigured SSL cert - use HTTP
-function toHttp(url: string): string {
-  return url.replace(/^https:\/\//, "http://");
+const evolutionHttpClient = Deno.createHttpClient({ caCerts: [] });
+
+function getBaseCandidates(rawUrl: string): string[] {
+  const normalized = rawUrl.trim().replace(/\/+$/, "");
+
+  try {
+    const url = new URL(normalized);
+    const httpsUrl = `${url.protocol === "https:" ? "https" : "https"}://${url.host}`;
+    const httpUrl = `http://${url.host}`;
+    return [httpsUrl, httpUrl];
+  } catch {
+    const stripped = normalized.replace(/^https?:\/\//i, "");
+    return [`https://${stripped}`, `http://${stripped}`];
+  }
+}
+
+async function parseResponseBody(response: Response) {
+  const text = await response.text();
+  if (!text) return null;
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
+  }
+}
+
+function extractErrorMessage(payload: unknown): string {
+  if (!payload) return "Sem detalhes";
+  if (typeof payload === "string") return payload;
+
+  const typed = payload as Record<string, unknown>;
+  const response = typed.response as Record<string, unknown> | undefined;
+  const messages = response?.message as unknown;
+
+  if (Array.isArray(messages) && messages.length > 0) {
+    return String(messages[0]);
+  }
+
+  if (typeof typed.message === "string") return typed.message;
+  return JSON.stringify(payload);
+}
+
+async function callEvolutionApi({
+  apiUrl,
+  apiKey,
+  path,
+  method = "GET",
+  body,
+}: {
+  apiUrl: string;
+  apiKey: string;
+  path: string;
+  method?: string;
+  body?: unknown;
+}) {
+  const baseCandidates = getBaseCandidates(apiUrl);
+  let lastError: Error | null = null;
+
+  for (const base of baseCandidates) {
+    const requestUrl = `${base}${path}`;
+
+    try {
+      console.log(`[whatsapp-instance] ${method} ${requestUrl}`);
+
+      const response = await fetch(requestUrl, {
+        method,
+        headers: {
+          apikey: apiKey,
+          ...(body ? { "Content-Type": "application/json" } : {}),
+        },
+        body: body ? JSON.stringify(body) : undefined,
+        redirect: "manual",
+        client: evolutionHttpClient,
+      });
+
+      const payload = await parseResponseBody(response);
+
+      if ([301, 302, 307, 308].includes(response.status)) {
+        const location = response.headers.get("location");
+        throw new Error(
+          `Evolution API redirecionou (${response.status}) para ${location ?? "destino desconhecido"}.`
+        );
+      }
+
+      if (!response.ok) {
+        throw new Error(
+          `Evolution API [${response.status}]: ${extractErrorMessage(payload)}`
+        );
+      }
+
+      return payload;
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error(`[whatsapp-instance] failed on ${requestUrl}:`, message);
+      lastError = error instanceof Error ? error : new Error(message);
+    }
+  }
+
+  throw (
+    lastError ??
+    new Error("Falha ao conectar com Evolution API em todos os endpoints testados")
+  );
 }
 
 Deno.serve(async (req) => {
@@ -32,8 +132,8 @@ Deno.serve(async (req) => {
     );
 
     const token = authHeader.replace("Bearer ", "");
-    const { data: userData, error: userError } =
-      await supabase.auth.getUser(token);
+    const { data: userData, error: userError } = await supabase.auth.getUser(token);
+
     if (userError || !userData?.user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
@@ -43,17 +143,12 @@ Deno.serve(async (req) => {
 
     const { action, instanceId } = await req.json();
 
-    // Helper to get instance
-    const getInstance = async (id: string) => {
-      const { data } = await supabase
-        .from("whatsapp_instances")
-        .select("*")
-        .eq("id", id)
-        .single();
-      return data;
-    };
+    const { data: instance } = await supabase
+      .from("whatsapp_instances")
+      .select("*")
+      .eq("id", instanceId)
+      .single();
 
-    const instance = await getInstance(instanceId);
     if (!instance) {
       return new Response(JSON.stringify({ error: "Instance not found" }), {
         status: 404,
@@ -61,35 +156,39 @@ Deno.serve(async (req) => {
       });
     }
 
-    const baseUrl = toHttp(instance.api_url);
+    const instanceName = encodeURIComponent(instance.instance_name);
 
     if (action === "check-status") {
-      const response = await fetch(
-        `${baseUrl}/instance/connectionState/${instance.instance_name}`,
-        { headers: { apikey: instance.api_key } }
-      );
+      const result = await callEvolutionApi({
+        apiUrl: instance.api_url,
+        apiKey: instance.api_key,
+        path: `/instance/connectionState/${instanceName}`,
+      });
 
-      const result = await response.json();
-      const status = result?.instance?.state || "disconnected";
+      const status =
+        (result as Record<string, unknown>)?.instance &&
+        typeof (result as Record<string, unknown>).instance === "object"
+          ? ((result as Record<string, unknown>).instance as Record<string, unknown>)
+              ?.state ?? "disconnected"
+          : "disconnected";
 
       await supabase
         .from("whatsapp_instances")
-        .update({ status })
+        .update({ status: String(status) })
         .eq("id", instanceId);
 
-      return new Response(
-        JSON.stringify({ success: true, status }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return new Response(JSON.stringify({ success: true, status }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     if (action === "get-qrcode") {
-      const response = await fetch(
-        `${baseUrl}/instance/connect/${instance.instance_name}`,
-        { headers: { apikey: instance.api_key } }
-      );
-
-      const result = await response.json();
+      const result = await callEvolutionApi({
+        apiUrl: instance.api_url,
+        apiKey: instance.api_key,
+        path: `/instance/connect/${instanceName}`,
+      });
 
       return new Response(JSON.stringify({ success: true, data: result }), {
         status: 200,
@@ -100,24 +199,18 @@ Deno.serve(async (req) => {
     if (action === "set-webhook") {
       const webhookUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/whatsapp-webhook`;
 
-      const response = await fetch(
-        `${baseUrl}/webhook/set/${instance.instance_name}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            apikey: instance.api_key,
-          },
-          body: JSON.stringify({
-            url: webhookUrl,
-            webhook_by_events: false,
-            webhook_base64: false,
-            events: ["MESSAGES_UPSERT"],
-          }),
-        }
-      );
-
-      const result = await response.json();
+      const result = await callEvolutionApi({
+        apiUrl: instance.api_url,
+        apiKey: instance.api_key,
+        path: `/webhook/set/${instanceName}`,
+        method: "POST",
+        body: {
+          url: webhookUrl,
+          webhook_by_events: false,
+          webhook_base64: false,
+          events: ["MESSAGES_UPSERT"],
+        },
+      });
 
       return new Response(JSON.stringify({ success: true, data: result }), {
         status: 200,
@@ -131,11 +224,11 @@ Deno.serve(async (req) => {
     });
   } catch (error: unknown) {
     console.error("Instance error:", error);
-    const errorMessage =
-      error instanceof Error ? error.message : "Unknown error";
-    return new Response(
-      JSON.stringify({ success: false, error: errorMessage }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+
+    return new Response(JSON.stringify({ success: false, error: errorMessage }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });

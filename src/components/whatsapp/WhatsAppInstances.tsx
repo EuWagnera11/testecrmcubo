@@ -11,20 +11,11 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
 export function WhatsAppInstances() {
-  const { instances, isLoading, createInstance, deleteInstance, refetch } = useWhatsAppInstances();
+  const { instances, isLoading, createInstance, deleteInstance } = useWhatsAppInstances();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ name: '', api_url: '', api_key: '', instance_name: '' });
   const { toast } = useToast();
 
-  const getInstanceConfig = (instanceId: string) => {
-    const instance = instances.find((item) => item.id === instanceId);
-    if (!instance) throw new Error('Instância não encontrada');
-
-    const baseUrl = instance.api_url.trim().replace(/\/+$/, '');
-    const instanceName = encodeURIComponent(instance.instance_name.trim());
-
-    return { instance, baseUrl, instanceName };
-  };
 
   const handleCreate = async () => {
     if (!form.name || !form.api_url || !form.api_key || !form.instance_name) {
@@ -43,21 +34,11 @@ export function WhatsAppInstances() {
 
   const handleCheckStatus = async (instanceId: string) => {
     try {
-      const { instance, baseUrl, instanceName } = getInstanceConfig(instanceId);
-      const response = await fetch(`${baseUrl}/instance/connectionState/${instanceName}`, {
-        method: 'GET',
-        headers: { apikey: instance.api_key },
+      const { data, error } = await supabase.functions.invoke('whatsapp-instance', {
+        body: { action: 'check-status', instanceId },
       });
-
-      const result = await response.json();
-      if (!response.ok) {
-        throw new Error(result?.response?.message?.[0] || result?.message || 'Falha ao verificar status');
-      }
-
-      const status = result?.instance?.state || 'disconnected';
-      await supabase.from('whatsapp_instances').update({ status }).eq('id', instanceId);
-      await refetch();
-      toast({ title: `Status: ${status}` });
+      if (error) throw error;
+      toast({ title: `Status: ${data.status}` });
     } catch (err: any) {
       toast({ title: 'Erro ao verificar status', description: err.message, variant: 'destructive' });
     }
@@ -65,28 +46,10 @@ export function WhatsAppInstances() {
 
   const handleSetWebhook = async (instanceId: string) => {
     try {
-      const { instance, baseUrl, instanceName } = getInstanceConfig(instanceId);
-      const webhookUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/whatsapp-webhook`;
-
-      const response = await fetch(`${baseUrl}/webhook/set/${instanceName}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          apikey: instance.api_key,
-        },
-        body: JSON.stringify({
-          url: webhookUrl,
-          webhook_by_events: false,
-          webhook_base64: false,
-          events: ['MESSAGES_UPSERT'],
-        }),
+      const { error } = await supabase.functions.invoke('whatsapp-instance', {
+        body: { action: 'set-webhook', instanceId },
       });
-
-      const result = await response.json();
-      if (!response.ok) {
-        throw new Error(result?.response?.message?.[0] || result?.message || 'Falha ao configurar webhook');
-      }
-
+      if (error) throw error;
       toast({ title: 'Webhook configurado com sucesso' });
     } catch (err: any) {
       toast({ title: 'Erro ao configurar webhook', description: err.message, variant: 'destructive' });
@@ -95,32 +58,22 @@ export function WhatsAppInstances() {
 
   const handleGetQR = async (instanceId: string) => {
     try {
-      const { instance, baseUrl, instanceName } = getInstanceConfig(instanceId);
-      const response = await fetch(`${baseUrl}/instance/connect/${instanceName}`, {
-        method: 'GET',
-        headers: { apikey: instance.api_key },
+      const { data, error } = await supabase.functions.invoke('whatsapp-instance', {
+        body: { action: 'get-qrcode', instanceId },
       });
+      if (error) throw error;
 
-      const result = await response.json();
-      if (!response.ok) {
-        throw new Error(result?.response?.message?.[0] || result?.message || 'Falha ao gerar QR Code');
-      }
-
-      const qrImage = result?.base64 || result?.qrcode?.base64 || result?.data?.base64;
+      const qrImage = data?.data?.base64 || data?.data?.qrcode?.base64 || data?.data?.code;
       if (qrImage) {
-        const w = window.open('', '_blank', 'width=420,height=420');
+        const w = window.open('', '_blank', 'width=400,height=400');
         if (w) {
           w.document.write(`<img src="${qrImage}" style="width:100%;height:auto;" />`);
         }
-        return;
+      } else if (data?.data?.pairingCode) {
+        toast({ title: 'Código de pareamento', description: data.data.pairingCode });
+      } else {
+        toast({ title: 'QR Code não disponível. Verifique se a instância existe na Evolution API.' });
       }
-
-      if (result?.pairingCode) {
-        toast({ title: 'Código de pareamento', description: result.pairingCode });
-        return;
-      }
-
-      toast({ title: 'QR Code não disponível no retorno da Evolution API' });
     } catch (err: any) {
       toast({ title: 'Erro ao buscar QR Code', description: err.message, variant: 'destructive' });
     }
