@@ -14,7 +14,7 @@ const tools = [
     type: "function",
     function: {
       name: "list_projects",
-      description: "List projects with optional filters (status, client). Returns id, name, status, client_name, created_at, project_type.",
+      description: "List projects with optional filters (status). Returns id, name, status, client_id, created_at, project_type.",
       parameters: {
         type: "object",
         properties: {
@@ -33,8 +33,9 @@ const tools = [
         type: "object",
         properties: {
           name: { type: "string", description: "Project name" },
-          client_id: { type: "string", description: "Client UUID" },
-          project_type: { type: "string", description: "Type: social_media, traffic, branding, audiovisual, financial_advisory, social_ai, crm_integration, gmb" },
+          client_id: { type: "string", description: "Client UUID (opcional). IDs inválidos serão ignorados." },
+          client_name: { type: "string", description: "Nome da clínica/cliente para referência (opcional)" },
+          project_type: { type: "string", description: "Tipo do projeto (ex.: branding, traffic, social_media)." },
           description: { type: "string" },
         },
         required: ["name"],
@@ -224,6 +225,9 @@ const tools = [
   },
 ];
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const isUuid = (value: unknown): value is string => typeof value === "string" && UUID_REGEX.test(value);
+
 // ── Tool execution ──────────────────────────────────────────────────────────
 
 async function executeTool(
@@ -240,7 +244,7 @@ async function executeTool(
     case "list_projects": {
       let query = supabase
         .from("projects")
-        .select("id, name, status, client_name, created_at, project_type, description")
+        .select("id, name, status, client_id, created_at, project_type")
         .order("created_at", { ascending: false })
         .limit((args.limit as number) || 20);
       if (args.status) query = query.eq("status", args.status);
@@ -253,17 +257,29 @@ async function executeTool(
       if (!isAdminOrDirector && !isTeamLeader) {
         return { error: "Sem permissão para criar projetos." };
       }
+      const rawClientId = typeof args.client_id === "string" ? args.client_id.trim() : "";
+      const normalizedProjectType =
+        typeof args.project_type === "string" && args.project_type.trim().length > 0
+          ? args.project_type.trim().toLowerCase().replace(/\s+/g, "_")
+          : "one_time";
+
+      const insertPayload: Record<string, unknown> = {
+        name: args.name,
+        user_id: userId,
+        status: "active",
+        project_type: normalizedProjectType,
+        project_types: [normalizedProjectType],
+      };
+
+      if (isUuid(rawClientId)) {
+        insertPayload.client_id = rawClientId;
+      } else if (rawClientId) {
+        console.warn(`[ai-chat] Ignoring invalid client_id '${rawClientId}' on create_project`);
+      }
+
       const { data, error } = await supabase
         .from("projects")
-        .insert({
-          name: args.name,
-          client_id: args.client_id || null,
-          client_name: args.client_name || null,
-          project_type: args.project_type || "social_media",
-          description: args.description || null,
-          user_id: userId,
-          status: "planning",
-        })
+        .insert(insertPayload)
         .select()
         .single();
       if (error) throw error;
@@ -588,6 +604,7 @@ INSTRUÇÕES:
         try {
           toolResult = await executeTool(fnName, fnArgs, supabase, userId, userRoles);
         } catch (e: any) {
+          console.error(`[ai-chat] Tool error (${fnName}):`, e?.message || e);
           toolResult = { error: e.message };
         }
 
