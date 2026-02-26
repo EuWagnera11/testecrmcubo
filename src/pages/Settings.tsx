@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Users, UserCheck, UserX, Shield, Target, Save, Info, Palette, PenTool, TrendingUp, Share2, Crown, User, Camera, Trash2, Bell, DollarSign } from 'lucide-react';
+import { Users, UserCheck, UserX, Shield, Target, Save, Info, Palette, PenTool, TrendingUp, Share2, Crown, User, Camera, Trash2, Bell, DollarSign, Code, PhoneCall, Handshake, Film } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -44,6 +44,10 @@ const roleIcons: Record<string, React.ReactNode> = {
   copywriter: <PenTool className="h-4 w-4" />,
   traffic_manager: <TrendingUp className="h-4 w-4" />,
   social_media: <Share2 className="h-4 w-4" />,
+  programmer: <Code className="h-4 w-4" />,
+  sdr: <PhoneCall className="h-4 w-4" />,
+  closer: <Handshake className="h-4 w-4" />,
+  video_editor: <Film className="h-4 w-4" />,
 };
 
 export default function Settings() {
