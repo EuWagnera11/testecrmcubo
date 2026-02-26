@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { AsaasPaymentsModule } from './AsaasPaymentsModule';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -124,6 +125,11 @@ export function CRMIntegrationModule({ projectId }: { projectId: string }) {
           <CardHeader className="pb-2"><CardTitle className="text-sm">Notas</CardTitle></CardHeader>
           <CardContent>
             <Textarea value={data.notes} onChange={e => setData(d => ({ ...d, notes: e.target.value }))} placeholder="Observações sobre a integração..." rows={3} />
+          </CardContent>
+        </Card>
+        <Card className="md:col-span-2">
+          <CardContent className="pt-6">
+            <AsaasPaymentsModule projectId={projectId} />
           </CardContent>
         </Card>
       </div>
