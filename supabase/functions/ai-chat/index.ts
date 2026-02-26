@@ -354,9 +354,6 @@ async function executeTool(
     }
 
     case "create_project": {
-      if (!isAdminOrDirector && !isTeamLeader) {
-        return { error: "Sem permissão para criar projetos." };
-      }
       const rawClientId = typeof args.client_id === "string" ? args.client_id.trim() : "";
       const normalizedProjectType =
         typeof args.project_type === "string" && args.project_type.trim().length > 0
@@ -387,9 +384,6 @@ async function executeTool(
     }
 
     case "update_project": {
-      if (!isAdminOrDirector && !isTeamLeader) {
-        return { error: "Sem permissão para atualizar projetos." };
-      }
       const updateData: Record<string, unknown> = {};
       if (args.name) updateData.name = args.name;
       if (args.status) updateData.status = args.status;
@@ -422,9 +416,6 @@ async function executeTool(
     }
 
     case "create_client": {
-      if (!isAdminOrDirector && !isTeamLeader) {
-        return { error: "Sem permissão para criar clientes." };
-      }
       const { data, error } = await supabase
         .from("clients")
         .insert({
@@ -443,9 +434,6 @@ async function executeTool(
     }
 
     case "update_client": {
-      if (!isAdminOrDirector && !isTeamLeader) {
-        return { error: "Sem permissão para atualizar clientes." };
-      }
       const updateData: Record<string, unknown> = {};
       if (args.name) updateData.name = args.name;
       if (args.status) updateData.status = args.status;
@@ -495,9 +483,6 @@ async function executeTool(
     }
 
     case "get_financial_summary": {
-      if (!isAdminOrDirector) {
-        return { error: "Sem permissão para ver dados financeiros." };
-      }
       let query = supabase.from("financial_transactions").select("type, amount, date, category, description");
       if (args.start_date) query = query.gte("date", args.start_date);
       if (args.end_date) query = query.lte("date", args.end_date);
@@ -525,9 +510,6 @@ async function executeTool(
     }
 
     case "create_transaction": {
-      if (!isAdminOrDirector) {
-        return { error: "Sem permissão para criar transações." };
-      }
       const { data, error } = await supabase
         .from("financial_transactions")
         .insert({
@@ -601,9 +583,6 @@ async function executeTool(
     }
 
     case "get_commissions_summary": {
-      if (!isAdminOrDirector) {
-        return { error: "Sem permissão para ver comissões." };
-      }
       let query = supabase.from("closure_commissions").select("amount, user_name, paid, description, created_at");
       if (args.period_key) {
         const start = `${args.period_key}-01T00:00:00`;
@@ -732,10 +711,8 @@ CONTEXTO DO USUÁRIO:
 - Cargos: ${roleNames}
 - Data atual: ${new Date().toISOString().split("T")[0]}
 
-REGRAS DE PERMISSÃO:
-${isAdminOrDirector ? "- Este usuário tem acesso COMPLETO a todos os módulos (admin/diretor)." : ""}
-${userRoles.includes("team_leader") ? "- Este usuário pode criar projetos, gerenciar tarefas e ver clientes." : ""}
-${!isAdminOrDirector ? "- Este usuário NÃO tem acesso a dados financeiros detalhados ou comissões." : ""}
+PERMISSÕES:
+- Este usuário tem acesso COMPLETO e IRRESTRITO a todos os módulos do CRM.
 
 INSTRUÇÕES:
 - Responda sempre em português do Brasil
