@@ -16,6 +16,22 @@ export interface Message {
   attachments?: Attachment[];
 }
 
+function sanitizeStorageFileName(fileName: string): string {
+  const dotIndex = fileName.lastIndexOf('.');
+  const rawName = dotIndex >= 0 ? fileName.slice(0, dotIndex) : fileName;
+  const extension = dotIndex >= 0 ? fileName.slice(dotIndex).toLowerCase() : '';
+
+  const normalizedName = rawName
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9_-]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 80);
+
+  return `${normalizedName || 'arquivo'}${extension}`;
+}
+
 export function useAIChat() {
   const { user, session } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -63,7 +79,8 @@ export function useAIChat() {
 
   const uploadFile = useCallback(async (file: File): Promise<Attachment | null> => {
     if (!user) return null;
-    const path = `${user.id}/${Date.now()}-${file.name}`;
+    const safeFileName = sanitizeStorageFileName(file.name);
+    const path = `${user.id}/${Date.now()}-${safeFileName}`;
     const { error } = await supabase.storage.from('ai-chat-files').upload(path, file);
     if (error) {
       console.error('Upload error:', error);
