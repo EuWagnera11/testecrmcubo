@@ -11,7 +11,10 @@ import {
   BarChart3,
   GraduationCap,
   MessageCircle,
-  Bot
+  Kanban,
+  CalendarDays,
+  UsersRound,
+  Activity
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -26,14 +29,17 @@ interface SidebarProps {
 
 const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
+  { icon: Kanban, label: 'Pipeline', path: '/pipeline' },
   { icon: BarChart3, label: 'Relatórios', path: '/relatorios', directorOnly: true },
+  { icon: UsersRound, label: 'Equipe', path: '/equipe', directorOnly: true },
   { icon: Users, label: 'Clínicas', path: '/clientes' },
   { icon: FolderKanban, label: 'Projetos', path: '/projetos' },
   { icon: MessageCircle, label: 'WhatsApp', path: '/whatsapp' },
-  
+  { icon: CalendarDays, label: 'Agenda', path: '/agenda' },
   { icon: FileText, label: 'Contratos', path: '/contratos' },
   { icon: Wallet, label: 'Financeiro', path: '/financeiro', directorOnly: true },
   { icon: GraduationCap, label: 'Estudos', path: '/estudos' },
+  { icon: Activity, label: 'Atividades', path: '/atividades' },
   { icon: Settings, label: 'Configurações', path: '/configuracoes' },
 ];
 
