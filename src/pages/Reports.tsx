@@ -8,6 +8,7 @@ import { useProjects } from '@/hooks/useProjects';
 import { useFinancial } from '@/hooks/useFinancial';
 import { useProjectsProfitability } from '@/hooks/useProjectsProfitability';
 import { format, subMonths, parseISO } from 'date-fns';
+import { formatCurrency } from '@/lib/utils';
 import { ptBR } from 'date-fns/locale';
 import { getFiscalMonthRange } from '@/lib/fiscalMonth';
 import { PDFExportDialog } from '@/components/PDFExportDialog';
@@ -84,8 +85,6 @@ export default function Reports() {
     return Object.entries(categories).map(([name, value]) => ({ name, value }));
   }, [filteredTransactions]);
 
-  const formatCurrency = (value: number) =>
-    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 
   return (
     <div className="space-y-8 animate-fade-in">

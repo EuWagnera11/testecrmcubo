@@ -35,15 +35,8 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { useAllPayouts, PayoutWithProject } from '@/hooks/useAllPayouts';
 import { PendingApproval } from '@/components/PendingApproval';
 import { Link } from 'react-router-dom';
-
-const roleLabels: Record<string, string> = {
-  designer: 'Designer',
-  copywriter: 'Copywriter',
-  traffic_manager: 'Gestor de Tráfego',
-  social_media: 'Social Media',
-  director: 'Diretor',
-  other: 'Outro',
-};
+import { appRoleLabels } from '@/lib/roleConfig';
+import { formatCurrency } from '@/lib/utils';
 
 const categories = {
   income: ['Projeto', 'Consultoria', 'Outros'],
@@ -90,20 +83,7 @@ export default function Financial() {
   const [mainTab, setMainTab] = useState('transactions');
   const [payoutTab, setPayoutTab] = useState('pending');
 
-  // Only directors and admins can access financial
-  if (!isAdmin && !isDirector) {
-    return (
-      <PendingApproval 
-        status="pending" 
-        customMessage="Apenas diretores e administradores podem acessar o módulo financeiro."
-      />
-    );
-  }
-
-  const formatCurrency = (value: number) =>
-    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
-
-  // Filter transactions by fiscal month (20th to 19th)
+  // Filter transactions by month (hooks must be before early return)
   const filteredTransactions = useMemo(() => {
     if (!filterMonth) return transactions;
     
@@ -114,7 +94,6 @@ export default function Financial() {
     return transactions.filter(t => isWithinFiscalMonth(t.date, referenceDate));
   }, [transactions, filterMonth, filterYear]);
 
-  // Compute totals based on filtered transactions
   const filteredTotalIncome = useMemo(() => 
     filteredTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + Number(t.amount), 0),
     [filteredTransactions]
@@ -126,6 +105,16 @@ export default function Financial() {
   );
   
   const filteredBalance = filteredTotalIncome - filteredTotalExpenses;
+
+  // Only directors and admins can access financial
+  if (!isAdmin && !isDirector) {
+    return (
+      <PendingApproval 
+        status="pending" 
+        customMessage="Apenas diretores e administradores podem acessar o módulo financeiro."
+      />
+    );
+  }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -175,7 +164,7 @@ export default function Financial() {
           <div className="flex items-center gap-2 flex-wrap">
             <p className="font-medium truncate text-sm sm:text-base">{payout.member_name || 'Membro'}</p>
             <Badge variant="outline" className="text-xs shrink-0">
-              {roleLabels[payout.role] || payout.role}
+              {appRoleLabels[payout.role as keyof typeof appRoleLabels] || payout.role}
             </Badge>
           </div>
           <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground flex-wrap">

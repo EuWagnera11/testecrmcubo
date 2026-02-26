@@ -19,7 +19,7 @@ import ContractDetails from "./pages/ContractDetails";
 import Settings from "./pages/Settings";
 import ClientDashboard from "./pages/ClientDashboard";
 import Financial from "./pages/Financial";
-import Payouts from "./pages/Payouts";
+
 import Reports from "./pages/Reports";
 import Studies from "./pages/Studies";
 import WhatsApp from "./pages/WhatsApp";
@@ -92,7 +92,7 @@ const AppRoutes = () => (
         <Route path="contratos" element={<Contracts />} />
         <Route path="contratos/:id" element={<ContractDetails />} />
         <Route path="financeiro" element={<Financial />} />
-        <Route path="pagamentos" element={<Payouts />} />
+        <Route path="pagamentos" element={<Navigate to="/financeiro" replace />} />
         <Route path="relatorios" element={<Reports />} />
         <Route path="estudos" element={<Studies />} />
         <Route path="whatsapp" element={<WhatsApp />} />
