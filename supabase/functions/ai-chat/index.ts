@@ -685,6 +685,288 @@ const tools = [
       },
     },
   },
+
+  // ─── PROJECT MODULES ──────────────────────────────────────────────────
+  {
+    type: "function",
+    function: {
+      name: "get_project_strategy",
+      description: "Get strategy data for a project: offer_big_idea, personas, funnel_structure, landing_page_url, landing_page_test_url.",
+      parameters: { type: "object", properties: { project_id: { type: "string" } }, required: ["project_id"] },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "upsert_project_strategy",
+      description: "Create or update project strategy. Fields: offer_big_idea, personas, funnel_structure, landing_page_url, landing_page_test_url.",
+      parameters: {
+        type: "object",
+        properties: {
+          project_id: { type: "string" },
+          offer_big_idea: { type: "string" },
+          personas: { type: "string" },
+          funnel_structure: { type: "string" },
+          landing_page_url: { type: "string" },
+          landing_page_test_url: { type: "string" },
+        },
+        required: ["project_id"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_project_technical_setup",
+      description: "Get technical setup: meta_pixel_id, tiktok_pixel_id, ad_account_id, capi_status, utm_pattern, ads_manager_link, drive_link.",
+      parameters: { type: "object", properties: { project_id: { type: "string" } }, required: ["project_id"] },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "upsert_project_technical_setup",
+      description: "Create or update technical setup. Fields: meta_pixel_id, tiktok_pixel_id, ad_account_id, capi_status, utm_pattern, ads_manager_link, drive_link.",
+      parameters: {
+        type: "object",
+        properties: {
+          project_id: { type: "string" },
+          meta_pixel_id: { type: "string" },
+          tiktok_pixel_id: { type: "string" },
+          ad_account_id: { type: "string" },
+          capi_status: { type: "string" },
+          utm_pattern: { type: "string" },
+          ads_manager_link: { type: "string" },
+          drive_link: { type: "string" },
+        },
+        required: ["project_id"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_project_branding",
+      description: "Get branding data: positioning_statement, brand_voice, color_palette, typography_notes, visual_identity_notes, target_audience, competitors, brand_guidelines_url.",
+      parameters: { type: "object", properties: { project_id: { type: "string" } }, required: ["project_id"] },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "upsert_project_branding",
+      description: "Create or update branding. Fields: positioning_statement, brand_voice, color_palette, typography_notes, visual_identity_notes, target_audience, competitors, brand_guidelines_url.",
+      parameters: {
+        type: "object",
+        properties: {
+          project_id: { type: "string" },
+          positioning_statement: { type: "string" },
+          brand_voice: { type: "string" },
+          color_palette: { type: "string" },
+          typography_notes: { type: "string" },
+          visual_identity_notes: { type: "string" },
+          target_audience: { type: "string" },
+          competitors: { type: "string" },
+          brand_guidelines_url: { type: "string" },
+        },
+        required: ["project_id"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_project_social_media",
+      description: "Get social media config: platforms, posting_frequency, content_pillars, brand_voice, hashtag_strategy, engagement_goals.",
+      parameters: { type: "object", properties: { project_id: { type: "string" } }, required: ["project_id"] },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "upsert_project_social_media",
+      description: "Create or update social media config. Fields: platforms (array), posting_frequency, content_pillars, brand_voice, hashtag_strategy, engagement_goals.",
+      parameters: {
+        type: "object",
+        properties: {
+          project_id: { type: "string" },
+          platforms: { type: "array", items: { type: "string" } },
+          posting_frequency: { type: "string" },
+          content_pillars: { type: "string" },
+          brand_voice: { type: "string" },
+          hashtag_strategy: { type: "string" },
+          engagement_goals: { type: "string" },
+        },
+        required: ["project_id"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_project_audiovisual",
+      description: "Get audiovisual config: video_types, production_notes, equipment_requirements, delivery_formats, style_references, script_notes.",
+      parameters: { type: "object", properties: { project_id: { type: "string" } }, required: ["project_id"] },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "upsert_project_audiovisual",
+      description: "Create or update audiovisual config. Fields: video_types (array), production_notes, equipment_requirements, delivery_formats, style_references, script_notes.",
+      parameters: {
+        type: "object",
+        properties: {
+          project_id: { type: "string" },
+          video_types: { type: "array", items: { type: "string" } },
+          production_notes: { type: "string" },
+          equipment_requirements: { type: "string" },
+          delivery_formats: { type: "string" },
+          style_references: { type: "string" },
+          script_notes: { type: "string" },
+        },
+        required: ["project_id"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_project_crm_integration",
+      description: "Get CRM integration: crm_platform, api_endpoint, fields_mapped, integration_status, sync_frequency, last_sync_at, notes.",
+      parameters: { type: "object", properties: { project_id: { type: "string" } }, required: ["project_id"] },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "upsert_project_crm_integration",
+      description: "Create or update CRM integration. Fields: crm_platform, api_endpoint, fields_mapped, integration_status, sync_frequency, notes.",
+      parameters: {
+        type: "object",
+        properties: {
+          project_id: { type: "string" },
+          crm_platform: { type: "string" },
+          api_endpoint: { type: "string" },
+          fields_mapped: { type: "string" },
+          integration_status: { type: "string" },
+          sync_frequency: { type: "string" },
+          notes: { type: "string" },
+        },
+        required: ["project_id"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "list_project_copy_bank",
+      description: "List copy bank entries for a project. Each has: angle, content, status.",
+      parameters: { type: "object", properties: { project_id: { type: "string" } }, required: ["project_id"] },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "create_project_copy",
+      description: "Add a copy to the project copy bank. Fields: angle, content, status.",
+      parameters: {
+        type: "object",
+        properties: {
+          project_id: { type: "string" },
+          angle: { type: "string" },
+          content: { type: "string" },
+          status: { type: "string", description: "active, paused, testing" },
+        },
+        required: ["project_id", "angle", "content"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "list_project_creatives",
+      description: "List creatives for a project. Each has: title, media_url, media_type, tags, dark_post_id, status.",
+      parameters: { type: "object", properties: { project_id: { type: "string" } }, required: ["project_id"] },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "create_project_creative",
+      description: "Add a creative to the project. Fields: title, media_url, media_type, tags (array), dark_post_id, status.",
+      parameters: {
+        type: "object",
+        properties: {
+          project_id: { type: "string" },
+          title: { type: "string" },
+          media_url: { type: "string" },
+          media_type: { type: "string", description: "image, video, carousel" },
+          tags: { type: "array", items: { type: "string" } },
+          dark_post_id: { type: "string" },
+        },
+        required: ["project_id", "title"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "list_project_tests",
+      description: "List A/B tests for a project. Each has: hypothesis, variables, result, learnings, status.",
+      parameters: { type: "object", properties: { project_id: { type: "string" } }, required: ["project_id"] },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "create_project_test",
+      description: "Create a test/experiment. Fields: hypothesis, variables, status.",
+      parameters: {
+        type: "object",
+        properties: {
+          project_id: { type: "string" },
+          hypothesis: { type: "string" },
+          variables: { type: "string" },
+          status: { type: "string", description: "planned, running, completed" },
+        },
+        required: ["project_id", "hypothesis"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "list_project_optimization_log",
+      description: "List optimization log entries for a project. Each has: action_date, action_description, reason.",
+      parameters: { type: "object", properties: { project_id: { type: "string" } }, required: ["project_id"] },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "create_project_optimization_log",
+      description: "Add an optimization log entry. Fields: action_description, reason, action_date.",
+      parameters: {
+        type: "object",
+        properties: {
+          project_id: { type: "string" },
+          action_description: { type: "string" },
+          reason: { type: "string" },
+          action_date: { type: "string", description: "ISO date" },
+        },
+        required: ["project_id", "action_description"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "list_project_members",
+      description: "List members assigned to a specific project with their roles.",
+      parameters: { type: "object", properties: { project_id: { type: "string" } }, required: ["project_id"] },
+    },
+  },
 ];
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -1064,6 +1346,171 @@ async function executeTool(
       return data;
     }
 
+    // ── PROJECT MODULES ──────────────────────────────────────
+    case "get_project_strategy": {
+      const { data, error } = await supabase.from("project_strategy").select("*").eq("project_id", args.project_id).maybeSingle();
+      if (error) throw error;
+      return data || { message: "Nenhuma estratégia cadastrada ainda." };
+    }
+    case "upsert_project_strategy": {
+      const fields: Record<string, unknown> = {};
+      for (const k of ["offer_big_idea", "personas", "funnel_structure", "landing_page_url", "landing_page_test_url"]) if (args[k] !== undefined) fields[k] = args[k];
+      const { data: existing } = await supabase.from("project_strategy").select("id").eq("project_id", args.project_id).maybeSingle();
+      if (existing) {
+        const { data, error } = await supabase.from("project_strategy").update({ ...fields, updated_at: new Date().toISOString() }).eq("id", existing.id).select().single();
+        if (error) throw error;
+        return { success: true, strategy: data };
+      } else {
+        const { data, error } = await supabase.from("project_strategy").insert({ project_id: args.project_id, ...fields }).select().single();
+        if (error) throw error;
+        return { success: true, strategy: data };
+      }
+    }
+    case "get_project_technical_setup": {
+      const { data, error } = await supabase.from("project_technical_setup").select("*").eq("project_id", args.project_id).maybeSingle();
+      if (error) throw error;
+      return data || { message: "Nenhum setup técnico cadastrado ainda." };
+    }
+    case "upsert_project_technical_setup": {
+      const fields: Record<string, unknown> = {};
+      for (const k of ["meta_pixel_id", "tiktok_pixel_id", "ad_account_id", "capi_status", "utm_pattern", "ads_manager_link", "drive_link"]) if (args[k] !== undefined) fields[k] = args[k];
+      const { data: existing } = await supabase.from("project_technical_setup").select("id").eq("project_id", args.project_id).maybeSingle();
+      if (existing) {
+        const { data, error } = await supabase.from("project_technical_setup").update({ ...fields, updated_at: new Date().toISOString() }).eq("id", existing.id).select().single();
+        if (error) throw error;
+        return { success: true, setup: data };
+      } else {
+        const { data, error } = await supabase.from("project_technical_setup").insert({ project_id: args.project_id, ...fields }).select().single();
+        if (error) throw error;
+        return { success: true, setup: data };
+      }
+    }
+    case "get_project_branding": {
+      const { data, error } = await supabase.from("project_branding").select("*").eq("project_id", args.project_id).maybeSingle();
+      if (error) throw error;
+      return data || { message: "Nenhum branding cadastrado ainda." };
+    }
+    case "upsert_project_branding": {
+      const fields: Record<string, unknown> = {};
+      for (const k of ["positioning_statement", "brand_voice", "color_palette", "typography_notes", "visual_identity_notes", "target_audience", "competitors", "brand_guidelines_url"]) if (args[k] !== undefined) fields[k] = args[k];
+      const { data: existing } = await supabase.from("project_branding").select("id").eq("project_id", args.project_id).maybeSingle();
+      if (existing) {
+        const { data, error } = await supabase.from("project_branding").update({ ...fields, updated_at: new Date().toISOString() }).eq("id", existing.id).select().single();
+        if (error) throw error;
+        return { success: true, branding: data };
+      } else {
+        const { data, error } = await supabase.from("project_branding").insert({ project_id: args.project_id, ...fields }).select().single();
+        if (error) throw error;
+        return { success: true, branding: data };
+      }
+    }
+    case "get_project_social_media": {
+      const { data, error } = await supabase.from("project_social_media").select("*").eq("project_id", args.project_id).maybeSingle();
+      if (error) throw error;
+      return data || { message: "Nenhuma config de social media cadastrada ainda." };
+    }
+    case "upsert_project_social_media": {
+      const fields: Record<string, unknown> = {};
+      for (const k of ["platforms", "posting_frequency", "content_pillars", "brand_voice", "hashtag_strategy", "engagement_goals"]) if (args[k] !== undefined) fields[k] = args[k];
+      const { data: existing } = await supabase.from("project_social_media").select("id").eq("project_id", args.project_id).maybeSingle();
+      if (existing) {
+        const { data, error } = await supabase.from("project_social_media").update({ ...fields, updated_at: new Date().toISOString() }).eq("id", existing.id).select().single();
+        if (error) throw error;
+        return { success: true, social_media: data };
+      } else {
+        const { data, error } = await supabase.from("project_social_media").insert({ project_id: args.project_id, ...fields }).select().single();
+        if (error) throw error;
+        return { success: true, social_media: data };
+      }
+    }
+    case "get_project_audiovisual": {
+      const { data, error } = await supabase.from("project_audiovisual").select("*").eq("project_id", args.project_id).maybeSingle();
+      if (error) throw error;
+      return data || { message: "Nenhuma config audiovisual cadastrada ainda." };
+    }
+    case "upsert_project_audiovisual": {
+      const fields: Record<string, unknown> = {};
+      for (const k of ["video_types", "production_notes", "equipment_requirements", "delivery_formats", "style_references", "script_notes"]) if (args[k] !== undefined) fields[k] = args[k];
+      const { data: existing } = await supabase.from("project_audiovisual").select("id").eq("project_id", args.project_id).maybeSingle();
+      if (existing) {
+        const { data, error } = await supabase.from("project_audiovisual").update({ ...fields, updated_at: new Date().toISOString() }).eq("id", existing.id).select().single();
+        if (error) throw error;
+        return { success: true, audiovisual: data };
+      } else {
+        const { data, error } = await supabase.from("project_audiovisual").insert({ project_id: args.project_id, ...fields }).select().single();
+        if (error) throw error;
+        return { success: true, audiovisual: data };
+      }
+    }
+    case "get_project_crm_integration": {
+      const { data, error } = await supabase.from("project_crm_integration").select("*").eq("project_id", args.project_id).maybeSingle();
+      if (error) throw error;
+      return data || { message: "Nenhuma integração CRM cadastrada ainda." };
+    }
+    case "upsert_project_crm_integration": {
+      const fields: Record<string, unknown> = {};
+      for (const k of ["crm_platform", "api_endpoint", "fields_mapped", "integration_status", "sync_frequency", "notes"]) if (args[k] !== undefined) fields[k] = args[k];
+      const { data: existing } = await supabase.from("project_crm_integration").select("id").eq("project_id", args.project_id).maybeSingle();
+      if (existing) {
+        const { data, error } = await supabase.from("project_crm_integration").update({ ...fields, updated_at: new Date().toISOString() }).eq("id", existing.id).select().single();
+        if (error) throw error;
+        return { success: true, crm: data };
+      } else {
+        const { data, error } = await supabase.from("project_crm_integration").insert({ project_id: args.project_id, ...fields }).select().single();
+        if (error) throw error;
+        return { success: true, crm: data };
+      }
+    }
+    case "list_project_copy_bank": {
+      const { data, error } = await supabase.from("project_copy_bank").select("id, angle, content, status, created_at").eq("project_id", args.project_id).order("created_at", { ascending: false });
+      if (error) throw error;
+      return data || [];
+    }
+    case "create_project_copy": {
+      const { data, error } = await supabase.from("project_copy_bank").insert({ project_id: args.project_id, angle: args.angle, content: args.content, status: args.status || "active" }).select().single();
+      if (error) throw error;
+      return { success: true, copy: data };
+    }
+    case "list_project_creatives": {
+      const { data, error } = await supabase.from("project_creatives").select("id, title, media_url, media_type, tags, dark_post_id, status, created_at").eq("project_id", args.project_id).order("created_at", { ascending: false });
+      if (error) throw error;
+      return data || [];
+    }
+    case "create_project_creative": {
+      const { data, error } = await supabase.from("project_creatives").insert({ project_id: args.project_id, title: args.title, media_url: args.media_url || null, media_type: args.media_type || "image", tags: args.tags || null, dark_post_id: args.dark_post_id || null }).select().single();
+      if (error) throw error;
+      return { success: true, creative: data };
+    }
+    case "list_project_tests": {
+      const { data, error } = await supabase.from("project_tests").select("id, hypothesis, variables, result, learnings, status, created_at").eq("project_id", args.project_id).order("created_at", { ascending: false });
+      if (error) throw error;
+      return data || [];
+    }
+    case "create_project_test": {
+      const { data, error } = await supabase.from("project_tests").insert({ project_id: args.project_id, hypothesis: args.hypothesis, variables: args.variables || null, status: args.status || "planned" }).select().single();
+      if (error) throw error;
+      return { success: true, test: data };
+    }
+    case "list_project_optimization_log": {
+      const { data, error } = await supabase.from("project_optimization_log").select("id, action_date, action_description, reason, user_id, created_at").eq("project_id", args.project_id).order("action_date", { ascending: false });
+      if (error) throw error;
+      return data || [];
+    }
+    case "create_project_optimization_log": {
+      const { data, error } = await supabase.from("project_optimization_log").insert({ project_id: args.project_id, action_description: args.action_description, reason: args.reason || null, action_date: args.action_date || new Date().toISOString().split("T")[0], user_id: userId }).select().single();
+      if (error) throw error;
+      return { success: true, log: data };
+    }
+    case "list_project_members": {
+      const { data, error } = await supabase.from("project_members").select("id, user_id, role, created_at").eq("project_id", args.project_id);
+      if (error) throw error;
+      if (!data || !data.length) return [];
+      const uids = data.map((m: any) => m.user_id);
+      const { data: profiles } = await supabase.from("profiles").select("user_id, full_name").in("user_id", uids);
+      const pm = new Map((profiles || []).map((p: any) => [p.user_id, p.full_name]));
+      return data.map((m: any) => ({ ...m, full_name: pm.get(m.user_id) || "Sem nome" }));
+    }
+
     default:
       return { error: `Tool '${name}' não encontrada.` };
   }
@@ -1123,7 +1570,7 @@ MÓDULOS DISPONÍVEIS (você pode fazer TUDO):
 📄 Contratos — listar, criar, editar status/termos
 📢 Campanhas — listar, criar, ver métricas de performance (spend, clicks, leads, ROAS, CPC, CPL, CTR)
 💵 Comissões — resumo por período
-👔 Equipe — listar membros e cargos
+👔 Equipe — listar membros e cargos (global e por projeto)
 📱 Social — listar e criar posts no calendário social
 🤖 Automações — listar e criar fluxos de automação
 💳 Pagamentos — listar e criar payouts por projeto
@@ -1131,16 +1578,95 @@ MÓDULOS DISPONÍVEIS (você pode fazer TUDO):
 📚 Cursos — listar cursos de treinamento
 🔄 Pipeline — listar propostas
 
+SUBCATEGORIAS DE PROJETO (campos reais do sistema — use SOMENTE estes):
+
+🎯 Estratégia (project_strategy):
+  - offer_big_idea: Oferta / Big Idea principal
+  - personas: Personas/público-alvo detalhado
+  - funnel_structure: Estrutura do funil de vendas
+  - landing_page_url: URL da landing page
+  - landing_page_test_url: URL de teste da landing page
+
+⚙️ Setup Técnico (project_technical_setup):
+  - meta_pixel_id: ID do Pixel Meta/Facebook
+  - tiktok_pixel_id: ID do Pixel TikTok
+  - ad_account_id: ID da conta de anúncios
+  - capi_status: Status da API de Conversões (CAPI)
+  - utm_pattern: Padrão de UTMs utilizado
+  - ads_manager_link: Link do gerenciador de anúncios
+  - drive_link: Link do Google Drive
+
+🎨 Branding (project_branding):
+  - positioning_statement: Declaração de posicionamento
+  - brand_voice: Tom de voz da marca
+  - color_palette: Paleta de cores
+  - typography_notes: Notas de tipografia
+  - visual_identity_notes: Notas de identidade visual
+  - target_audience: Público-alvo
+  - competitors: Concorrentes
+  - brand_guidelines_url: URL do brand guide
+
+📱 Social Media (project_social_media):
+  - platforms: Plataformas ativas (array: instagram, facebook, linkedin, tiktok, etc.)
+  - posting_frequency: Frequência de postagem
+  - content_pillars: Pilares de conteúdo
+  - brand_voice: Tom de voz nas redes
+  - hashtag_strategy: Estratégia de hashtags
+  - engagement_goals: Metas de engajamento
+
+🎬 Audiovisual (project_audiovisual):
+  - video_types: Tipos de vídeo (array: reels, stories, institucional, etc.)
+  - production_notes: Notas de produção
+  - equipment_requirements: Equipamentos necessários
+  - delivery_formats: Formatos de entrega
+  - style_references: Referências de estilo
+  - script_notes: Notas de roteiro
+
+🔗 Integração CRM (project_crm_integration):
+  - crm_platform: Plataforma CRM (HubSpot, Salesforce, etc.)
+  - api_endpoint: Endpoint da API
+  - fields_mapped: Campos mapeados
+  - integration_status: Status da integração
+  - sync_frequency: Frequência de sincronização
+  - notes: Notas adicionais
+
+✍️ Copy Bank (project_copy_bank) — lista de copies:
+  - angle: Ângulo/abordagem da copy
+  - content: Conteúdo da copy
+  - status: Status (active, paused, testing)
+
+🖼️ Criativos (project_creatives) — lista de criativos:
+  - title: Título do criativo
+  - media_url: URL da mídia
+  - media_type: Tipo (image, video, carousel)
+  - tags: Tags (array)
+  - dark_post_id: ID do dark post
+  - status: Status
+
+🧪 Testes (project_tests) — lista de testes A/B:
+  - hypothesis: Hipótese do teste
+  - variables: Variáveis testadas
+  - result: Resultado
+  - learnings: Aprendizados
+  - status: Status (planned, running, completed)
+
+📝 Log de Otimização (project_optimization_log) — histórico de ações:
+  - action_date: Data da ação
+  - action_description: Descrição da ação
+  - reason: Motivo/razão
+
 INSTRUÇÕES:
 - Responda SEMPRE em português do Brasil
 - Seja conciso e direto
 - Use ferramentas para consultar e modificar dados — NUNCA invente dados
+- Quando o usuário perguntar sobre campos de um módulo, consulte a lista acima e retorne os CAMPOS REAIS do sistema
 - Quando o usuário der dados claros, execute IMEDIATAMENTE sem confirmação
 - Para ações DESTRUTIVAS (deletar), peça confirmação antes
 - Formate valores em R$ (BRL) e datas em dd/mm/yyyy
 - Use markdown para formatar listas e tabelas
 - Quando pedir para criar projeto para um cliente pelo nome, use list_clients primeiro para achar o ID
-- Quando pedir para atribuir tarefa, use list_team_members para achar o user_id`;
+- Quando pedir para atribuir tarefa, use list_team_members para achar o user_id
+- Quando pedir informações de subcategorias, use as ferramentas get_project_* para buscar dados REAIS`;
 
     const apiMessages = [{ role: "system", content: systemPrompt }, ...messages];
 
