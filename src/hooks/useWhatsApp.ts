@@ -245,6 +245,30 @@ export function useMarkConversationRead() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['whatsapp-conversations'] });
+      queryClient.invalidateQueries({ queryKey: ['whatsapp-unread-counts'] });
     },
+  });
+}
+
+export function useWhatsAppUnreadCounts() {
+  const { user } = useAuth();
+
+  return useQuery({
+    queryKey: ['whatsapp-unread-counts'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('whatsapp_conversations')
+        .select('instance_id, unread_count');
+      if (error) throw error;
+
+      const counts: Record<string, number> = {};
+      for (const row of data ?? []) {
+        const iid = row.instance_id;
+        counts[iid] = (counts[iid] || 0) + (row.unread_count || 0);
+      }
+      return counts;
+    },
+    enabled: !!user,
+    refetchInterval: 15000,
   });
 }
