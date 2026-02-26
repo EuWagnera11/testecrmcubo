@@ -122,6 +122,69 @@ export type Database = {
         }
         Relationships: []
       }
+      automation_flows: {
+        Row: {
+          assigned_to: string | null
+          category: string | null
+          client_id: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          n8n_workflow_url: string | null
+          name: string
+          notes: string | null
+          priority: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          category?: string | null
+          client_id?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          n8n_workflow_url?: string | null
+          name: string
+          notes?: string | null
+          priority?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          category?: string | null
+          client_id?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          n8n_workflow_url?: string | null
+          name?: string
+          notes?: string | null
+          priority?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automation_flows_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "automation_flows_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "shared_project_clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       campaign_metrics: {
         Row: {
           campaign_id: string
@@ -1333,6 +1396,66 @@ export type Database = {
           },
         ]
       }
+      project_branding: {
+        Row: {
+          brand_guidelines_url: string | null
+          brand_voice: string | null
+          color_palette: string | null
+          competitors: string | null
+          created_at: string
+          id: string
+          positioning_statement: string | null
+          project_id: string
+          target_audience: string | null
+          typography_notes: string | null
+          updated_at: string
+          visual_identity_notes: string | null
+        }
+        Insert: {
+          brand_guidelines_url?: string | null
+          brand_voice?: string | null
+          color_palette?: string | null
+          competitors?: string | null
+          created_at?: string
+          id?: string
+          positioning_statement?: string | null
+          project_id: string
+          target_audience?: string | null
+          typography_notes?: string | null
+          updated_at?: string
+          visual_identity_notes?: string | null
+        }
+        Update: {
+          brand_guidelines_url?: string | null
+          brand_voice?: string | null
+          color_palette?: string | null
+          competitors?: string | null
+          created_at?: string
+          id?: string
+          positioning_statement?: string | null
+          project_id?: string
+          target_audience?: string | null
+          typography_notes?: string | null
+          updated_at?: string
+          visual_identity_notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_branding_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: true
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_branding_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: true
+            referencedRelation: "shared_project_clients"
+            referencedColumns: ["project_id"]
+          },
+        ]
+      }
       project_change_requests: {
         Row: {
           attachments: string[] | null
@@ -1486,6 +1609,63 @@ export type Database = {
           },
         ]
       }
+      project_crm_integration: {
+        Row: {
+          api_endpoint: string | null
+          created_at: string
+          crm_platform: string | null
+          fields_mapped: string | null
+          id: string
+          integration_status: string | null
+          last_sync_at: string | null
+          notes: string | null
+          project_id: string
+          sync_frequency: string | null
+          updated_at: string
+        }
+        Insert: {
+          api_endpoint?: string | null
+          created_at?: string
+          crm_platform?: string | null
+          fields_mapped?: string | null
+          id?: string
+          integration_status?: string | null
+          last_sync_at?: string | null
+          notes?: string | null
+          project_id: string
+          sync_frequency?: string | null
+          updated_at?: string
+        }
+        Update: {
+          api_endpoint?: string | null
+          created_at?: string
+          crm_platform?: string | null
+          fields_mapped?: string | null
+          id?: string
+          integration_status?: string | null
+          last_sync_at?: string | null
+          notes?: string | null
+          project_id?: string
+          sync_frequency?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_crm_integration_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: true
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_crm_integration_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: true
+            referencedRelation: "shared_project_clients"
+            referencedColumns: ["project_id"]
+          },
+        ]
+      }
       project_fields: {
         Row: {
           attachments: string[] | null
@@ -1532,6 +1712,117 @@ export type Database = {
             foreignKeyName: "project_fields_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
+            referencedRelation: "shared_project_clients"
+            referencedColumns: ["project_id"]
+          },
+        ]
+      }
+      project_financial_advisory: {
+        Row: {
+          budget_analysis: string | null
+          cash_flow_notes: string | null
+          created_at: string
+          financial_goals: string | null
+          id: string
+          investment_recommendations: string | null
+          project_id: string
+          report_frequency: string | null
+          updated_at: string
+        }
+        Insert: {
+          budget_analysis?: string | null
+          cash_flow_notes?: string | null
+          created_at?: string
+          financial_goals?: string | null
+          id?: string
+          investment_recommendations?: string | null
+          project_id: string
+          report_frequency?: string | null
+          updated_at?: string
+        }
+        Update: {
+          budget_analysis?: string | null
+          cash_flow_notes?: string | null
+          created_at?: string
+          financial_goals?: string | null
+          id?: string
+          investment_recommendations?: string | null
+          project_id?: string
+          report_frequency?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_financial_advisory_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: true
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_financial_advisory_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: true
+            referencedRelation: "shared_project_clients"
+            referencedColumns: ["project_id"]
+          },
+        ]
+      }
+      project_gmb: {
+        Row: {
+          business_name: string | null
+          categories: string | null
+          created_at: string
+          gmb_url: string | null
+          id: string
+          keywords: string | null
+          performance_notes: string | null
+          photos_notes: string | null
+          posting_schedule: string | null
+          project_id: string
+          review_response_strategy: string | null
+          updated_at: string
+        }
+        Insert: {
+          business_name?: string | null
+          categories?: string | null
+          created_at?: string
+          gmb_url?: string | null
+          id?: string
+          keywords?: string | null
+          performance_notes?: string | null
+          photos_notes?: string | null
+          posting_schedule?: string | null
+          project_id: string
+          review_response_strategy?: string | null
+          updated_at?: string
+        }
+        Update: {
+          business_name?: string | null
+          categories?: string | null
+          created_at?: string
+          gmb_url?: string | null
+          id?: string
+          keywords?: string | null
+          performance_notes?: string | null
+          photos_notes?: string | null
+          posting_schedule?: string | null
+          project_id?: string
+          review_response_strategy?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_gmb_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: true
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_gmb_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: true
             referencedRelation: "shared_project_clients"
             referencedColumns: ["project_id"]
           },
@@ -1760,6 +2051,66 @@ export type Database = {
             foreignKeyName: "project_payouts_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
+            referencedRelation: "shared_project_clients"
+            referencedColumns: ["project_id"]
+          },
+        ]
+      }
+      project_social_ai: {
+        Row: {
+          ai_instructions: string | null
+          ai_tone: string | null
+          auto_reply_comments: boolean | null
+          auto_reply_dms: boolean | null
+          created_at: string
+          excluded_keywords: string | null
+          facebook_token: string | null
+          id: string
+          instagram_token: string | null
+          project_id: string
+          response_delay_minutes: number | null
+          updated_at: string
+        }
+        Insert: {
+          ai_instructions?: string | null
+          ai_tone?: string | null
+          auto_reply_comments?: boolean | null
+          auto_reply_dms?: boolean | null
+          created_at?: string
+          excluded_keywords?: string | null
+          facebook_token?: string | null
+          id?: string
+          instagram_token?: string | null
+          project_id: string
+          response_delay_minutes?: number | null
+          updated_at?: string
+        }
+        Update: {
+          ai_instructions?: string | null
+          ai_tone?: string | null
+          auto_reply_comments?: boolean | null
+          auto_reply_dms?: boolean | null
+          created_at?: string
+          excluded_keywords?: string | null
+          facebook_token?: string | null
+          id?: string
+          instagram_token?: string | null
+          project_id?: string
+          response_delay_minutes?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_social_ai_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: true
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_social_ai_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: true
             referencedRelation: "shared_project_clients"
             referencedColumns: ["project_id"]
           },

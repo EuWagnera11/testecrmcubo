@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { 
   ArrowLeft, Users, Plus, Trash2, Save, Share2, Copy, Check,
   Palette, FileText, TrendingUp, MessageSquare, DollarSign, Image, Layers, LayoutGrid, ExternalLink,
-  Video, Megaphone
+  Video, Megaphone, Sparkles, MapPin, Database, Bot, Film
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -34,6 +34,11 @@ import { StrategyModule } from '@/components/project/StrategyModule';
 import { CreativesModule } from '@/components/project/CreativesModule';
 import { SocialMediaModule } from '@/components/project/SocialMediaModule';
 import { AudiovisualModule } from '@/components/project/AudiovisualModule';
+import { FinancialAdvisoryModule } from '@/components/project/FinancialAdvisoryModule';
+import { BrandingModule } from '@/components/project/BrandingModule';
+import { GMBModule } from '@/components/project/GMBModule';
+import { CRMIntegrationModule } from '@/components/project/CRMIntegrationModule';
+import { SocialAIModule } from '@/components/project/SocialAIModule';
 
 const fieldConfig = {
   design: { label: 'Design', icon: Palette, color: 'text-pink-500', role: 'designer' as ProjectRole },
@@ -57,6 +62,12 @@ const projectTypeConfig: Record<string, { label: string; icon: React.ElementType
   copy: { label: 'Copywriting', icon: FileText, color: 'text-blue-500' },
   social_media: { label: 'Social Media', icon: MessageSquare, color: 'text-purple-500' },
   audiovisual: { label: 'Audiovisual', icon: Video, color: 'text-orange-500' },
+  financial_advisory: { label: 'Assessoria Financeira', icon: DollarSign, color: 'text-emerald-500' },
+  branding: { label: 'Branding', icon: Sparkles, color: 'text-amber-500' },
+  gmb: { label: 'Google Meu Negócio', icon: MapPin, color: 'text-red-500' },
+  crm_integration: { label: 'Integração CRM', icon: Database, color: 'text-cyan-500' },
+  social_ai: { label: 'Social Media IA', icon: Bot, color: 'text-violet-500' },
+  video_editing: { label: 'Edição de Vídeo', icon: Film, color: 'text-rose-500' },
 };
 
 export default function ProjectDetails() {
@@ -178,6 +189,12 @@ export default function ProjectDetails() {
   const hasCopy = projectTypes.includes('copy');
   const hasSocialMedia = projectTypes.includes('social_media');
   const hasAudiovisual = projectTypes.includes('audiovisual');
+  const hasFinancialAdvisory = projectTypes.includes('financial_advisory');
+  const hasBranding = projectTypes.includes('branding');
+  const hasGMB = projectTypes.includes('gmb');
+  const hasCRMIntegration = projectTypes.includes('crm_integration');
+  const hasSocialAI = projectTypes.includes('social_ai');
+  const hasVideoEditing = projectTypes.includes('video_editing');
   
   // Show creatives module for design, copy, or audiovisual
   const showCreatives = hasDesign || hasCopy || hasAudiovisual;
@@ -287,6 +304,36 @@ export default function ProjectDetails() {
               <Palette className="h-4 w-4" /> Criativos
             </TabsTrigger>
           )}
+          {hasFinancialAdvisory && (
+            <TabsTrigger value="financial_advisory" className="px-4 gap-1">
+              <DollarSign className="h-4 w-4" /> Assessoria
+            </TabsTrigger>
+          )}
+          {hasBranding && (
+            <TabsTrigger value="branding" className="px-4 gap-1">
+              <Sparkles className="h-4 w-4" /> Branding
+            </TabsTrigger>
+          )}
+          {hasGMB && (
+            <TabsTrigger value="gmb" className="px-4 gap-1">
+              <MapPin className="h-4 w-4" /> GMB
+            </TabsTrigger>
+          )}
+          {hasCRMIntegration && (
+            <TabsTrigger value="crm_integration" className="px-4 gap-1">
+              <Database className="h-4 w-4" /> CRM
+            </TabsTrigger>
+          )}
+          {hasSocialAI && (
+            <TabsTrigger value="social_ai" className="px-4 gap-1">
+              <Bot className="h-4 w-4" /> IA Social
+            </TabsTrigger>
+          )}
+          {(hasVideoEditing || hasAudiovisual) && !hasAudiovisual && hasVideoEditing && (
+            <TabsTrigger value="video_editing" className="px-4 gap-1">
+              <Film className="h-4 w-4" /> Edição
+            </TabsTrigger>
+          )}
           <TabsTrigger value="fields" className="px-4">Campos</TabsTrigger>
           <TabsTrigger value="tasks" className="px-4">Tarefas</TabsTrigger>
           <TabsTrigger value="team" className="px-4">Equipe</TabsTrigger>
@@ -336,6 +383,48 @@ export default function ProjectDetails() {
         {showCreatives && (
           <TabsContent value="creatives" className="space-y-6">
             <CreativesModule projectId={id!} />
+          </TabsContent>
+        )}
+
+        {/* Financial Advisory Module Tab */}
+        {hasFinancialAdvisory && (
+          <TabsContent value="financial_advisory" className="space-y-6">
+            <FinancialAdvisoryModule projectId={id!} />
+          </TabsContent>
+        )}
+
+        {/* Branding Module Tab */}
+        {hasBranding && (
+          <TabsContent value="branding" className="space-y-6">
+            <BrandingModule projectId={id!} />
+          </TabsContent>
+        )}
+
+        {/* GMB Module Tab */}
+        {hasGMB && (
+          <TabsContent value="gmb" className="space-y-6">
+            <GMBModule projectId={id!} />
+          </TabsContent>
+        )}
+
+        {/* CRM Integration Module Tab */}
+        {hasCRMIntegration && (
+          <TabsContent value="crm_integration" className="space-y-6">
+            <CRMIntegrationModule projectId={id!} />
+          </TabsContent>
+        )}
+
+        {/* Social AI Module Tab */}
+        {hasSocialAI && (
+          <TabsContent value="social_ai" className="space-y-6">
+            <SocialAIModule projectId={id!} />
+          </TabsContent>
+        )}
+
+        {/* Video Editing uses Audiovisual module */}
+        {hasVideoEditing && !hasAudiovisual && (
+          <TabsContent value="video_editing" className="space-y-6">
+            <AudiovisualModule projectId={id!} />
           </TabsContent>
         )}
 
