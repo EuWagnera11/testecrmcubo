@@ -10,26 +10,9 @@ function getNormalizedUrl(rawUrl: string): string {
   return rawUrl.trim().replace(/\/+$/, "");
 }
 
-function getEvolutionHost(rawUrl: string): string | null {
-  const normalized = getNormalizedUrl(rawUrl);
-
-  try {
-    const withProtocol = /^https?:\/\//i.test(normalized)
-      ? normalized
-      : `https://${normalized}`;
-    return new URL(withProtocol).hostname;
-  } catch {
-    return null;
-  }
-}
-
-function createEvolutionHttpClient(rawUrl: string): Deno.HttpClient | null {
-  const host = getEvolutionHost(rawUrl);
-
-  if (!host) return null;
-
+function createEvolutionHttpClient(): Deno.HttpClient {
   return Deno.createHttpClient({
-    unsafelyIgnoreCertificateErrors: [host],
+    unsafelyIgnoreCertificateErrors: true,
   });
 }
 
@@ -87,7 +70,7 @@ async function callEvolutionApi({
   body?: unknown;
 }) {
   const baseCandidates = getBaseCandidates(apiUrl);
-  const evolutionHttpClient = createEvolutionHttpClient(apiUrl);
+  const evolutionHttpClient = createEvolutionHttpClient();
   let lastError: Error | null = null;
 
   try {
