@@ -5,7 +5,7 @@ import { ptBR } from 'date-fns/locale';
 import { 
   Plus, TrendingUp, TrendingDown, Wallet, Trash2,
   ArrowUpRight, ArrowDownRight, Calendar, Filter,
-  Clock, CheckCircle2, Users
+  Clock, CheckCircle2, Users, CreditCard
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -37,6 +37,7 @@ import { PendingApproval } from '@/components/PendingApproval';
 import { Link } from 'react-router-dom';
 import { appRoleLabels } from '@/lib/roleConfig';
 import { formatCurrency } from '@/lib/utils';
+import { AsaasPaymentsModule } from '@/components/project/AsaasPaymentsModule';
 
 const categories = {
   income: ['Projeto', 'Consultoria', 'Outros'],
@@ -353,14 +354,18 @@ export default function Financial() {
 
       {/* Main Tabs */}
       <Tabs value={mainTab} onValueChange={setMainTab}>
-        <TabsList className="grid w-full max-w-md grid-cols-2">
+        <TabsList className="grid w-full max-w-lg grid-cols-3">
           <TabsTrigger value="transactions" className="gap-2">
             <Wallet className="h-4 w-4" />
             Transações
           </TabsTrigger>
           <TabsTrigger value="payouts" className="gap-2">
             <Users className="h-4 w-4" />
-            Pagamentos ({pendingPayouts.length})
+            Repasses ({pendingPayouts.length})
+          </TabsTrigger>
+          <TabsTrigger value="asaas" className="gap-2">
+            <CreditCard className="h-4 w-4" />
+            Cobranças
           </TabsTrigger>
         </TabsList>
 
@@ -615,6 +620,11 @@ export default function Financial() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Asaas Tab */}
+        <TabsContent value="asaas" className="space-y-6 mt-6">
+          <AsaasPaymentsModule projectId="" />
         </TabsContent>
       </Tabs>
     </div>
