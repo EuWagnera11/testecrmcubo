@@ -14,11 +14,11 @@ const tools = [
     type: "function",
     function: {
       name: "list_projects",
-      description: "List projects with optional filters (status). Returns id, name, status, client_id, created_at, project_type.",
+      description: "List projects with optional filters. Returns id, name, status, client_id, client_name, created_at, project_type.",
       parameters: {
         type: "object",
         properties: {
-          status: { type: "string", description: "Filter by status: planning, in_progress, completed, cancelled" },
+          status: { type: "string", description: "Filter by status: active, planning, in_progress, completed, cancelled" },
           limit: { type: "number", description: "Max results (default 20)" },
         },
       },
@@ -27,18 +27,46 @@ const tools = [
   {
     type: "function",
     function: {
+      name: "get_project_details",
+      description: "Get full details of a specific project by ID, including client info and task counts.",
+      parameters: {
+        type: "object",
+        properties: {
+          project_id: { type: "string", description: "Project UUID" },
+        },
+        required: ["project_id"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
       name: "create_project",
-      description: "Create a new project in the CRM.",
+      description: "Create a new project in the CRM. Use list_clients first to get the client_id.",
       parameters: {
         type: "object",
         properties: {
           name: { type: "string", description: "Project name" },
-          client_id: { type: "string", description: "Client UUID (opcional). IDs inválidos serão ignorados." },
-          client_name: { type: "string", description: "Nome da clínica/cliente para referência (opcional)" },
-          project_type: { type: "string", description: "Tipo do projeto (ex.: branding, traffic, social_media)." },
-          description: { type: "string" },
+          client_id: { type: "string", description: "Client UUID (use list_clients to find it)" },
+          project_type: { type: "string", description: "Type: social_media, traffic, branding, audiovisual, financial_advisory, social_ai, crm_integration, gmb, one_time" },
         },
         required: ["name"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "update_project",
+      description: "Update a project's status or name.",
+      parameters: {
+        type: "object",
+        properties: {
+          project_id: { type: "string", description: "Project UUID" },
+          name: { type: "string" },
+          status: { type: "string", description: "active, planning, in_progress, completed, cancelled" },
+        },
+        required: ["project_id"],
       },
     },
   },
@@ -223,9 +251,37 @@ const tools = [
       },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "list_team_members",
+      description: "List team members/users with their roles. Useful for assigning tasks or checking who is on the team.",
+      parameters: {
+        type: "object",
+        properties: {
+          role: { type: "string", description: "Filter by role: admin, director, team_leader, designer, copywriter, traffic_manager, social_media, programmer, sdr, closer, video_editor" },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "list_campaigns",
+      description: "List ad campaigns for a specific project.",
+      parameters: {
+        type: "object",
+        properties: {
+          project_id: { type: "string", description: "Project UUID" },
+          status: { type: "string", description: "active, paused, completed" },
+        },
+        required: ["project_id"],
+      },
+    },
+  },
 ];
 
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const isUuid = (value: unknown): value is string => typeof value === "string" && UUID_REGEX.test(value);
 
 // ── Tool execution ──────────────────────────────────────────────────────────
@@ -242,15 +298,59 @@ async function executeTool(
 
   switch (name) {
     case "list_projects": {
-      let query = supabase
+      const { data, error } = await supabase
         .from("projects")
-        .select("id, name, status, client_id, created_at, project_type")
+        .select("id, name, status, client_id, created_at, project_type, clients(name, company)")
         .order("created_at", { ascending: false })
         .limit((args.limit as number) || 20);
-      if (args.status) query = query.eq("status", args.status);
-      const { data, error } = await query;
+      if (error) {
+        // Fallback without join if clients relation fails
+        const fallback = await supabase
+          .from("projects")
+          .select("id, name, status, client_id, created_at, project_type")
+          .order("created_at", { ascending: false })
+          .limit((args.limit as number) || 20);
+        if (fallback.error) throw fallback.error;
+        return fallback.data;
+      }
+      // Flatten client info
+      return (data || []).map((p: any) => ({
+        id: p.id,
+        name: p.name,
+        status: p.status,
+        client_id: p.client_id,
+        client_name: p.clients?.name || p.clients?.company || null,
+        created_at: p.created_at,
+        project_type: p.project_type,
+      }));
+    }
+
+    case "get_project_details": {
+      const { data, error } = await supabase
+        .from("projects")
+        .select("*, clients(name, company, email)")
+        .eq("id", args.project_id)
+        .single();
       if (error) throw error;
-      return data;
+
+      // Get task counts
+      const { data: tasks } = await supabase
+        .from("project_tasks")
+        .select("status")
+        .eq("project_id", args.project_id);
+
+      const taskCounts = {
+        total: tasks?.length || 0,
+        todo: tasks?.filter((t: any) => t.status === "todo").length || 0,
+        in_progress: tasks?.filter((t: any) => t.status === "in_progress").length || 0,
+        done: tasks?.filter((t: any) => t.status === "done").length || 0,
+      };
+
+      return {
+        ...data,
+        client_name: data.clients?.name || data.clients?.company || null,
+        task_counts: taskCounts,
+      };
     }
 
     case "create_project": {
@@ -283,7 +383,29 @@ async function executeTool(
         .select()
         .single();
       if (error) throw error;
-      return data;
+      return { success: true, project: data };
+    }
+
+    case "update_project": {
+      if (!isAdminOrDirector && !isTeamLeader) {
+        return { error: "Sem permissão para atualizar projetos." };
+      }
+      const updateData: Record<string, unknown> = {};
+      if (args.name) updateData.name = args.name;
+      if (args.status) updateData.status = args.status;
+
+      if (Object.keys(updateData).length === 0) {
+        return { error: "Nenhum campo para atualizar." };
+      }
+
+      const { data, error } = await supabase
+        .from("projects")
+        .update(updateData)
+        .eq("id", args.project_id)
+        .select()
+        .single();
+      if (error) throw error;
+      return { success: true, project: data };
     }
 
     case "list_clients": {
@@ -317,7 +439,7 @@ async function executeTool(
         .select()
         .single();
       if (error) throw error;
-      return data;
+      return { success: true, client: data };
     }
 
     case "update_client": {
@@ -338,7 +460,7 @@ async function executeTool(
         .select()
         .single();
       if (error) throw error;
-      return data;
+      return { success: true, client: data };
     }
 
     case "list_tasks": {
@@ -346,7 +468,7 @@ async function executeTool(
         .from("project_tasks")
         .select("id, title, status, priority, due_date, assigned_to, created_at")
         .eq("project_id", args.project_id)
-        .order("created_at", { ascending: false });
+        .order("position", { ascending: true });
       if (args.status) query = query.eq("status", args.status);
       const { data, error } = await query;
       if (error) throw error;
@@ -364,27 +486,42 @@ async function executeTool(
           due_date: args.due_date || null,
           assigned_to: args.assigned_to || null,
           status: "todo",
-          created_by: userId,
+          user_id: userId,
         })
         .select()
         .single();
       if (error) throw error;
-      return data;
+      return { success: true, task: data };
     }
 
     case "get_financial_summary": {
       if (!isAdminOrDirector) {
         return { error: "Sem permissão para ver dados financeiros." };
       }
-      let query = supabase.from("financial_transactions").select("type, amount, date, category");
+      let query = supabase.from("financial_transactions").select("type, amount, date, category, description");
       if (args.start_date) query = query.gte("date", args.start_date);
       if (args.end_date) query = query.lte("date", args.end_date);
       const { data, error } = await query;
       if (error) throw error;
 
-      const income = (data || []).filter((t: any) => t.type === "income").reduce((s: number, t: any) => s + Number(t.amount), 0);
-      const expenses = (data || []).filter((t: any) => t.type === "expense").reduce((s: number, t: any) => s + Number(t.amount), 0);
-      return { total_income: income, total_expenses: expenses, balance: income - expenses, transaction_count: data?.length || 0 };
+      const transactions = data || [];
+      const income = transactions.filter((t: any) => t.type === "income").reduce((s: number, t: any) => s + Number(t.amount), 0);
+      const expenses = transactions.filter((t: any) => t.type === "expense").reduce((s: number, t: any) => s + Number(t.amount), 0);
+
+      // Group by category
+      const byCategory: Record<string, number> = {};
+      transactions.forEach((t: any) => {
+        const key = `${t.type}:${t.category}`;
+        byCategory[key] = (byCategory[key] || 0) + Number(t.amount);
+      });
+
+      return {
+        total_income: income,
+        total_expenses: expenses,
+        balance: income - expenses,
+        transaction_count: transactions.length,
+        by_category: byCategory,
+      };
     }
 
     case "create_transaction": {
@@ -405,7 +542,7 @@ async function executeTool(
         .select()
         .single();
       if (error) throw error;
-      return data;
+      return { success: true, transaction: data };
     }
 
     case "list_calendar_events": {
@@ -437,19 +574,30 @@ async function executeTool(
         .select()
         .single();
       if (error) throw error;
-      return data;
+      return { success: true, event: data };
     }
 
     case "list_contracts": {
-      let query = supabase
+      const { data, error } = await supabase
         .from("contracts")
-        .select("id, title, status, contract_type, expiry_date, client_id, created_at")
+        .select("id, title, status, contract_type, expiry_date, client_id, created_at, clients(name, company)")
         .order("created_at", { ascending: false })
         .limit(20);
-      if (args.status) query = query.eq("status", args.status);
-      const { data, error } = await query;
-      if (error) throw error;
-      return data;
+      if (error) {
+        // Fallback without join
+        const fallback = await supabase
+          .from("contracts")
+          .select("id, title, status, contract_type, expiry_date, client_id, created_at")
+          .order("created_at", { ascending: false })
+          .limit(20);
+        if (fallback.error) throw fallback.error;
+        return fallback.data;
+      }
+      return (data || []).map((c: any) => ({
+        ...c,
+        client_name: c.clients?.name || c.clients?.company || null,
+        clients: undefined,
+      }));
     }
 
     case "get_commissions_summary": {
@@ -458,15 +606,62 @@ async function executeTool(
       }
       let query = supabase.from("closure_commissions").select("amount, user_name, paid, description, created_at");
       if (args.period_key) {
-        const start = `${args.period_key}-01`;
-        const endDate = new Date(start);
-        endDate.setMonth(endDate.getMonth() + 1);
-        query = query.gte("created_at", start).lt("created_at", endDate.toISOString().split("T")[0]);
+        const start = `${args.period_key}-01T00:00:00`;
+        const [year, month] = (args.period_key as string).split("-").map(Number);
+        const endDate = new Date(year, month, 1);
+        query = query.gte("created_at", start).lt("created_at", endDate.toISOString());
       }
       const { data, error } = await query;
       if (error) throw error;
       const total = (data || []).reduce((s: number, c: any) => s + Number(c.amount), 0);
-      return { commissions: data, total_amount: total };
+      const totalPaid = (data || []).filter((c: any) => c.paid).reduce((s: number, c: any) => s + Number(c.amount), 0);
+      return { commissions: data, total_amount: total, total_paid: totalPaid, total_pending: total - totalPaid };
+    }
+
+    case "list_team_members": {
+      let query = supabase.from("user_roles").select("user_id, role");
+      if (args.role) query = query.eq("role", args.role);
+      const { data: roles, error: rolesError } = await query;
+      if (rolesError) throw rolesError;
+
+      if (!roles || roles.length === 0) return [];
+
+      const userIds = [...new Set(roles.map((r: any) => r.user_id))];
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("user_id, full_name, avatar_url, status")
+        .in("user_id", userIds);
+
+      const profileMap = new Map((profiles || []).map((p: any) => [p.user_id, p]));
+
+      // Group roles by user
+      const userMap = new Map<string, any>();
+      for (const r of roles) {
+        if (!userMap.has(r.user_id)) {
+          const profile = profileMap.get(r.user_id);
+          userMap.set(r.user_id, {
+            user_id: r.user_id,
+            full_name: profile?.full_name || "Sem nome",
+            status: profile?.status || "unknown",
+            roles: [],
+          });
+        }
+        userMap.get(r.user_id).roles.push(r.role);
+      }
+
+      return Array.from(userMap.values());
+    }
+
+    case "list_campaigns": {
+      let query = supabase
+        .from("campaigns")
+        .select("id, name, status, platform, budget, objective, start_date, end_date")
+        .eq("project_id", args.project_id)
+        .order("created_at", { ascending: false });
+      if (args.status) query = query.eq("status", args.status);
+      const { data, error } = await query;
+      if (error) throw error;
+      return data;
     }
 
     default:
@@ -546,12 +741,14 @@ INSTRUÇÕES:
 - Responda sempre em português do Brasil
 - Seja conciso mas completo
 - Use as ferramentas disponíveis para consultar e modificar dados do CRM
-- Quando o usuário pedir para criar algo, confirme os dados antes de executar, a menos que o comando seja claro
+- Quando o usuário pedir para criar algo com dados claros, execute imediatamente sem pedir confirmação
+- Quando faltar informação essencial, pergunte antes de executar
 - Formate valores monetários em R$ (BRL)
 - Para datas, use o formato brasileiro (dd/mm/yyyy)
 - Quando listar itens, use formatação organizada com markdown
 - Se o usuário não tem permissão para uma ação, explique educadamente e sugira alternativas
-- Para ações destrutivas, sempre peça confirmação`;
+- Para ações DESTRUTIVAS (deletar), peça confirmação. Para criação/atualização, execute diretamente
+- Quando o usuário pedir para criar um projeto para um cliente e fornecer o nome do cliente, use list_clients para buscar o ID primeiro, depois use create_project com o client_id correto`;
 
     // Prepare messages for OpenAI
     const apiMessages = [
@@ -589,16 +786,21 @@ INSTRUÇÕES:
     let result = await openaiResponse.json();
     let assistantMessage = result.choices[0].message;
 
-    // Handle tool calls (up to 5 iterations)
+    // Handle tool calls (up to 8 iterations for multi-step workflows)
     let iterations = 0;
-    while (assistantMessage.tool_calls && iterations < 5) {
+    while (assistantMessage.tool_calls && iterations < 8) {
       iterations++;
       const toolResults: any[] = [];
 
       for (const toolCall of assistantMessage.tool_calls) {
         const fnName = toolCall.function.name;
-        const fnArgs = JSON.parse(toolCall.function.arguments);
-        console.log(`[ai-chat] Tool call: ${fnName}`, fnArgs);
+        let fnArgs: Record<string, unknown>;
+        try {
+          fnArgs = JSON.parse(toolCall.function.arguments);
+        } catch {
+          fnArgs = {};
+        }
+        console.log(`[ai-chat] Tool call #${iterations}: ${fnName}`, JSON.stringify(fnArgs));
 
         let toolResult: unknown;
         try {
