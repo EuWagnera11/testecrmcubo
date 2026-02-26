@@ -211,9 +211,9 @@ export function getRolePermissions(role: AppRole) {
 }
 
 // Cargos ativos do sistema (os que aparecem para seleção)
-export const activeRoles: AppRole[] = ['admin', 'director', 'traffic_manager', 'designer', 'social_media', 'programmer', 'sdr', 'closer', 'video_editor'];
+export const activeRoles: AppRole[] = ['admin', 'director', 'team_leader', 'designer', 'copywriter', 'traffic_manager', 'social_media', 'programmer', 'sdr', 'closer', 'video_editor'];
 
 // Agrupamentos
-export const managementRoles: AppRole[] = ['admin', 'director'];
-export const functionalRoles: AppRole[] = ['traffic_manager', 'designer', 'social_media', 'programmer', 'sdr', 'closer', 'video_editor'];
+export const managementRoles: AppRole[] = ['admin', 'director', 'team_leader'];
+export const functionalRoles: AppRole[] = ['designer', 'copywriter', 'traffic_manager', 'social_media', 'programmer', 'sdr', 'closer', 'video_editor'];
 export const allRoles: AppRole[] = [...managementRoles, ...functionalRoles];
