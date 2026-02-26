@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Users, UserCheck, UserX, Shield, Target, Save, Info, Palette, PenTool, TrendingUp, Share2, Crown, User, Camera, Trash2, Bell, DollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -47,6 +48,7 @@ const roleIcons: Record<string, React.ReactNode> = {
 
 export default function Settings() {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const { toast } = useToast();
   const { users, isLoading, approveUser, rejectUser, setUserRoles, deleteUser } = useUsers();
   const { isAdmin, isDirector, canSetRevenueGoal, roles: currentUserRoles } = useUserRole();
@@ -93,7 +95,8 @@ export default function Settings() {
     setUploadingAvatar(true);
     try {
       const fileExt = file.name.split('.').pop();
-      const filePath = `${user.id}/avatar.${fileExt}`;
+      const fileName = `avatar_${Date.now()}.${fileExt}`;
+      const filePath = `${user.id}/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('avatars')
@@ -105,8 +108,20 @@ export default function Settings() {
         .from('avatars')
         .getPublicUrl(filePath);
 
-      await updateProfile.mutateAsync({ avatar_url: publicUrl });
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: publicUrl })
+        .eq('user_id', user.id);
+
+      if (updateError) throw updateError;
+
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+      toast({
+        title: 'Avatar atualizado!',
+        description: 'Sua foto foi salva com sucesso.',
+      });
     } catch (error: any) {
+      console.error('Avatar upload error:', error);
       toast({
         title: 'Erro ao fazer upload',
         description: error.message,
