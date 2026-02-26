@@ -31,11 +31,11 @@ const currencies = [
 
 // 5 core project types
 const projectTypes = [
-  { value: 'traffic', label: 'Tráfego Pago', icon: TrendingUp, color: 'text-green-500' },
-  { value: 'design', label: 'Design', icon: Palette, color: 'text-pink-500' },
-  { value: 'copy', label: 'Copywriting', icon: FileText, color: 'text-blue-500' },
-  { value: 'social_media', label: 'Social Media', icon: Users, color: 'text-purple-500' },
-  { value: 'audiovisual', label: 'Audiovisual', icon: Megaphone, color: 'text-orange-500' },
+  { value: 'traffic', label: 'Tráfego Pago', icon: TrendingUp, color: 'text-success' },
+  { value: 'design', label: 'Design', icon: Palette, color: 'text-primary' },
+  { value: 'copy', label: 'Copywriting', icon: FileText, color: 'text-accent-foreground' },
+  { value: 'social_media', label: 'Social Media', icon: Users, color: 'text-secondary-foreground' },
+  { value: 'audiovisual', label: 'Audiovisual', icon: Megaphone, color: 'text-warning' },
 ];
 
 const statusConfig: Record<string, { label: string; className: string }> = {

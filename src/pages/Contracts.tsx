@@ -55,6 +55,7 @@ export default function Contracts() {
       client_id: formData.get('client_id') as string || undefined,
       project_id: formData.get('project_id') as string || undefined,
       terms: termsValue || formData.get('terms') as string || undefined,
+      contract_type: formData.get('contract_type') as string || 'one_time',
       signatories: [
         { name: formData.get('sig_name') as string, email: formData.get('sig_email') as string, role: 'contratante' as const },
       ],
