@@ -55,14 +55,14 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed lg:sticky top-0 left-0 z-50 lg:z-30 h-screen bg-sidebar text-sidebar-foreground transition-all duration-300 relative overflow-hidden",
+          "fixed lg:sticky top-0 left-0 z-50 lg:z-30 h-screen bg-sidebar text-sidebar-foreground transition-all duration-300 overflow-hidden border-r border-sidebar-border",
           isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
           isCollapsed ? "lg:w-20" : "lg:w-64",
           "w-64"
         )}
       >
-        {/* Watermark decoration in sidebar */}
-        <span className="absolute -bottom-6 -right-8 text-[8rem] font-serif italic font-semibold text-foreground/[0.03] select-none pointer-events-none leading-none">
+        {/* Watermark decoration */}
+        <span className="absolute -bottom-6 -right-8 text-[8rem] font-serif italic font-semibold text-sidebar-foreground/[0.03] select-none pointer-events-none leading-none z-0">
           C
         </span>
         <div className="flex flex-col h-full">
