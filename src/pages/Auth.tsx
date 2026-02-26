@@ -11,7 +11,6 @@ import { Loader2, ArrowRight } from 'lucide-react';
 import { signInSchema, signUpSchema } from '@/lib/validation';
 import { logAuditEvent } from '@/hooks/useAuditLog';
 import { supabase } from '@/integrations/supabase/client';
-import refineLogo from '@/assets/refine-logo.png';
 
 export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
@@ -46,7 +45,6 @@ export default function Auth() {
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
 
-    // Validate input
     const validation = signInSchema.safeParse({ email, password });
     if (!validation.success) {
       const errors: Record<string, string> = {};
@@ -85,7 +83,6 @@ export default function Auth() {
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
 
-    // Validate input
     const validation = signUpSchema.safeParse({ fullName, email, password });
     if (!validation.success) {
       const errors: Record<string, string> = {};
@@ -119,39 +116,51 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen flex bg-background">
-      {/* Left side - Brand */}
-      <div className="hidden lg:flex lg:w-1/2 bg-sidebar items-center justify-center p-12 relative overflow-hidden">
-        {/* Geometric decoration */}
-        <div className="absolute top-20 right-20 w-64 h-64 border border-primary/30 rotate-12 opacity-50" />
-        <div className="absolute bottom-32 left-16 w-48 h-48 border border-primary/20 -rotate-6 opacity-30" />
+      {/* Left side — Orange gradient matching institutional site hero */}
+      <div className="hidden lg:flex lg:w-1/2 bg-cubo-gradient items-center justify-center p-12 relative overflow-hidden">
+        {/* Decorative watermark like institutional site */}
+        <span className="absolute -top-10 -left-10 text-[18rem] font-serif italic font-bold text-white/[0.08] select-none pointer-events-none leading-none">
+          Cubo
+        </span>
+        <span className="absolute -bottom-20 -right-10 text-[14rem] font-serif italic font-bold text-white/[0.06] select-none pointer-events-none leading-none">
+          Cubo
+        </span>
         
-        <div className="relative z-10 max-w-md">
-          <img src={refineLogo} alt="Refine" className="h-32 w-auto mb-6" />
-          <p className="text-sidebar-foreground/70 text-xl leading-relaxed">
-            Design limpo. Propósito claro.
+        {/* Decorative cross elements like institutional site */}
+        <div className="absolute top-32 right-24 text-white/10 text-6xl font-light select-none">+</div>
+        <div className="absolute bottom-40 left-20 text-white/10 text-4xl font-light select-none">+</div>
+        
+        <div className="relative z-10 max-w-lg">
+          <h1 className="text-white font-serif text-6xl leading-tight mb-6">
+            Transforme sua clínica em uma <em className="italic">máquina de vendas</em>
+          </h1>
+          <p className="text-white/70 text-lg leading-relaxed">
+            IA no WhatsApp, tráfego pago que converte e social media no piloto automático.
           </p>
-          <p className="text-sidebar-foreground/50 mt-4">
-            Sistema de gestão para consultorias e agências.
-          </p>
+          <div className="flex items-center gap-6 mt-8 text-white/60 text-sm">
+            <span>+200 clínicas atendidas</span>
+            <span>•</span>
+            <span>Resultados em 30 dias</span>
+          </div>
         </div>
       </div>
 
-      {/* Right side - Auth form */}
+      {/* Right side — Auth form */}
       <div className="flex-1 flex items-center justify-center p-6 lg:p-12">
         <div className="w-full max-w-md space-y-8 animate-fade-in">
           {/* Mobile logo */}
           <div className="lg:hidden text-center mb-8">
-            <img src={refineLogo} alt="Refine" className="h-20 w-auto mx-auto" />
+            <span className="text-3xl font-bold tracking-tight">CUBO</span>
           </div>
 
           <div>
-            <h2 className="text-2xl font-bold tracking-tight">Bem-vindo</h2>
-            <p className="text-muted-foreground mt-1">
+            <h2 className="text-3xl font-serif font-semibold tracking-tight">Bem-vindo</h2>
+            <p className="text-muted-foreground mt-2">
               Entre ou crie sua conta para continuar.
             </p>
           </div>
 
-          <Card className="border-border/50 shadow-sm">
+          <Card className="border-border/50 shadow-card">
             <Tabs defaultValue="login" className="w-full">
               <CardHeader className="pb-4">
                 <TabsList className="grid w-full grid-cols-2">

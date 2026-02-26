@@ -166,25 +166,25 @@ export default function Dashboard() {
     : baseMetrics;
 
   return (
-    <div className="space-y-8 animate-fade-in">
+    <div className="space-y-6 animate-fade-in">
       {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+      <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
         <div>
-          <p className="text-muted-foreground text-sm uppercase tracking-wider mb-1 font-body">Dashboard</p>
-          <h1 className="text-3xl lg:text-4xl font-display tracking-wide">
-            {greeting()}, <span className="text-accent">{user?.user_metadata?.full_name?.split(' ')[0] || 'Usuário'}</span>
+          <p className="text-muted-foreground text-xs uppercase tracking-[0.2em] mb-1">Dashboard</p>
+          <h1 className="text-3xl lg:text-4xl font-serif">
+            {greeting()}, <span className="text-primary italic">{user?.user_metadata?.full_name?.split(' ')[0] || 'Usuário'}</span>
           </h1>
-          <p className="text-muted-foreground mt-2 font-body">Aqui está o resumo do motor de crescimento.</p>
+          <p className="text-muted-foreground mt-1 text-sm">Resumo do motor de crescimento das suas clínicas.</p>
         </div>
-        <div className="flex gap-3">
-          <Button asChild variant="outline" className="h-11">
+        <div className="flex gap-2">
+          <Button asChild variant="outline" size="sm">
             <Link to="/clientes">
-              <Plus className="h-4 w-4 mr-2" /> Nova Clínica
+              <Plus className="h-4 w-4 mr-1" /> Nova Clínica
             </Link>
           </Button>
-          <Button asChild className="h-11">
+          <Button asChild size="sm">
             <Link to="/projetos">
-              <Plus className="h-4 w-4 mr-2" /> Novo Projeto
+              <Plus className="h-4 w-4 mr-1" /> Novo Projeto
             </Link>
           </Button>
         </div>
@@ -217,18 +217,18 @@ export default function Dashboard() {
       </Card>
 
       {/* Metrics */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
         {metrics.map((metric, index) => (
-          <Card key={metric.title} className="card-hover border-border/50 glass-card" style={{ animationDelay: `${index * 100}ms` }}>
-            <CardContent className="p-5 lg:p-6">
+          <Card key={metric.title} className="card-hover glass-card" style={{ animationDelay: `${index * 80}ms` }}>
+            <CardContent className="p-4 lg:p-5">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground font-medium font-body">{metric.title}</p>
-                  <p className="text-2xl lg:text-3xl font-display mt-1">{metric.value}</p>
-                  <p className="text-xs text-muted-foreground mt-1 font-body">{metric.description}</p>
+                  <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">{metric.title}</p>
+                  <p className="text-2xl lg:text-3xl font-serif mt-1">{metric.value}</p>
+                  <p className="text-[11px] text-muted-foreground mt-1">{metric.description}</p>
                 </div>
-                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <metric.icon className="h-5 w-5 text-primary" />
+                <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <metric.icon className="h-4 w-4 text-primary" />
                 </div>
               </div>
             </CardContent>

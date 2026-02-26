@@ -14,7 +14,6 @@ import {
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useUserRole } from '@/hooks/useUserRole';
-import refineLogo from '@/assets/refine-logo.png';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -58,29 +57,30 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
         className={cn(
           "fixed lg:sticky top-0 left-0 z-50 lg:z-30 h-screen bg-sidebar text-sidebar-foreground transition-all duration-300",
           isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
-          isCollapsed ? "lg:w-24" : "lg:w-72",
-          "w-72"
+          isCollapsed ? "lg:w-20" : "lg:w-64",
+          "w-64"
         )}
       >
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className={cn(
             "flex items-center border-b border-sidebar-border",
-            isCollapsed ? "h-20 flex-col justify-center py-3 px-2" : "h-20 justify-between px-6"
+            isCollapsed ? "h-16 flex-col justify-center py-3 px-2" : "h-16 justify-between px-5"
           )}>
-            <img 
-              src={refineLogo} 
-              alt="Refine" 
-              className={cn(
-                "w-auto",
-                isCollapsed ? "h-10" : "h-10"
-              )} 
-            />
+            <div className="flex items-center gap-2">
+              {/* CUBO text logo matching institutional site */}
+              <span className={cn(
+                "font-bold tracking-widest text-white",
+                isCollapsed ? "text-sm" : "text-lg"
+              )}>
+                CUBO
+              </span>
+            </div>
             
             {/* Mobile close */}
             {!isCollapsed && (
-              <Button variant="ghost" size="icon" onClick={onClose} className="lg:hidden text-sidebar-foreground hover:bg-sidebar-accent">
-                <X className="h-5 w-5" />
+              <Button variant="ghost" size="icon" onClick={onClose} className="lg:hidden text-sidebar-foreground hover:bg-sidebar-accent h-8 w-8">
+                <X className="h-4 w-4" />
               </Button>
             )}
             
@@ -90,9 +90,9 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
                 variant="ghost" 
                 size="icon"
                 onClick={onToggleCollapse}
-                className="hidden lg:flex h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent"
+                className="hidden lg:flex h-7 w-7 text-sidebar-foreground/60 hover:bg-sidebar-accent"
               >
-                <ChevronLeft className="h-4 w-4" />
+                <ChevronLeft className="h-3.5 w-3.5" />
               </Button>
             )}
           </div>
@@ -103,15 +103,15 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
               variant="ghost" 
               size="icon"
               onClick={onToggleCollapse}
-              className="hidden lg:flex mx-auto mt-2 h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent"
+              className="hidden lg:flex mx-auto mt-2 h-7 w-7 text-sidebar-foreground/60 hover:bg-sidebar-accent"
             >
-              <ChevronLeft className="h-4 w-4 rotate-180" />
+              <ChevronLeft className="h-3.5 w-3.5 rotate-180" />
             </Button>
           )}
 
           {/* Navigation */}
-          <nav className="flex-1 overflow-y-auto py-6">
-            <ul className="space-y-1 px-3">
+          <nav className="flex-1 overflow-y-auto py-4">
+            <ul className="space-y-0.5 px-2">
               {filteredNavItems.map((item) => {
                 const isActive = location.pathname === item.path || 
                   (item.path === '/dashboard' && location.pathname === '/');
@@ -122,13 +122,13 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
                       to={item.path}
                       onClick={() => onClose()}
                       className={cn(
-                        "flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200",
+                        "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-sm",
                         "hover:bg-sidebar-accent",
                         isActive && "bg-sidebar-primary text-sidebar-primary-foreground",
-                        !isActive && "text-sidebar-foreground/70 hover:text-sidebar-foreground"
+                        !isActive && "text-sidebar-foreground/60 hover:text-sidebar-foreground"
                       )}
                     >
-                      <item.icon className="h-5 w-5 flex-shrink-0" />
+                      <item.icon className="h-4 w-4 flex-shrink-0" />
                       {!isCollapsed && (
                         <span className="font-medium">{item.label}</span>
                       )}
@@ -141,9 +141,9 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
 
           {/* Footer */}
           {!isCollapsed && (
-            <div className="p-4 border-t border-sidebar-border">
-              <p className="text-xs text-sidebar-foreground/50 text-center">
-                v1.0
+            <div className="p-3 border-t border-sidebar-border">
+              <p className="text-[10px] text-sidebar-foreground/30 text-center tracking-wider uppercase">
+                Cubo v1.0
               </p>
             </div>
           )}
