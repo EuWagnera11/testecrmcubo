@@ -17,7 +17,8 @@ export function Logo({ size = 'md', linkTo = '/dashboard' }: LogoProps) {
     <img 
       src={refineLogo}
       alt="Refine"
-      className={`${sizeClasses[size]} w-auto transition-opacity duration-300 hover:opacity-80`}
+      className={`${sizeClasses[size]} w-auto transition-opacity duration-300 hover:opacity-80 dark:invert`}
+      style={{ filter: 'brightness(0)' }}
     />
   );
 
