@@ -23,6 +23,10 @@ import Financial from "./pages/Financial";
 import Reports from "./pages/Reports";
 import Studies from "./pages/Studies";
 import WhatsApp from "./pages/WhatsApp";
+import Pipeline from "./pages/Pipeline";
+import GlobalCalendar from "./pages/GlobalCalendar";
+import TeamReports from "./pages/TeamReports";
+import ActivityLogPage from "./pages/ActivityLog";
 
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
@@ -96,6 +100,10 @@ const AppRoutes = () => (
         <Route path="relatorios" element={<Reports />} />
         <Route path="estudos" element={<Studies />} />
         <Route path="whatsapp" element={<WhatsApp />} />
+        <Route path="pipeline" element={<Pipeline />} />
+        <Route path="agenda" element={<GlobalCalendar />} />
+        <Route path="equipe" element={<TeamReports />} />
+        <Route path="atividades" element={<ActivityLogPage />} />
         
         <Route path="configuracoes" element={<Settings />} />
       </Route>
