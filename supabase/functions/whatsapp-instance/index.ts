@@ -10,9 +10,17 @@ function getNormalizedUrl(rawUrl: string): string {
   return rawUrl.trim().replace(/\/+$/, "");
 }
 
-function createEvolutionHttpClient(): Deno.HttpClient {
+function createEvolutionHttpClient(rawUrl: string): Deno.HttpClient {
+  const hosts: string[] = [];
+  try {
+    const normalized = getNormalizedUrl(rawUrl);
+    const withProto = /^https?:\/\//i.test(normalized) ? normalized : `https://${normalized}`;
+    hosts.push(new URL(withProto).hostname);
+  } catch { /* ignore */ }
+
   return Deno.createHttpClient({
-    unsafelyIgnoreCertificateErrors: true,
+    // array format required by Supabase Edge Runtime
+    unsafelyIgnoreCertificateErrors: hosts.length > 0 ? hosts : ["evoapi.refinecubo.com.br"],
   });
 }
 
@@ -70,7 +78,7 @@ async function callEvolutionApi({
   body?: unknown;
 }) {
   const baseCandidates = getBaseCandidates(apiUrl);
-  const evolutionHttpClient = createEvolutionHttpClient();
+  const evolutionHttpClient = createEvolutionHttpClient(apiUrl);
   let lastError: Error | null = null;
 
   try {
