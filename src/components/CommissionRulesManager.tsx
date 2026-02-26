@@ -37,6 +37,7 @@ import {
 import { useCommissionRules, CommissionRule, CreateCommissionRuleInput } from '@/hooks/useCommissionRules';
 import { useUsers } from '@/hooks/useUsers';
 import { appRoleLabels } from '@/lib/roleConfig';
+import { formatCurrency } from '@/lib/utils';
 
 const roleOptions = [
   { value: 'traffic_manager', label: 'Gestor de Tráfego' },
@@ -53,12 +54,6 @@ const baseFieldOptions = [
   { value: 'plan_value', label: 'Valor do Plano Mensal' },
 ];
 
-const formatCurrency = (value: number) => {
-  return new Intl.NumberFormat('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-  }).format(value);
-};
 
 interface RuleFormData {
   name: string;

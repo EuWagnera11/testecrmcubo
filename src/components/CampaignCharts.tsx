@@ -8,6 +8,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { formatCurrency } from '@/lib/utils';
 
 interface CampaignChartsProps {
   projectId: string;
@@ -38,12 +39,7 @@ export function CampaignCharts({ projectId, currency }: CampaignChartsProps) {
     enabled: !!campaigns?.length,
   });
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: currency || 'BRL',
-    }).format(value);
-  };
+  const fmtCurrency = (value: number) => formatCurrency(value, currency || 'BRL');
 
   // Group metrics by campaign
   const metricsByCampaign = useMemo(() => {
@@ -77,7 +73,7 @@ export function CampaignCharts({ projectId, currency }: CampaignChartsProps) {
 
       {/* Campaign Comparison */}
       <div className="grid gap-6 md:grid-cols-2">
-        <SpendDistribution campaigns={campaigns} metricsByCampaign={metricsByCampaign} formatCurrency={formatCurrency} />
+        <SpendDistribution campaigns={campaigns} metricsByCampaign={metricsByCampaign} currency={currency} />
         <CampaignComparison campaigns={campaigns} metricsByCampaign={metricsByCampaign} />
       </div>
     </div>
@@ -110,19 +106,14 @@ function KPISummary({ campaigns, metricsByCampaign, currency }: { campaigns: any
   const avgCpc = totals.clicks > 0 ? totals.spend / totals.clicks : 0;
   const roas = totals.spend > 0 ? totals.revenue / totals.spend : 0;
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: currency || 'BRL',
-    }).format(value);
-  };
+  const fmt = (value: number) => formatCurrency(value, currency || 'BRL');
 
   const kpis = [
     { title: 'Impressões', value: totals.impressions.toLocaleString('pt-BR'), icon: Eye, color: 'text-blue-500', bgColor: 'bg-blue-500/10' },
     { title: 'Cliques', value: totals.clicks.toLocaleString('pt-BR'), icon: MousePointer, color: 'text-green-500', bgColor: 'bg-green-500/10' },
     { title: 'CTR Médio', value: `${avgCtr.toFixed(2)}%`, icon: TrendingUp, color: 'text-purple-500', bgColor: 'bg-purple-500/10' },
-    { title: 'Total Gasto', value: formatCurrency(totals.spend), icon: DollarSign, color: 'text-orange-500', bgColor: 'bg-orange-500/10' },
-    { title: 'CPC Médio', value: formatCurrency(avgCpc), icon: MousePointer, color: 'text-cyan-500', bgColor: 'bg-cyan-500/10' },
+    { title: 'Total Gasto', value: fmt(totals.spend), icon: DollarSign, color: 'text-orange-500', bgColor: 'bg-orange-500/10' },
+    { title: 'CPC Médio', value: fmt(avgCpc), icon: MousePointer, color: 'text-cyan-500', bgColor: 'bg-cyan-500/10' },
     { title: 'Conversões', value: totals.conversions.toLocaleString('pt-BR'), icon: Target, color: 'text-emerald-500', bgColor: 'bg-emerald-500/10' },
     { title: 'Leads', value: totals.leads.toLocaleString('pt-BR'), icon: Users, color: 'text-pink-500', bgColor: 'bg-pink-500/10' },
     { title: 'ROAS', value: `${roas.toFixed(2)}x`, icon: roas >= 1 ? ArrowUpRight : ArrowDownRight, color: roas >= 1 ? 'text-green-500' : 'text-red-500', bgColor: roas >= 1 ? 'bg-green-500/10' : 'bg-red-500/10' },
@@ -214,7 +205,7 @@ function PerformanceChart({ campaigns, metricsByCampaign }: { campaigns: any[]; 
   );
 }
 
-function SpendDistribution({ campaigns, metricsByCampaign, formatCurrency }: { campaigns: any[]; metricsByCampaign: MetricsByCampaign; formatCurrency: (v: number) => string }) {
+function SpendDistribution({ campaigns, metricsByCampaign, currency }: { campaigns: any[]; metricsByCampaign: MetricsByCampaign; currency?: string }) {
   const chartData = useMemo(() => {
     return campaigns.map((campaign, index) => {
       const metrics = metricsByCampaign[campaign.id] || [];
@@ -256,7 +247,7 @@ function SpendDistribution({ campaigns, metricsByCampaign, formatCurrency }: { c
               <Legend
                 formatter={(value, entry: any) => (
                   <span className="text-xs">
-                    {entry.payload.name}: {formatCurrency(entry.payload.value)}
+                    {entry.payload.name}: {formatCurrency(entry.payload.value, currency || 'BRL')}
                   </span>
                 )}
               />

@@ -13,6 +13,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pi
 import { format, parseISO, subMonths, addMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { getFiscalMonthKey, getFiscalMonthFromDate, isWithinFiscalMonth } from '@/lib/fiscalMonth';
+import { formatCurrency } from '@/lib/utils';
 
 const COLORS = ['hsl(28, 85%, 52%)', 'hsl(142, 76%, 36%)', 'hsl(38, 92%, 50%)', 'hsl(0, 72%, 51%)'];
 
@@ -23,8 +24,6 @@ export default function AdminDashboard() {
   const { transactions, balance, totalIncome, totalExpenses } = useFinancial();
   const { users } = useUsers();
 
-  const formatCurrency = (value: number) => 
-    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 
   // KPIs
   const activeProjects = projects.filter(p => p.status === 'active').length;

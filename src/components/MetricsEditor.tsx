@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { formatCurrency } from '@/lib/utils';
 import { format, subDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { 
@@ -39,10 +40,7 @@ export function MetricsEditor({ projectId, currency }: MetricsEditorProps) {
   const [value, setValue] = useState('');
   const [date, setDate] = useState<Date>(new Date());
 
-  const formatCurrency = (val: number) => {
-    const locales: Record<string, string> = { BRL: 'pt-BR', USD: 'en-US', EUR: 'de-DE' };
-    return new Intl.NumberFormat(locales[currency] || 'pt-BR', { style: 'currency', currency }).format(val);
-  };
+  const fmtCurrency = (val: number) => formatCurrency(val, currency);
 
   const handleSave = async () => {
     if (!value) return;
@@ -155,7 +153,7 @@ export function MetricsEditor({ projectId, currency }: MetricsEditorProps) {
                 </div>
                 <p className="text-2xl font-bold">
                   {isCurrency 
-                    ? formatCurrency(Number(metric?.value || 0))
+                    ? fmtCurrency(Number(metric?.value || 0))
                     : (metric?.value || 0).toLocaleString('pt-BR')
                   }
                 </p>
