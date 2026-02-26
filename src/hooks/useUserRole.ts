@@ -27,7 +27,7 @@ export function useUserRole() {
         .from('profiles')
         .select('status')
         .eq('user_id', user!.id)
-        .single();
+        .maybeSingle();
       
       if (error) throw error;
       return data.status as 'pending' | 'approved' | 'rejected';
