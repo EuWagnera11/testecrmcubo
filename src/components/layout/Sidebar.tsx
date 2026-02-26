@@ -68,25 +68,23 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className={cn(
-            "flex items-center border-b border-sidebar-border",
-            isCollapsed ? "h-16 flex-col justify-center py-3 px-2" : "h-16 justify-between px-5"
+            "flex items-center border-b border-sidebar-border h-16",
+            isCollapsed ? "lg:flex-col lg:justify-center lg:py-3 lg:px-2 justify-between px-5" : "justify-between px-5"
           )}>
             <div className="flex items-center gap-2">
               {/* CUBO text logo matching institutional site */}
               <span className={cn(
                 "font-extrabold tracking-widest text-sidebar-foreground",
-                isCollapsed ? "text-sm" : "text-lg"
+                isCollapsed ? "lg:text-sm text-lg" : "text-lg"
               )}>
                 CUBO
               </span>
             </div>
             
-            {/* Mobile close */}
-            {!isCollapsed && (
-              <Button variant="ghost" size="icon" onClick={onClose} className="lg:hidden text-sidebar-foreground hover:bg-sidebar-accent h-8 w-8">
-                <X className="h-4 w-4" />
-              </Button>
-            )}
+            {/* Mobile close — always visible on mobile */}
+            <Button variant="ghost" size="icon" onClick={onClose} className="lg:hidden text-sidebar-foreground hover:bg-sidebar-accent h-8 w-8">
+              <X className="h-4 w-4" />
+            </Button>
             
             {/* Desktop collapse */}
             {!isCollapsed && (
@@ -127,15 +125,15 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
                       onClick={() => onClose()}
                       className={cn(
                         "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-sm",
+                        isCollapsed && "lg:justify-center lg:px-2",
                         "hover:bg-sidebar-accent",
                         isActive && "bg-sidebar-primary text-sidebar-primary-foreground",
                         !isActive && "text-sidebar-foreground/60 hover:text-sidebar-foreground"
                       )}
                     >
                       <item.icon className="h-4 w-4 flex-shrink-0" />
-                      {!isCollapsed && (
-                        <span className="font-medium">{item.label}</span>
-                      )}
+                      {/* Always show label on mobile, hide on desktop when collapsed */}
+                      <span className={cn("font-medium", isCollapsed && "lg:hidden")}>{item.label}</span>
                     </NavLink>
                   </li>
                 );
@@ -143,14 +141,12 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
             </ul>
           </nav>
 
-          {/* Footer */}
-          {!isCollapsed && (
-            <div className="p-3 border-t border-sidebar-border">
-              <p className="text-[10px] text-sidebar-foreground/30 text-center tracking-wider uppercase">
-                Cubo v1.0
-              </p>
-            </div>
-          )}
+          {/* Footer — hide on desktop when collapsed */}
+          <div className={cn("p-3 border-t border-sidebar-border", isCollapsed && "lg:hidden")}>
+            <p className="text-[10px] text-sidebar-foreground/30 text-center tracking-wider uppercase">
+              Cubo v1.0
+            </p>
+          </div>
         </div>
       </aside>
     </>
