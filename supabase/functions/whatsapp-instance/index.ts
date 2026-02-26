@@ -38,12 +38,11 @@ function getBaseCandidates(rawUrl: string): string[] {
 
   try {
     const url = new URL(normalized);
-    const httpsUrl = `${url.protocol === "https:" ? "https" : "https"}://${url.host}`;
     const httpUrl = `http://${url.host}`;
-    return [httpsUrl, httpUrl];
+    return [httpUrl];
   } catch {
     const stripped = normalized.replace(/^https?:\/\//i, "");
-    return [`https://${stripped}`, `http://${stripped}`];
+    return [`http://${stripped}`];
   }
 }
 
@@ -105,18 +104,10 @@ async function callEvolutionApi({
             ...(body ? { "Content-Type": "application/json" } : {}),
           },
           body: body ? JSON.stringify(body) : undefined,
-          redirect: "manual",
           ...(evolutionHttpClient ? { client: evolutionHttpClient } : {}),
         });
 
         const payload = await parseResponseBody(response);
-
-        if ([301, 302, 307, 308].includes(response.status)) {
-          const location = response.headers.get("location");
-          throw new Error(
-            `Evolution API redirecionou (${response.status}) para ${location ?? "destino desconhecido"}.`
-          );
-        }
 
         if (!response.ok) {
           throw new Error(
