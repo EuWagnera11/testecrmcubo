@@ -6,10 +6,35 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const evolutionHttpClient = Deno.createHttpClient({ caCerts: [] });
+function getNormalizedUrl(rawUrl: string): string {
+  return rawUrl.trim().replace(/\/+$/, "");
+}
+
+function getEvolutionHost(rawUrl: string): string | null {
+  const normalized = getNormalizedUrl(rawUrl);
+
+  try {
+    const withProtocol = /^https?:\/\//i.test(normalized)
+      ? normalized
+      : `https://${normalized}`;
+    return new URL(withProtocol).hostname;
+  } catch {
+    return null;
+  }
+}
+
+function createEvolutionHttpClient(rawUrl: string): Deno.HttpClient | null {
+  const host = getEvolutionHost(rawUrl);
+
+  if (!host) return null;
+
+  return Deno.createHttpClient({
+    unsafelyIgnoreCertificateErrors: [host],
+  });
+}
 
 function getBaseCandidates(rawUrl: string): string[] {
-  const normalized = rawUrl.trim().replace(/\/+$/, "");
+  const normalized = getNormalizedUrl(rawUrl);
 
   try {
     const url = new URL(normalized);
@@ -63,46 +88,51 @@ async function callEvolutionApi({
   body?: unknown;
 }) {
   const baseCandidates = getBaseCandidates(apiUrl);
+  const evolutionHttpClient = createEvolutionHttpClient(apiUrl);
   let lastError: Error | null = null;
 
-  for (const base of baseCandidates) {
-    const requestUrl = `${base}${path}`;
+  try {
+    for (const base of baseCandidates) {
+      const requestUrl = `${base}${path}`;
 
-    try {
-      console.log(`[whatsapp-instance] ${method} ${requestUrl}`);
+      try {
+        console.log(`[whatsapp-instance] ${method} ${requestUrl}`);
 
-      const response = await fetch(requestUrl, {
-        method,
-        headers: {
-          apikey: apiKey,
-          ...(body ? { "Content-Type": "application/json" } : {}),
-        },
-        body: body ? JSON.stringify(body) : undefined,
-        redirect: "manual",
-        client: evolutionHttpClient,
-      });
+        const response = await fetch(requestUrl, {
+          method,
+          headers: {
+            apikey: apiKey,
+            ...(body ? { "Content-Type": "application/json" } : {}),
+          },
+          body: body ? JSON.stringify(body) : undefined,
+          redirect: "manual",
+          ...(evolutionHttpClient ? { client: evolutionHttpClient } : {}),
+        });
 
-      const payload = await parseResponseBody(response);
+        const payload = await parseResponseBody(response);
 
-      if ([301, 302, 307, 308].includes(response.status)) {
-        const location = response.headers.get("location");
-        throw new Error(
-          `Evolution API redirecionou (${response.status}) para ${location ?? "destino desconhecido"}.`
-        );
+        if ([301, 302, 307, 308].includes(response.status)) {
+          const location = response.headers.get("location");
+          throw new Error(
+            `Evolution API redirecionou (${response.status}) para ${location ?? "destino desconhecido"}.`
+          );
+        }
+
+        if (!response.ok) {
+          throw new Error(
+            `Evolution API [${response.status}]: ${extractErrorMessage(payload)}`
+          );
+        }
+
+        return payload;
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.error(`[whatsapp-instance] failed on ${requestUrl}:`, message);
+        lastError = error instanceof Error ? error : new Error(message);
       }
-
-      if (!response.ok) {
-        throw new Error(
-          `Evolution API [${response.status}]: ${extractErrorMessage(payload)}`
-        );
-      }
-
-      return payload;
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : String(error);
-      console.error(`[whatsapp-instance] failed on ${requestUrl}:`, message);
-      lastError = error instanceof Error ? error : new Error(message);
     }
+  } finally {
+    evolutionHttpClient?.close();
   }
 
   throw (
