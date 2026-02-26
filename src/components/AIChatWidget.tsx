@@ -1,27 +1,47 @@
 import { useState, useRef, useEffect } from 'react';
-import { Bot, Send, X, Trash2, Loader2, Sparkles } from 'lucide-react';
+import { Bot, Send, X, Trash2, Loader2, Sparkles, Paperclip, FileText, Image, Film } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
-import { useAIChat } from '@/hooks/useAIChat';
+import { useAIChat, Attachment } from '@/hooks/useAIChat';
 import { AIChatMessage } from './AIChatMessage';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+
+function AttachmentChip({ attachment, onRemove }: { attachment: Attachment; onRemove: () => void }) {
+  const isImage = attachment.type.startsWith('image/');
+  const isVideo = attachment.type.startsWith('video/');
+  const Icon = isImage ? Image : isVideo ? Film : FileText;
+
+  return (
+    <div className="flex items-center gap-1.5 bg-muted rounded-lg px-2 py-1 text-xs max-w-[180px]">
+      <Icon className="h-3 w-3 flex-shrink-0 text-muted-foreground" />
+      <span className="truncate text-foreground">{attachment.name}</span>
+      <button onClick={onRemove} className="text-muted-foreground hover:text-foreground flex-shrink-0">
+        <X className="h-3 w-3" />
+      </button>
+    </div>
+  );
+}
 
 export function AIChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
-  const { messages, isLoading, sendMessage, clearChat } = useAIChat();
+  const { messages, isLoading, sendMessage, uploadFile, clearChat } = useAIChat();
   const [input, setInput] = useState('');
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Auto scroll on new messages
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, isLoading]);
 
-  // Focus textarea when opened
   useEffect(() => {
     if (isOpen && textareaRef.current) {
       setTimeout(() => textareaRef.current?.focus(), 100);
@@ -30,15 +50,41 @@ export function AIChatWidget() {
 
   const handleSend = async () => {
     const msg = input.trim();
-    if (!msg || isLoading) return;
+    if ((!msg && !attachments.length) || isLoading || isUploading) return;
     setInput('');
-    await sendMessage(msg);
+    const currentAttachments = [...attachments];
+    setAttachments([]);
+    await sendMessage(msg, currentAttachments.length ? currentAttachments : undefined);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
+    }
+  };
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files?.length) return;
+
+    setIsUploading(true);
+    try {
+      for (const file of Array.from(files)) {
+        if (file.size > MAX_FILE_SIZE) {
+          toast.error(`${file.name} excede 10MB`);
+          continue;
+        }
+        const attachment = await uploadFile(file);
+        if (attachment) {
+          setAttachments(prev => [...prev, attachment]);
+        } else {
+          toast.error(`Falha ao enviar ${file.name}`);
+        }
+      }
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
@@ -142,9 +188,44 @@ export function AIChatWidget() {
         )}
       </ScrollArea>
 
+      {/* Attachments preview */}
+      {attachments.length > 0 && (
+        <div className="px-3 pt-2 flex flex-wrap gap-1.5 border-t">
+          {attachments.map((att, i) => (
+            <AttachmentChip
+              key={i}
+              attachment={att}
+              onRemove={() => setAttachments(prev => prev.filter((_, idx) => idx !== i))}
+            />
+          ))}
+        </div>
+      )}
+
       {/* Input */}
       <div className="p-3 border-t bg-card">
-        <div className="flex items-end gap-2">
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          className="hidden"
+          accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv"
+          onChange={handleFileSelect}
+        />
+        <div className="flex items-end gap-1.5">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isLoading || isUploading}
+            className="h-10 w-10 rounded-xl flex-shrink-0 text-muted-foreground hover:text-foreground"
+            title="Anexar arquivo"
+          >
+            {isUploading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Paperclip className="h-4 w-4" />
+            )}
+          </Button>
           <Textarea
             ref={textareaRef}
             placeholder="Digite sua mensagem..."
@@ -158,7 +239,7 @@ export function AIChatWidget() {
           <Button
             size="icon"
             onClick={handleSend}
-            disabled={!input.trim() || isLoading}
+            disabled={(!input.trim() && !attachments.length) || isLoading || isUploading}
             className="h-10 w-10 rounded-xl flex-shrink-0"
           >
             <Send className="h-4 w-4" />
