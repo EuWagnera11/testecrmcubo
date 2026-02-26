@@ -1,1 +1,19 @@
 project_id = "ognblcupazzctxxhsyau"
+
+[functions.ai-chat]
+verify_jwt = false
+
+[functions.whatsapp-instance]
+verify_jwt = false
+
+[functions.whatsapp-send]
+verify_jwt = false
+
+[functions.whatsapp-webhook]
+verify_jwt = false
+
+[functions.close-client-month]
+verify_jwt = false
+
+[functions.auto-close-months]
+verify_jwt = false

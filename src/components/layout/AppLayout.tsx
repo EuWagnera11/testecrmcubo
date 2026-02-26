@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { Header } from './Header';
 import { Sidebar } from './Sidebar';
+import { AIChatWidget } from '@/components/AIChatWidget';
 import { useGlobalNotifications } from '@/hooks/useGlobalNotifications';
 import { useChatNotifications } from '@/hooks/useChatNotifications';
 
@@ -32,6 +33,8 @@ export function AppLayout() {
           <Outlet />
         </main>
       </div>
+      
+      <AIChatWidget />
     </div>
   );
 }
