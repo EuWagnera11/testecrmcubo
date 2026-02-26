@@ -62,7 +62,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
         )}
       >
         {/* Watermark decoration in sidebar */}
-        <span className="absolute -bottom-6 -right-8 text-[8rem] font-serif italic font-semibold text-white/[0.03] select-none pointer-events-none leading-none">
+        <span className="absolute -bottom-6 -right-8 text-[8rem] font-serif italic font-semibold text-foreground/[0.03] select-none pointer-events-none leading-none">
           C
         </span>
         <div className="flex flex-col h-full">
@@ -74,7 +74,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
             <div className="flex items-center gap-2">
               {/* CUBO text logo matching institutional site */}
               <span className={cn(
-                "font-bold tracking-widest text-white",
+                "font-bold tracking-widest text-sidebar-foreground",
                 isCollapsed ? "text-sm" : "text-lg"
               )}>
                 CUBO
