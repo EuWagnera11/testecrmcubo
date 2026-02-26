@@ -2932,6 +2932,10 @@ export type Database = {
         | "traffic_manager"
         | "social_media"
         | "team_leader"
+        | "programmer"
+        | "sdr"
+        | "closer"
+        | "video_editor"
       project_role:
         | "director"
         | "designer"
@@ -3074,6 +3078,10 @@ export const Constants = {
         "traffic_manager",
         "social_media",
         "team_leader",
+        "programmer",
+        "sdr",
+        "closer",
+        "video_editor",
       ],
       project_role: [
         "director",
