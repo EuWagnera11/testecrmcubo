@@ -144,7 +144,7 @@ export default function Reports() {
                 </div>
                 <div className="min-w-0">
                   <p className="text-xs sm:text-sm text-muted-foreground">Receita</p>
-                  <p className="text-base sm:text-xl font-bold text-green-500 truncate">{formatCurrency(periodIncome)}</p>
+                  <p className="text-base sm:text-xl font-bold text-success truncate">{formatCurrency(periodIncome)}</p>
                 </div>
               </div>
             </CardContent>
@@ -157,7 +157,7 @@ export default function Reports() {
                 </div>
                 <div className="min-w-0">
                   <p className="text-xs sm:text-sm text-muted-foreground">Despesas</p>
-                  <p className="text-base sm:text-xl font-bold text-red-500 truncate">{formatCurrency(periodExpenses)}</p>
+                  <p className="text-base sm:text-xl font-bold text-destructive truncate">{formatCurrency(periodExpenses)}</p>
                 </div>
               </div>
             </CardContent>
@@ -178,8 +178,8 @@ export default function Reports() {
           <Card className="border-border/50">
             <CardContent className="p-3 sm:p-4">
               <div className="flex items-center gap-2 sm:gap-3">
-                <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg bg-green-500/10 flex items-center justify-center shrink-0">
-                  <Users className="h-4 w-4 sm:h-5 sm:w-5 text-green-500" />
+                <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg bg-success/10 flex items-center justify-center shrink-0">
+                  <Users className="h-4 w-4 sm:h-5 sm:w-5 text-success" />
                 </div>
                 <div className="min-w-0">
                   <p className="text-xs sm:text-sm text-muted-foreground">Lucro</p>
@@ -274,8 +274,8 @@ export default function Reports() {
                       <tr key={p.id} className="border-b border-border/50">
                         <td className="py-3 px-2">{p.name}</td>
                         <td className="py-3 px-2 text-right">{formatCurrency(p.total_value + p.total_alterations)}</td>
-                        <td className="py-3 px-2 text-right text-red-500">{formatCurrency(p.total_payouts)}</td>
-                        <td className="py-3 px-2 text-right text-green-500">{formatCurrency(p.profit)}</td>
+                        <td className="py-3 px-2 text-right text-destructive">{formatCurrency(p.total_payouts)}</td>
+                        <td className="py-3 px-2 text-right text-success">{formatCurrency(p.profit)}</td>
                         <td className="py-3 px-2 text-right font-medium">{p.profit_margin.toFixed(1)}%</td>
                       </tr>
                     ))}
@@ -284,8 +284,8 @@ export default function Reports() {
                     <tr className="bg-muted/30">
                       <td className="py-3 px-2 font-bold">Total</td>
                       <td className="py-3 px-2 text-right font-bold">{formatCurrency(totalRevenue)}</td>
-                      <td className="py-3 px-2 text-right font-bold text-red-500">{formatCurrency(totalPayouts)}</td>
-                      <td className="py-3 px-2 text-right font-bold text-green-500">{formatCurrency(totalProfit)}</td>
+                      <td className="py-3 px-2 text-right font-bold text-destructive">{formatCurrency(totalPayouts)}</td>
+                      <td className="py-3 px-2 text-right font-bold text-success">{formatCurrency(totalProfit)}</td>
                       <td className="py-3 px-2 text-right font-bold">{averageMargin.toFixed(1)}%</td>
                     </tr>
                   </tfoot>
