@@ -78,6 +78,11 @@ export function useAIChat() {
         content: m.content,
       }));
 
+      const currentProjectId =
+        typeof window !== 'undefined'
+          ? window.location.pathname.match(/\/projetos\/([0-9a-fA-F-]{36})/)?.[1] ?? null
+          : null;
+
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`,
         {
@@ -89,6 +94,7 @@ export function useAIChat() {
           body: JSON.stringify({
             messages: historyMessages,
             conversation_id: convId,
+            current_project_id: currentProjectId,
           }),
         }
       );

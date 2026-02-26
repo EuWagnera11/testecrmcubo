@@ -972,6 +972,104 @@ const tools = [
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const isUuid = (v: unknown): v is string => typeof v === "string" && UUID_REGEX.test(v);
 
+const PROJECT_SCOPED_TOOLS = new Set([
+  "get_project_details",
+  "list_tasks",
+  "create_task",
+  "list_campaigns",
+  "create_campaign",
+  "list_social_posts",
+  "create_social_post",
+  "list_change_requests",
+  "create_change_request",
+  "list_payouts",
+  "create_payout",
+  "list_activity_logs",
+  "get_project_strategy",
+  "upsert_project_strategy",
+  "get_project_technical_setup",
+  "upsert_project_technical_setup",
+  "get_project_branding",
+  "upsert_project_branding",
+  "get_project_social_media",
+  "upsert_project_social_media",
+  "get_project_audiovisual",
+  "upsert_project_audiovisual",
+  "get_project_crm_integration",
+  "upsert_project_crm_integration",
+  "list_project_copy_bank",
+  "create_project_copy",
+  "list_project_creatives",
+  "create_project_creative",
+  "list_project_tests",
+  "create_project_test",
+  "list_project_optimization_log",
+  "create_project_optimization_log",
+  "list_project_members",
+]);
+
+async function resolveProjectId(
+  rawProjectId: unknown,
+  currentProjectId: string | null,
+  supabase: ReturnType<typeof createClient>,
+): Promise<string | null> {
+  if (isUuid(rawProjectId)) {
+    const { data: byRawId } = await supabase.from("projects").select("id").eq("id", rawProjectId).maybeSingle();
+    if (byRawId?.id) return byRawId.id;
+  }
+
+  if (isUuid(currentProjectId)) {
+    const { data: byContextId } = await supabase.from("projects").select("id").eq("id", currentProjectId).maybeSingle();
+    if (byContextId?.id) return byContextId.id;
+  }
+
+  if (typeof rawProjectId !== "string") return null;
+  const query = rawProjectId.trim();
+  if (!query) return null;
+
+  const { data: exactByName } = await supabase
+    .from("projects")
+    .select("id")
+    .ilike("name", query)
+    .limit(2);
+
+  if (exactByName && exactByName.length === 1) {
+    return exactByName[0].id;
+  }
+
+  const { data: partialByName } = await supabase
+    .from("projects")
+    .select("id")
+    .ilike("name", `%${query}%`)
+    .limit(2);
+
+  if (partialByName && partialByName.length === 1) {
+    return partialByName[0].id;
+  }
+
+  const { data: clients } = await supabase
+    .from("clients")
+    .select("id")
+    .or(`name.ilike.%${query}%,company.ilike.%${query}%`)
+    .limit(3);
+
+  const clientIds = (clients || []).map((c: any) => c.id);
+  if (clientIds.length) {
+    const { data: byClient } = await supabase
+      .from("projects")
+      .select("id")
+      .in("client_id", clientIds)
+      .order("created_at", { ascending: false })
+      .limit(2);
+
+    if (byClient && byClient.length === 1) {
+      return byClient[0].id;
+    }
+  }
+
+  return null;
+}
+
 // ── Tool execution ──────────────────────────────────────────────────────────
 
 async function executeTool(
@@ -979,9 +1077,19 @@ async function executeTool(
   args: Record<string, unknown>,
   supabase: ReturnType<typeof createClient>,
   userId: string,
+  currentProjectId: string | null,
 ) {
+  if (PROJECT_SCOPED_TOOLS.has(name)) {
+    const resolvedProjectId = await resolveProjectId(args.project_id, currentProjectId, supabase);
+    if (!resolvedProjectId) {
+      return {
+        error: "Não consegui identificar o projeto desta ação. Informe o nome exato do projeto ou abra o projeto correto antes de pedir preenchimento.",
+      };
+    }
+    args.project_id = resolvedProjectId;
+  }
+
   switch (name) {
-    // ── PROJECTS ──────────────────────────────────────────────
     case "list_projects": {
       const { data, error } = await supabase
         .from("projects")
@@ -1551,7 +1659,8 @@ serve(async (req) => {
     const { data: profileData } = await supabase.from("profiles").select("full_name").eq("user_id", userId).maybeSingle();
     const userName = profileData?.full_name || "Usuário";
 
-    const { messages, conversation_id } = await req.json();
+    const { messages, conversation_id, current_project_id } = await req.json();
+    const currentProjectId = isUuid(current_project_id) ? current_project_id : null;
     const roleNames = userRoles.length > 0 ? userRoles.join(", ") : "user";
 
     const systemPrompt = `Você é o CUBO AI, assistente inteligente do CRM CUBO. Você tem acesso COMPLETO e IRRESTRITO a TODOS os módulos do sistema.
@@ -1559,6 +1668,7 @@ serve(async (req) => {
 CONTEXTO DO USUÁRIO:
 - Nome: ${userName}
 - Cargos: ${roleNames}
+- Projeto em contexto atual: ${currentProjectId || "nenhum"}
 - Data atual: ${new Date().toISOString().split("T")[0]}
 
 MÓDULOS DISPONÍVEIS (você pode fazer TUDO):
@@ -1666,6 +1776,8 @@ INSTRUÇÕES:
 - Use markdown para formatar listas e tabelas
 - Quando pedir para criar projeto para um cliente pelo nome, use list_clients primeiro para achar o ID
 - Quando pedir para atribuir tarefa, use list_team_members para achar o user_id
+- Nunca use IDs fictícios como PRJ-XXXX, CLI-XXXX, USER-XXXX
+- Para qualquer ação que exija project_id, use o projeto em contexto atual quando disponível
 - Quando pedir informações de subcategorias, use as ferramentas get_project_* para buscar dados REAIS`;
 
     const apiMessages = [{ role: "system", content: systemPrompt }, ...messages];
@@ -1699,7 +1811,7 @@ INSTRUÇÕES:
 
         let toolResult: unknown;
         try {
-          toolResult = await executeTool(fnName, fnArgs, supabase, userId);
+          toolResult = await executeTool(fnName, fnArgs, supabase, userId, currentProjectId);
         } catch (e: any) {
           console.error(`[ai-chat] Tool error (${fnName}):`, e?.message || e);
           toolResult = { error: e.message };
