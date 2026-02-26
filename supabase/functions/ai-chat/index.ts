@@ -1039,6 +1039,39 @@ const tools = [
       },
     },
   },
+
+  // ─── PROJECT MEMBER MANAGEMENT ────────────────────────────────────────
+  {
+    type: "function",
+    function: {
+      name: "add_project_member",
+      description: "Add a team member to a project. Use list_team_members first to get the user_id.",
+      parameters: {
+        type: "object",
+        properties: {
+          project_id: { type: "string" },
+          user_id: { type: "string", description: "User UUID to add" },
+          role: { type: "string", description: "Project role: director, designer, copywriter, traffic_manager, social_media" },
+        },
+        required: ["project_id", "user_id", "role"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "remove_project_member",
+      description: "Remove a team member from a project.",
+      parameters: {
+        type: "object",
+        properties: {
+          project_id: { type: "string" },
+          user_id: { type: "string", description: "User UUID to remove" },
+        },
+        required: ["project_id", "user_id"],
+      },
+    },
+  },
 ];
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -1078,6 +1111,8 @@ const PROJECT_SCOPED_TOOLS = new Set([
   "list_project_optimization_log",
   "create_project_optimization_log",
   "list_project_members",
+  "add_project_member",
+  "remove_project_member",
   "list_project_fields",
   "upsert_project_field",
   "delete_project_field",
@@ -1695,6 +1730,24 @@ async function executeTool(
       const pm = new Map((profiles || []).map((p: any) => [p.user_id, p.full_name]));
       return data.map((m: any) => ({ ...m, full_name: pm.get(m.user_id) || "Sem nome" }));
     }
+    case "add_project_member": {
+      // Check if already a member
+      const { data: existing } = await supabase.from("project_members").select("id").eq("project_id", args.project_id).eq("user_id", args.user_id).maybeSingle();
+      if (existing) {
+        // Update role if already exists
+        const { data, error } = await supabase.from("project_members").update({ role: args.role }).eq("id", existing.id).select().single();
+        if (error) throw error;
+        return { success: true, message: "Cargo do membro atualizado.", member: data };
+      }
+      const { data, error } = await supabase.from("project_members").insert({ project_id: args.project_id as string, user_id: args.user_id as string, role: args.role as string }).select().single();
+      if (error) throw error;
+      return { success: true, message: "Membro adicionado ao projeto.", member: data };
+    }
+    case "remove_project_member": {
+      const { error } = await supabase.from("project_members").delete().eq("project_id", args.project_id).eq("user_id", args.user_id);
+      if (error) throw error;
+      return { success: true, message: "Membro removido do projeto." };
+    }
 
     // ── PROJECT FIELDS (Campos) ─────────────────────────────
     case "list_project_fields": {
@@ -1915,7 +1968,8 @@ INSTRUÇÕES:
 - Formate valores em R$ (BRL) e datas em dd/mm/yyyy
 - Use markdown para formatar listas e tabelas
 - Quando pedir para criar projeto para um cliente pelo nome, use list_clients primeiro para achar o ID
-- Quando pedir para atribuir tarefa, use list_team_members para achar o user_id
+- Quando pedir para atribuir tarefa ou adicionar membro ao projeto, use list_team_members para achar o user_id e depois add_project_member
+- Para definir equipe do projeto, use add_project_member para cada membro com o role correto (director, designer, copywriter, traffic_manager, social_media)
 - Nunca use IDs fictícios como PRJ-XXXX, CLI-XXXX, USER-XXXX
 - Para qualquer ação que exija project_id, use o projeto em contexto atual quando disponível
 - Quando pedir informações de subcategorias, use as ferramentas get_project_* para buscar dados REAIS
