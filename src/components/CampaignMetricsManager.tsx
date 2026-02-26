@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { formatCurrency } from '@/lib/utils';
 import { Plus, Trash2, TrendingUp, Target, DollarSign, MousePointer, Eye, Users, BarChart3, Calendar, Edit2, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -138,12 +139,7 @@ export function CampaignMetricsManager({ projectId, currency }: CampaignMetricsM
     setEditingCampaign(null);
   };
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: currency || 'BRL',
-    }).format(value);
-  };
+  const fmtCurrency = (value: number) => formatCurrency(value, currency || 'BRL');
 
   if (isLoading) {
     return <div className="flex items-center justify-center py-8">Carregando...</div>;
@@ -415,12 +411,7 @@ function CampaignCard({ campaign, currency, onSelect, onEdit, onDelete, onStatus
 
   const avgCtr = totals.impressions > 0 ? (totals.clicks / totals.impressions) * 100 : 0;
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: currency || 'BRL',
-    }).format(value);
-  };
+  const fmtCurrency = (value: number) => formatCurrency(value, currency || 'BRL');
 
   return (
     <Card className="hover:shadow-lg transition-shadow">
@@ -469,7 +460,7 @@ function CampaignCard({ campaign, currency, onSelect, onEdit, onDelete, onStatus
           <div className="flex items-center gap-1.5">
             <DollarSign className="w-3.5 h-3.5 text-muted-foreground" />
             <span className="text-muted-foreground">Gasto:</span>
-            <span className="font-medium">{formatCurrency(totals.spend)}</span>
+            <span className="font-medium">{fmtCurrency(totals.spend)}</span>
           </div>
         </div>
 
@@ -612,12 +603,7 @@ function MetricsDialog({ campaign, currency, open, onOpenChange }: MetricsDialog
     });
   };
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: currency || 'BRL',
-    }).format(value);
-  };
+  const fmtCurrency = (value: number) => formatCurrency(value, currency || 'BRL');
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -769,8 +755,8 @@ function MetricsDialog({ campaign, currency, open, onOpenChange }: MetricsDialog
                           <td className="text-right py-2 px-1">{m.impressions.toLocaleString('pt-BR')}</td>
                           <td className="text-right py-2 px-1">{m.clicks.toLocaleString('pt-BR')}</td>
                           <td className="text-right py-2 px-1">{m.ctr}%</td>
-                          <td className="text-right py-2 px-1">{formatCurrency(m.spend)}</td>
-                          <td className="text-right py-2 px-1">{formatCurrency(m.cpc)}</td>
+                          <td className="text-right py-2 px-1">{fmtCurrency(m.spend)}</td>
+                          <td className="text-right py-2 px-1">{fmtCurrency(m.cpc)}</td>
                           <td className="text-right py-2 px-1">{m.conversions}</td>
                           <td className="text-right py-2 px-1">{m.leads}</td>
                           <td className="text-right py-2 px-1">{m.roas}x</td>

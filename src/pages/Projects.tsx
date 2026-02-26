@@ -20,6 +20,7 @@ import { useProjects, CreateProjectData, Project } from '@/hooks/useProjects';
 import { useClients } from '@/hooks/useClients';
 import { useUserRole } from '@/hooks/useUserRole';
 import { Badge } from '@/components/ui/badge';
+import { formatCurrency } from '@/lib/utils';
 import { ProjectTypeSelector } from '@/components/project/ProjectTypeSelector';
 import { useToast } from '@/hooks/use-toast';
 
@@ -79,10 +80,6 @@ export default function Projects() {
     return matchSearch && matchStatus;
   });
 
-  const formatCurrency = (value: number, currency: string) => {
-    const locales: Record<string, string> = { BRL: 'pt-BR', USD: 'en-US', EUR: 'de-DE' };
-    return new Intl.NumberFormat(locales[currency] || 'pt-BR', { style: 'currency', currency }).format(value);
-  };
 
   const handleToggleProjectType = (type: string) => {
     setSelectedProjectTypes(prev =>
