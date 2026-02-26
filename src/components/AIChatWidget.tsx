@@ -55,7 +55,7 @@ export function AIChatWidget() {
   }
 
   return (
-    <div className="fixed bottom-0 right-0 w-full h-[100dvh] sm:bottom-6 sm:right-6 sm:w-[380px] md:w-[420px] sm:h-[520px] md:h-[600px] sm:rounded-2xl z-50 flex flex-col rounded-none border border-border bg-card shadow-2xl overflow-hidden animate-in slide-in-from-bottom-4 fade-in duration-300">
+    <div className="fixed bottom-3 right-3 left-3 h-[72dvh] max-h-[520px] sm:left-auto sm:bottom-4 sm:right-4 sm:w-[340px] sm:h-[500px] md:w-[380px] md:h-[540px] z-50 flex flex-col rounded-2xl border border-border bg-card shadow-2xl overflow-hidden animate-in slide-in-from-bottom-4 fade-in duration-300">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b bg-cubo-gradient text-white">
         <div className="flex items-center gap-2">
