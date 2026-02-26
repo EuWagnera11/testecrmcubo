@@ -49,12 +49,14 @@ const fieldConfig = {
   general: { label: 'Geral', icon: FileText, color: 'text-gray-500', role: 'director' as ProjectRole },
 };
 
+import { appRoleLabels } from '@/lib/roleConfig';
+
 const roleLabels: Record<ProjectRole, string> = {
-  director: 'Diretor',
-  designer: 'Designer',
-  copywriter: 'Copywriter',
-  traffic_manager: 'Gestor de Tráfego',
-  social_media: 'Social Media',
+  director: appRoleLabels.director,
+  designer: appRoleLabels.designer,
+  copywriter: appRoleLabels.copywriter,
+  traffic_manager: appRoleLabels.traffic_manager,
+  social_media: appRoleLabels.social_media,
 };
 
 const projectTypeConfig: Record<string, { label: string; icon: React.ElementType; color: string }> = {
