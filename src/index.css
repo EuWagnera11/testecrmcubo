@@ -4,31 +4,31 @@
 @tailwind components;
 @tailwind utilities;
 
-/* CUBO Design System — Faithful to institutional site */
+/* CUBO Design System — Fiel ao site institucional */
 
 @layer base {
   :root {
     /* Light Mode — Off-white quente como site institucional */
-    --background: 35 30% 96%;
-    --foreground: 30 8% 22%;
+    --background: 30 15% 96%;
+    --foreground: 0 0% 18%;
 
-    --card: 36 30% 98%;
-    --card-foreground: 30 8% 22%;
+    --card: 30 12% 98%;
+    --card-foreground: 0 0% 18%;
 
-    --popover: 36 30% 98%;
-    --popover-foreground: 30 8% 22%;
+    --popover: 30 12% 98%;
+    --popover-foreground: 0 0% 18%;
 
-    /* Primary Orange — #FF6B00 */
-    --primary: 25 100% 50%;
+    /* Primary Orange — HSL 24, 100%, 50% exato do site */
+    --primary: 24 100% 50%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 35 18% 91%;
-    --secondary-foreground: 30 8% 22%;
+    --secondary: 30 10% 92%;
+    --secondary-foreground: 0 0% 18%;
 
-    --muted: 35 15% 91%;
-    --muted-foreground: 30 6% 48%;
+    --muted: 30 8% 92%;
+    --muted-foreground: 0 0% 45%;
 
-    --accent: 25 100% 50%;
+    --accent: 24 100% 50%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 72% 51%;
@@ -38,56 +38,57 @@
     --success-foreground: 0 0% 100%;
 
     --warning: 38 92% 50%;
-    --warning-foreground: 30 8% 10%;
+    --warning-foreground: 0 0% 12%;
 
-    --border: 35 15% 88%;
-    --input: 35 15% 90%;
-    --ring: 25 100% 50%;
+    --border: 30 8% 88%;
+    --input: 30 8% 90%;
+    --ring: 24 100% 50%;
 
     --radius: 0.75rem;
 
-    /* Custom tokens */
-    --cubo-orange: 25 100% 50%;
-    --cubo-orange-dark: 20 100% 45%;
-    --cubo-orange-light: 30 100% 58%;
+    /* Custom tokens — paleta do site institucional */
+    --cubo-orange: 24 100% 50%;
+    --cubo-orange-dark: 20 100% 42%;
+    --cubo-orange-light: 28 100% 58%;
     --cubo-orange-glow: 30 100% 65%;
-    --cubo-charcoal: 30 8% 22%;
-    --cubo-cream: 35 30% 96%;
-    --cubo-warm-white: 36 30% 98%;
-    --cubo-gray: 30 5% 55%;
+    --cubo-charcoal: 0 0% 18%;
+    --cubo-cream: 30 15% 96%;
+    --cubo-warm-white: 30 12% 98%;
+    --cubo-gray: 0 0% 45%;
+    --cubo-warm-gray: 30 5% 72%;
 
     /* Sidebar — Dark warm charcoal */
-    --sidebar-background: 28 18% 10%;
-    --sidebar-foreground: 35 12% 88%;
-    --sidebar-primary: 25 100% 50%;
+    --sidebar-background: 24 18% 9%;
+    --sidebar-foreground: 30 8% 88%;
+    --sidebar-primary: 24 100% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 28 15% 15%;
-    --sidebar-accent-foreground: 35 12% 95%;
-    --sidebar-border: 28 12% 15%;
-    --sidebar-ring: 25 100% 50%;
+    --sidebar-accent: 24 14% 14%;
+    --sidebar-accent-foreground: 30 8% 95%;
+    --sidebar-border: 24 12% 14%;
+    --sidebar-ring: 24 100% 50%;
   }
 
   .dark {
-    /* Dark Mode — Warm dark browns/charcoal, NOT blue-gray */
+    /* Dark Mode — Warm dark, NOT blue-gray */
     --background: 24 15% 7%;
-    --foreground: 30 12% 94%;
+    --foreground: 30 8% 94%;
     
     --card: 24 14% 11%;
-    --card-foreground: 30 12% 94%;
+    --card-foreground: 30 8% 94%;
     
     --popover: 24 14% 11%;
-    --popover-foreground: 30 12% 94%;
+    --popover-foreground: 30 8% 94%;
     
-    --primary: 25 100% 50%;
+    --primary: 24 100% 50%;
     --primary-foreground: 0 0% 100%;
     
     --secondary: 24 14% 16%;
-    --secondary-foreground: 30 12% 94%;
+    --secondary-foreground: 30 8% 94%;
     
     --muted: 24 12% 16%;
     --muted-foreground: 24 8% 50%;
     
-    --accent: 25 100% 50%;
+    --accent: 24 100% 50%;
     --accent-foreground: 0 0% 100%;
     
     --destructive: 0 72% 51%;
@@ -101,15 +102,15 @@
     
     --border: 24 12% 16%;
     --input: 24 12% 15%;
-    --ring: 25 100% 50%;
+    --ring: 24 100% 50%;
 
     --cubo-cream: 24 15% 7%;
     --cubo-warm-white: 24 14% 9%;
 
     --sidebar-background: 24 18% 5%;
-    --sidebar-foreground: 30 12% 88%;
+    --sidebar-foreground: 30 8% 88%;
     --sidebar-accent: 24 14% 10%;
-    --sidebar-accent-foreground: 30 12% 95%;
+    --sidebar-accent-foreground: 30 8% 95%;
     --sidebar-border: 24 14% 10%;
   }
 }
@@ -126,25 +127,70 @@
 }
 
 @layer utilities {
-  /* Glass Card — Warm subtle shadow like institutional site cards */
+  /* Glass Card — sutil como site institucional */
   .glass-card {
     @apply bg-card border border-border/40 rounded-xl;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 20px rgba(0, 0, 0, 0.03);
   }
 
-  /* Orange gradient matching institutional site hero exactly */
+  /* Gradient Warm — transição suave entre seções */
   .bg-cubo-gradient {
-    background: linear-gradient(135deg, hsl(18 100% 42%) 0%, hsl(22 100% 48%) 25%, hsl(25 100% 50%) 50%, hsl(28 100% 55%) 75%, hsl(32 95% 60%) 100%);
+    background: linear-gradient(135deg, hsl(20 100% 42%) 0%, hsl(22 100% 46%) 25%, hsl(24 100% 50%) 50%, hsl(26 100% 55%) 75%, hsl(30 95% 60%) 100%);
   }
 
-  /* Lighter orange gradient for accents */
+  /* Gradient Luxury — para seções escuras */
+  .bg-cubo-gradient-luxury {
+    background: linear-gradient(135deg, hsl(0 0% 12%) 0%, hsl(24 20% 14%) 50%, hsl(0 0% 18%) 100%);
+  }
+
+  /* Gradient cream fade — transições entre seções claras */
+  .bg-cubo-gradient-cream {
+    background: linear-gradient(180deg, hsl(30 15% 96%) 0%, hsl(30 12% 98%) 50%, hsl(30 15% 96%) 100%);
+  }
+
+  /* Gradient light overlay — topo do layout */
   .bg-cubo-gradient-light {
-    background: linear-gradient(135deg, hsl(25 100% 50% / 0.08) 0%, hsl(30 100% 58% / 0.04) 100%);
+    background: linear-gradient(135deg, hsl(24 100% 50% / 0.06) 0%, hsl(30 100% 58% / 0.02) 100%);
+  }
+
+  /* Texture noise — 3% opacidade para profundidade sutil */
+  .texture-noise {
+    position: relative;
+  }
+  .texture-noise::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0.03;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Texture dots — 6% opacidade */
+  .texture-dots {
+    position: relative;
+  }
+  .texture-dots::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0.06;
+    background-image: radial-gradient(circle, hsl(0 0% 18%) 1px, transparent 1px);
+    background-size: 20px 20px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Hairline — separador fino com gradiente */
+  .hairline {
+    height: 1px;
+    background: linear-gradient(90deg, transparent 0%, hsl(var(--border)) 20%, hsl(var(--border)) 80%, transparent 100%);
   }
 
   /* Text Gradient */
   .text-gradient {
-    background: linear-gradient(135deg, hsl(25 100% 50%) 0%, hsl(30 100% 58%) 100%);
+    background: linear-gradient(135deg, hsl(24 100% 50%) 0%, hsl(28 100% 58%) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -184,7 +230,7 @@
     animation: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
 
-  /* Watermark text — like "Cubo" / "Refine" on institutional site */
+  /* Watermark — texto decorativo grande e semi-transparente */
   .watermark {
     @apply absolute select-none pointer-events-none leading-none;
     font-family: 'Cormorant Garamond', serif;
@@ -192,12 +238,27 @@
     font-weight: 600;
   }
 
-  /* Cross decorative element — like institutional site + symbols */
+  /* Cross decorative element — + symbols */
   .cross-decoration::before {
     content: '+';
     @apply absolute text-primary/[0.06] font-light select-none pointer-events-none;
     font-size: 5rem;
   }
+
+  /* Scroll reveal — elementos aparecem suavemente */
+  .scroll-reveal {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.7s ease-out, transform 0.7s ease-out;
+  }
+  .scroll-reveal.revealed {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .scroll-reveal-delay-1 { transition-delay: 0.1s; }
+  .scroll-reveal-delay-2 { transition-delay: 0.2s; }
+  .scroll-reveal-delay-3 { transition-delay: 0.3s; }
+  .scroll-reveal-delay-4 { transition-delay: 0.4s; }
 }
 
 /* Keyframes */
@@ -218,6 +279,15 @@
   }
   50% {
     box-shadow: 0 0 40px hsl(var(--accent) / 0.5);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-8px);
   }
 }
 
