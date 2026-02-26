@@ -14,10 +14,10 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
-        body: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        sans: ['Manrope', 'system-ui', '-apple-system', 'sans-serif'],
+        body: ['Manrope', 'system-ui', '-apple-system', 'sans-serif'],
         serif: ['Cormorant Garamond', 'serif'],
-        display: ['Cormorant Garamond', 'serif'],
+        display: ['Manrope', 'system-ui', '-apple-system', 'sans-serif'],
       },
       colors: {
         border: "hsl(var(--border))",
