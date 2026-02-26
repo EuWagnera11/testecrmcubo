@@ -37,7 +37,7 @@ export function Header({ onMenuClick }: HeaderProps) {
           </Button>
           
           <div className="flex items-center gap-1 lg:hidden">
-            <span className="font-bold tracking-widest text-sm">CUBO</span>
+            <span className="font-extrabold tracking-widest text-sm">CUBO</span>
           </div>
         </div>
 

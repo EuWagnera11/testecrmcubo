@@ -74,7 +74,7 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
             <div className="flex items-center gap-2">
               {/* CUBO text logo matching institutional site */}
               <span className={cn(
-                "font-bold tracking-widest text-sidebar-foreground",
+                "font-extrabold tracking-widest text-sidebar-foreground",
                 isCollapsed ? "text-sm" : "text-lg"
               )}>
                 CUBO
