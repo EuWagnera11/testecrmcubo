@@ -30,7 +30,7 @@ const navItems = [
   { icon: Users, label: 'Clínicas', path: '/clientes' },
   { icon: FolderKanban, label: 'Projetos', path: '/projetos' },
   { icon: MessageCircle, label: 'WhatsApp', path: '/whatsapp' },
-  { icon: Bot, label: 'Automações', path: '/automacoes' },
+  
   { icon: FileText, label: 'Contratos', path: '/contratos' },
   { icon: Wallet, label: 'Financeiro', path: '/financeiro', directorOnly: true },
   { icon: GraduationCap, label: 'Estudos', path: '/estudos' },
