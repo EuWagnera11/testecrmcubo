@@ -1,12 +1,19 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
-interface Message {
+export interface Attachment {
+  name: string;
+  url: string;
+  type: string;
+}
+
+export interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
   created_at: string;
+  attachments?: Attachment[];
 }
 
 export function useAIChat() {
@@ -54,14 +61,34 @@ export function useAIChat() {
     }
   }, []);
 
-  const sendMessage = useCallback(async (content: string) => {
-    if (!content.trim() || !session) return;
+  const uploadFile = useCallback(async (file: File): Promise<Attachment | null> => {
+    if (!user) return null;
+    const path = `${user.id}/${Date.now()}-${file.name}`;
+    const { error } = await supabase.storage.from('ai-chat-files').upload(path, file);
+    if (error) {
+      console.error('Upload error:', error);
+      return null;
+    }
+    const { data: urlData } = supabase.storage.from('ai-chat-files').getPublicUrl(path);
+    return { name: file.name, url: urlData.publicUrl, type: file.type };
+  }, [user]);
+
+  const sendMessage = useCallback(async (content: string, attachments?: Attachment[]) => {
+    if ((!content.trim() && (!attachments || !attachments.length)) || !session) return;
+
+    // Build content with attachment references for the AI
+    let fullContent = content;
+    if (attachments?.length) {
+      const attachmentText = attachments.map(a => `[Arquivo anexado: ${a.name}](${a.url})`).join('\n');
+      fullContent = content ? `${content}\n\n${attachmentText}` : attachmentText;
+    }
 
     const userMsg: Message = {
       id: `temp-${++idCounter.current}`,
       role: 'user',
-      content,
+      content: fullContent,
       created_at: new Date().toISOString(),
+      attachments,
     };
     setMessages(prev => [...prev, userMsg]);
     setIsLoading(true);
@@ -72,7 +99,6 @@ export function useAIChat() {
         convId = await createConversation();
       }
 
-      // Build message history for API (last 20 messages for context)
       const historyMessages = [...messages.slice(-18), userMsg].map(m => ({
         role: m.role,
         content: m.content,
@@ -114,7 +140,6 @@ export function useAIChat() {
       };
       setMessages(prev => [...prev, assistantMsg]);
 
-      // Update conversation title with first message
       if (convId && messages.length === 0) {
         const title = content.length > 50 ? content.substring(0, 50) + '...' : content;
         await supabase
@@ -145,6 +170,7 @@ export function useAIChat() {
     messages,
     isLoading,
     sendMessage,
+    uploadFile,
     clearChat,
     conversationId,
     loadConversations,
