@@ -10,37 +10,16 @@ function getNormalizedUrl(rawUrl: string): string {
   return rawUrl.trim().replace(/\/+$/, "");
 }
 
-function createEvolutionHttpClient(rawUrl: string): Deno.HttpClient {
-  const hosts: string[] = [];
-  try {
-    const normalized = getNormalizedUrl(rawUrl);
-    const withProto = /^https?:\/\//i.test(normalized) ? normalized : `https://${normalized}`;
-    hosts.push(new URL(withProto).hostname);
-  } catch { /* ignore */ }
-
-  return Deno.createHttpClient({
-    // array format required by Supabase Edge Runtime
-    unsafelyIgnoreCertificateErrors: hosts.length > 0 ? hosts : ["evoapi.refinecubo.com.br"],
-  });
-}
-
-function getBaseCandidates(rawUrl: string): string[] {
+function toHttpUrl(rawUrl: string): string {
   const normalized = getNormalizedUrl(rawUrl);
-
-  try {
-    const url = new URL(normalized);
-    const httpUrl = `http://${url.host}`;
-    return [httpUrl];
-  } catch {
-    const stripped = normalized.replace(/^https?:\/\//i, "");
-    return [`http://${stripped}`];
-  }
+  // Strip any protocol and force http://
+  const stripped = normalized.replace(/^https?:\/\//i, "");
+  return `http://${stripped}`;
 }
 
 async function parseResponseBody(response: Response) {
   const text = await response.text();
   if (!text) return null;
-
   try {
     return JSON.parse(text);
   } catch {
@@ -51,19 +30,29 @@ async function parseResponseBody(response: Response) {
 function extractErrorMessage(payload: unknown): string {
   if (!payload) return "Sem detalhes";
   if (typeof payload === "string") return payload;
-
   const typed = payload as Record<string, unknown>;
   const response = typed.response as Record<string, unknown> | undefined;
   const messages = response?.message as unknown;
-
-  if (Array.isArray(messages) && messages.length > 0) {
-    return String(messages[0]);
-  }
-
+  if (Array.isArray(messages) && messages.length > 0) return String(messages[0]);
   if (typeof typed.message === "string") return typed.message;
   return JSON.stringify(payload);
 }
 
+/**
+ * Attempts to call the Evolution API with two strategies:
+ *
+ * Strategy 1: HTTP with redirect: "manual" + insecure httpClient.
+ *   - Sends to http:// URL with redirect:"manual" so the runtime does NOT
+ *     auto-follow to https:// (which would trigger the TLS error).
+ *   - If server returns 3xx with Location header, we rewrite it to http://
+ *     and follow manually (still with the insecure client).
+ *   - If the server responds with content (2xx or error), we use that.
+ *
+ * Strategy 2 (fallback): Direct fetch with insecure httpClient.
+ *   - Tries the original URL (could be https) with the insecure client
+ *     that has unsafelyIgnoreCertificateErrors set to the target hostname.
+ *   - This works if the Edge Runtime actually honours the flag.
+ */
 async function callEvolutionApi({
   apiUrl,
   apiKey,
@@ -77,51 +66,115 @@ async function callEvolutionApi({
   method?: string;
   body?: unknown;
 }) {
-  const baseCandidates = getBaseCandidates(apiUrl);
-  const evolutionHttpClient = createEvolutionHttpClient(apiUrl);
-  let lastError: Error | null = null;
+  const headers: Record<string, string> = {
+    apikey: apiKey,
+    ...(body ? { "Content-Type": "application/json" } : {}),
+  };
+  const fetchBody = body ? JSON.stringify(body) : undefined;
 
+  // Extract hostname for the array-based client (Strategy 2 fallback)
+  let hostname = "evoapi.refinecubo.com.br";
   try {
-    for (const base of baseCandidates) {
-      const requestUrl = `${base}${path}`;
+    const n = getNormalizedUrl(apiUrl);
+    const withProto = /^https?:\/\//i.test(n) ? n : `https://${n}`;
+    hostname = new URL(withProto).hostname;
+  } catch { /* keep default */ }
 
-      try {
-        console.log(`[whatsapp-instance] ${method} ${requestUrl}`);
+  const errors: string[] = [];
 
-        const response = await fetch(requestUrl, {
-          method,
-          headers: {
-            apikey: apiKey,
-            ...(body ? { "Content-Type": "application/json" } : {}),
-          },
-          body: body ? JSON.stringify(body) : undefined,
-          ...(evolutionHttpClient ? { client: evolutionHttpClient } : {}),
-        });
+  // ── Strategy 1: HTTP + manual redirect control ──
+  {
+    const httpUrl = `${toHttpUrl(apiUrl)}${path}`;
+    console.log(`[whatsapp-instance] Strategy1: ${method} ${httpUrl} (redirect:manual)`);
 
-        const payload = await parseResponseBody(response);
+    // Create a client just for this attempt
+    const client = Deno.createHttpClient({ unsafelyIgnoreCertificateErrors: [hostname] });
+    try {
+      let response = await fetch(httpUrl, {
+        method,
+        headers,
+        body: fetchBody,
+        redirect: "manual",
+        client,
+      });
 
-        if (!response.ok) {
-          throw new Error(
-            `Evolution API [${response.status}]: ${extractErrorMessage(payload)}`
-          );
+      // If redirected, follow manually rewriting https→http
+      if ([301, 302, 303, 307, 308].includes(response.status)) {
+        const location = response.headers.get("location");
+        if (location) {
+          const rewrittenUrl = location.replace(/^https:\/\//i, "http://");
+          console.log(`[whatsapp-instance] Strategy1: redirect → ${rewrittenUrl}`);
+          response = await fetch(rewrittenUrl, {
+            method,
+            headers,
+            body: fetchBody,
+            redirect: "manual",
+            client,
+          });
         }
-
-        return payload;
-      } catch (error: unknown) {
-        const message = error instanceof Error ? error.message : String(error);
-        console.error(`[whatsapp-instance] failed on ${requestUrl}:`, message);
-        lastError = error instanceof Error ? error : new Error(message);
       }
+
+      // If we got a real response (not another redirect), use it
+      if (![301, 302, 303, 307, 308].includes(response.status)) {
+        const payload = await parseResponseBody(response);
+        if (!response.ok) {
+          throw new Error(`Evolution API [${response.status}]: ${extractErrorMessage(payload)}`);
+        }
+        console.log(`[whatsapp-instance] Strategy1: success ${response.status}`);
+        return payload;
+      }
+
+      errors.push(`Strategy1: still redirecting after rewrite (status ${response.status})`);
+      console.warn(`[whatsapp-instance] ${errors[errors.length - 1]}`);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      errors.push(`Strategy1: ${msg}`);
+      console.error(`[whatsapp-instance] Strategy1 failed:`, msg);
+    } finally {
+      client.close();
     }
-  } finally {
-    evolutionHttpClient?.close();
   }
 
-  throw (
-    lastError ??
-    new Error("Falha ao conectar com Evolution API em todos os endpoints testados")
+  // ── Strategy 2: Direct fetch with insecure client (hostname array) ──
+  {
+    const normalized = getNormalizedUrl(apiUrl);
+    const directUrl = (/^https?:\/\//i.test(normalized) ? normalized : `https://${normalized}`) + path;
+    console.log(`[whatsapp-instance] Strategy2: ${method} ${directUrl} (insecure client)`);
+
+    const client = Deno.createHttpClient({ unsafelyIgnoreCertificateErrors: [hostname] });
+    try {
+      const response = await fetch(directUrl, {
+        method,
+        headers,
+        body: fetchBody,
+        client,
+      });
+
+      const payload = await parseResponseBody(response);
+      if (!response.ok) {
+        throw new Error(`Evolution API [${response.status}]: ${extractErrorMessage(payload)}`);
+      }
+      console.log(`[whatsapp-instance] Strategy2: success ${response.status}`);
+      return payload;
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      errors.push(`Strategy2: ${msg}`);
+      console.error(`[whatsapp-instance] Strategy2 failed:`, msg);
+    } finally {
+      client.close();
+    }
+  }
+
+  // All strategies failed
+  const consolidated = errors.join(" | ");
+  throw new Error(
+    `Falha ao conectar com Evolution API. Detalhes: ${consolidated}. ` +
+    `Se o erro persistir com 'CaUsedAsEndEntity', o certificado SSL do servidor Evolution (${hostname}) ` +
+    `precisa ser corrigido (a CA está sendo usada como certificado final).`
   );
 }
+
+// ── Main handler ──
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -145,7 +198,6 @@ Deno.serve(async (req) => {
 
     const token = authHeader.replace("Bearer ", "");
     const { data: userData, error: userError } = await supabase.auth.getUser(token);
-
     if (userError || !userData?.user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
@@ -180,8 +232,7 @@ Deno.serve(async (req) => {
       const status =
         (result as Record<string, unknown>)?.instance &&
         typeof (result as Record<string, unknown>).instance === "object"
-          ? ((result as Record<string, unknown>).instance as Record<string, unknown>)
-              ?.state ?? "disconnected"
+          ? ((result as Record<string, unknown>).instance as Record<string, unknown>)?.state ?? "disconnected"
           : "disconnected";
 
       await supabase
