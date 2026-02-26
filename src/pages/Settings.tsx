@@ -166,14 +166,16 @@ export default function Settings() {
       </div>
 
       <Tabs defaultValue={isAdmin ? "users" : "profile"}>
-        <TabsList className="h-11 mb-6 flex-wrap">
+        <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
+          <TabsList className="h-11 mb-6 inline-flex w-auto min-w-full md:min-w-0 md:flex-wrap">
           {isAdmin && <TabsTrigger value="users" className="px-4">Usuários</TabsTrigger>}
           {isAdmin && <TabsTrigger value="roles" className="px-4">Cargos</TabsTrigger>}
           {isAdmin && <TabsTrigger value="commissions" className="px-4">Comissões</TabsTrigger>}
           {canEditTeamGoal && <TabsTrigger value="team" className="px-4">Meta da Equipe</TabsTrigger>}
           <TabsTrigger value="notifications" className="px-4">Notificações</TabsTrigger>
           <TabsTrigger value="profile" className="px-4">Meu Perfil</TabsTrigger>
-        </TabsList>
+          </TabsList>
+        </div>
 
         {/* Users Tab - Admin Only */}
         {isAdmin && (
@@ -199,7 +201,7 @@ export default function Settings() {
                 ) : (
                   <div className="space-y-3">
                     {pendingUsers.map((u) => (
-                      <div key={u.id} className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
+                      <div key={u.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-lg bg-muted/50">
                         <div>
                           <p className="font-medium">{u.full_name || 'Sem nome'}</p>
                           <p className="text-sm text-muted-foreground">Cadastrado em {new Date(u.created_at).toLocaleDateString('pt-BR')}</p>
@@ -249,11 +251,11 @@ export default function Settings() {
                 ) : (
                   <div className="space-y-3">
                     {allUsers.map((u) => (
-                      <div key={u.id} className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
+                      <div key={u.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-lg bg-muted/50">
                         <div className="flex items-center gap-3">
-                          <div>
-                            <p className="font-medium">{u.full_name || 'Sem nome'}</p>
-                            <div className="flex items-center gap-2 mt-1">
+                          <div className="min-w-0">
+                            <p className="font-medium truncate">{u.full_name || 'Sem nome'}</p>
+                            <div className="flex flex-wrap items-center gap-2 mt-1">
                               <Badge variant="outline" className={statusConfig[u.status].className}>
                                 {statusConfig[u.status].label}
                               </Badge>
@@ -268,7 +270,7 @@ export default function Settings() {
                             </div>
                           </div>
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 flex-shrink-0">
                           {u.status !== 'approved' && (
                             <Button 
                               size="sm"
@@ -326,8 +328,8 @@ export default function Settings() {
                   <div className="space-y-4">
                     {allUsers.filter(u => u.status === 'approved').map((u) => (
                       <div key={u.id} className="p-4 rounded-lg bg-muted/50">
-                        <div className="flex items-center justify-between mb-3">
-                          <div>
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+                          <div className="min-w-0">
                             <p className="font-medium">{u.full_name || 'Sem nome'}</p>
                             <div className="flex flex-wrap items-center gap-2 mt-1">
                               {u.roles.map(role => (

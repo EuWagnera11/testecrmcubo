@@ -391,13 +391,13 @@ export default function Dashboard() {
       {canSeeFinancials && profitProjects.length > 0 && (
         <>
           {/* Profitability Summary */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
             <Card className="border-border/50 glass-card">
-              <CardContent className="p-5">
+              <CardContent className="p-4 md:p-5">
                 <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Receita Total</p>
-                    <p className="text-xl font-semibold mt-1">{formatCurrency(totalRevenue)}</p>
+                  <div className="min-w-0">
+                    <p className="text-xs md:text-sm text-muted-foreground">Receita Total</p>
+                    <p className="text-lg md:text-xl font-semibold mt-1 truncate">{formatCurrency(totalRevenue)}</p>
                   </div>
                   <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center">
                     <DollarSign className="h-4 w-4 text-primary" />
@@ -407,11 +407,11 @@ export default function Dashboard() {
             </Card>
             
             <Card className="border-border/50 glass-card">
-              <CardContent className="p-5">
+              <CardContent className="p-4 md:p-5">
                 <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Repasses Equipe</p>
-                    <p className="text-xl font-semibold mt-1 text-destructive">{formatCurrency(totalPayouts)}</p>
+                  <div className="min-w-0">
+                    <p className="text-xs md:text-sm text-muted-foreground">Repasses Equipe</p>
+                    <p className="text-lg md:text-xl font-semibold mt-1 text-destructive truncate">{formatCurrency(totalPayouts)}</p>
                   </div>
                   <div className="h-9 w-9 rounded-lg bg-destructive/10 flex items-center justify-center">
                     <TrendingDown className="h-4 w-4 text-destructive" />
@@ -421,11 +421,11 @@ export default function Dashboard() {
             </Card>
             
             <Card className="border-border/50 glass-card">
-              <CardContent className="p-5">
+              <CardContent className="p-4 md:p-5">
                 <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Lucro Líquido</p>
-                    <p className={cn("text-xl font-semibold mt-1", totalProfit >= 0 ? "text-success" : "text-destructive")}>
+                  <div className="min-w-0">
+                    <p className="text-xs md:text-sm text-muted-foreground">Lucro Líquido</p>
+                    <p className={cn("text-lg md:text-xl font-semibold mt-1 truncate", totalProfit >= 0 ? "text-success" : "text-destructive")}>
                       {formatCurrency(totalProfit)}
                     </p>
                   </div>
@@ -437,11 +437,11 @@ export default function Dashboard() {
             </Card>
             
             <Card className="border-border/50 glass-card">
-              <CardContent className="p-5">
+              <CardContent className="p-4 md:p-5">
                 <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Margem Média</p>
-                    <p className={cn("text-xl font-semibold mt-1", averageMargin >= 0 ? "text-success" : "text-destructive")}>
+                  <div className="min-w-0">
+                    <p className="text-xs md:text-sm text-muted-foreground">Margem Média</p>
+                    <p className={cn("text-lg md:text-xl font-semibold mt-1", averageMargin >= 0 ? "text-success" : "text-destructive")}>
                       {averageMargin.toFixed(1)}%
                     </p>
                   </div>
