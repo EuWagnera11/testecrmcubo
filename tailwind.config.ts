@@ -63,6 +63,7 @@ export default {
         },
         cubo: {
           orange: "hsl(var(--cubo-orange))",
+          "orange-dark": "hsl(var(--cubo-orange-dark))",
           "orange-light": "hsl(var(--cubo-orange-light))",
           "orange-glow": "hsl(var(--cubo-orange-glow))",
           charcoal: "hsl(var(--cubo-charcoal))",
