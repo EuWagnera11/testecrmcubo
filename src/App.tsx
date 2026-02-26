@@ -22,6 +22,7 @@ import Financial from "./pages/Financial";
 import Payouts from "./pages/Payouts";
 import Reports from "./pages/Reports";
 import Studies from "./pages/Studies";
+import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -78,6 +79,7 @@ const AppRoutes = () => (
     <Routes>
       <Route path="/cliente/:token" element={<ErrorBoundary><ClientDashboard /></ErrorBoundary>} />
       <Route path="/auth" element={<PublicRoute><Auth /></PublicRoute>} />
+      <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard" element={<Dashboard />} />
