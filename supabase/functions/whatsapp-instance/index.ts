@@ -389,10 +389,12 @@ Deno.serve(async (req) => {
         path: `/webhook/set/${instanceName}`,
         method: "POST",
         body: {
-          url: webhookUrl,
-          webhook_by_events: false,
-          webhook_base64: false,
-          events: ["MESSAGES_UPSERT"],
+          webhook: {
+            url: webhookUrl,
+            webhook_by_events: false,
+            webhook_base64: false,
+            events: ["MESSAGES_UPSERT"],
+          },
         },
       });
 
