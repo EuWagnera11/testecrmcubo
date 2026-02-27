@@ -657,7 +657,7 @@ export default function Dashboard() {
                     <div key={inst.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/30">
                       <span className="text-sm font-medium">{inst.name}</span>
                       <div className="flex items-center gap-1.5">
-                        {inst.status === 'connected' ? (
+                        {inst.status === 'open' ? (
                           <>
                             <Wifi className="h-3.5 w-3.5 text-emerald-500" />
                             <span className="text-xs text-emerald-500">Conectado</span>

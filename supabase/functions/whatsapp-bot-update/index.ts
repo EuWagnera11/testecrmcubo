@@ -17,18 +17,42 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const body = await req.json();
-    const { instance_name, phone, reply_text, ai_summary, is_bot_active } = body;
+    // Robust JSON parsing with fallback
+    let body: Record<string, unknown>;
+    try {
+      body = await req.json();
+    } catch {
+      try {
+        const rawText = await req.text();
+        console.log("whatsapp-bot-update: raw text received:", rawText);
+        body = JSON.parse(rawText);
+      } catch {
+        console.error("whatsapp-bot-update: failed to parse body");
+        return new Response(
+          JSON.stringify({ error: "Invalid JSON payload" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
 
-    if (!instance_name || !phone || !reply_text) {
+    console.log("whatsapp-bot-update: body received:", JSON.stringify(body));
+
+    const { instance_name, phone, ai_summary, is_bot_active } = body as Record<string, any>;
+
+    // Accept alternative text fields
+    const botText = (body.reply_text || body.text || body.message || body.content || "") as string;
+    const finalText = botText.trim() || "[Mensagem do bot não capturada]";
+    const usedFallback = !botText.trim();
+
+    if (!instance_name || !phone) {
       return new Response(
-        JSON.stringify({ error: "instance_name, phone and reply_text are required" }),
+        JSON.stringify({ error: "instance_name and phone are required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     // Normalize phone (remove non-digits)
-    const normalizedPhone = phone.replace(/\D/g, "");
+    const normalizedPhone = (phone as string).replace(/\D/g, "");
 
     // Find instance by name
     const { data: instance } = await supabase
@@ -95,22 +119,28 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Insert bot message
+    // Always insert bot message (even with fallback text)
     await supabase.from("whatsapp_messages").insert({
       conversation_id: conversation.id,
       sender_type: "bot",
-      content: reply_text,
+      content: finalText,
       status: "sent",
     });
 
+    // Sanitize ai_summary — remove "Tipo CRM: desconhecido"
+    let cleanSummary = ai_summary as string | undefined;
+    if (cleanSummary) {
+      cleanSummary = cleanSummary.replace(/Tipo CRM:\s*desconhecido[,;\s]*/gi, '').trim() || undefined;
+    }
+
     // Update conversation with preview + optional AI fields
     const updateFields: Record<string, unknown> = {
-      last_message_preview: reply_text.substring(0, 100),
+      last_message_preview: finalText.substring(0, 100),
       last_message_at: new Date().toISOString(),
     };
 
-    if (ai_summary !== undefined) {
-      updateFields.ai_summary = ai_summary;
+    if (cleanSummary !== undefined) {
+      updateFields.ai_summary = cleanSummary;
       updateFields.ai_summary_at = new Date().toISOString();
     }
 
@@ -123,10 +153,10 @@ Deno.serve(async (req) => {
       .update(updateFields)
       .eq("id", conversation.id);
 
-    console.log("Bot update saved:", { conversation_id: conversation.id, phone: normalizedPhone });
+    console.log("Bot update saved:", { conversation_id: conversation.id, phone: normalizedPhone, usedFallback });
 
     return new Response(
-      JSON.stringify({ ok: true, conversation_id: conversation.id }),
+      JSON.stringify({ ok: true, conversation_id: conversation.id, ...(usedFallback ? { warning: "Used fallback text — original reply_text was empty" } : {}) }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error: unknown) {
