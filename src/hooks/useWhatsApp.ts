@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEffect } from 'react';
-import { useWhatsAppBackend } from './useWhatsAppBackend';
+
 
 // Types
 export interface WhatsAppInstance {
@@ -217,11 +217,14 @@ export function useWhatsAppTemplates() {
 
 export function useSendWhatsAppMessage() {
   const queryClient = useQueryClient();
-  const { callFunction } = useWhatsAppBackend();
 
   return useMutation({
     mutationFn: async ({ instanceId, phone, message }: { instanceId: string; phone: string; message: string }) => {
-      return callFunction('whatsapp-send', { instanceId, phone, message });
+      const { data, error } = await supabase.functions.invoke('whatsapp-send', {
+        body: { instanceId, phone, message },
+      });
+      if (error) throw error;
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['whatsapp-messages'] });

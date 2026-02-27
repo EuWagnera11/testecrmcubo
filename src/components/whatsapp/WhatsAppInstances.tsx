@@ -1,25 +1,20 @@
 import { useState, useEffect } from 'react';
 import { useWhatsAppInstances } from '@/hooks/useWhatsApp';
-import { useWhatsAppBackend } from '@/hooks/useWhatsAppBackend';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
-import { Plus, Trash2, Wifi, WifiOff, QrCode, Webhook, Server, RotateCcw, Save, CheckCircle2, XCircle } from 'lucide-react';
+import { Plus, Trash2, Wifi, WifiOff, QrCode, Webhook, RotateCcw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 export function WhatsAppInstances() {
   const { instances, isLoading, createInstance, deleteInstance } = useWhatsAppInstances();
-  const { url, key, isConfigured, setConfig, clearConfig, callFunction, DEFAULT_URL, DEFAULT_KEY } = useWhatsAppBackend();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ name: '', api_url: '', api_key: '', instance_name: '' });
   const { toast } = useToast();
-
-  // Backend config form state
-  const [configUrl, setConfigUrl] = useState(url);
-  const [configKey, setConfigKey] = useState(key);
 
   // QR Code modal state
   const [qrOpen, setQrOpen] = useState(false);
@@ -37,22 +32,6 @@ export function WhatsAppInstances() {
     return () => clearInterval(interval);
   }, [qrOpen, qrInstanceId]);
 
-  const handleSaveConfig = () => {
-    if (!configUrl || !configKey) {
-      toast({ title: 'Preencha URL e Chave', variant: 'destructive' });
-      return;
-    }
-    setConfig(configUrl, configKey);
-    toast({ title: '✅ Backend configurado com sucesso' });
-  };
-
-  const handleResetConfig = () => {
-    clearConfig();
-    setConfigUrl(DEFAULT_URL);
-    setConfigKey(DEFAULT_KEY);
-    toast({ title: 'Backend resetado para o padrão' });
-  };
-
   const handleCreate = async () => {
     if (!form.name || !form.api_url || !form.api_key || !form.instance_name) {
       toast({ title: 'Preencha todos os campos', variant: 'destructive' });
@@ -69,12 +48,11 @@ export function WhatsAppInstances() {
   };
 
   const handleCheckStatus = async (instanceId: string) => {
-    if (!isConfigured) {
-      toast({ title: '⚠️ Configure o backend primeiro', variant: 'destructive' });
-      return;
-    }
     try {
-      const data = await callFunction('whatsapp-instance', { action: 'check-status', instanceId });
+      const { data, error } = await supabase.functions.invoke('whatsapp-instance', {
+        body: { action: 'check-status', instanceId },
+      });
+      if (error) throw error;
       toast({ title: `Status: ${data.status}` });
     } catch (err: any) {
       toast({ title: 'Erro ao verificar status', description: err.message, variant: 'destructive' });
@@ -82,12 +60,11 @@ export function WhatsAppInstances() {
   };
 
   const handleSetWebhook = async (instanceId: string) => {
-    if (!isConfigured) {
-      toast({ title: '⚠️ Configure o backend primeiro', variant: 'destructive' });
-      return;
-    }
     try {
-      await callFunction('whatsapp-instance', { action: 'set-webhook', instanceId });
+      const { data, error } = await supabase.functions.invoke('whatsapp-instance', {
+        body: { action: 'set-webhook', instanceId },
+      });
+      if (error) throw error;
       toast({ title: 'Webhook configurado com sucesso' });
     } catch (err: any) {
       toast({ title: 'Erro ao configurar webhook', description: err.message, variant: 'destructive' });
@@ -97,7 +74,10 @@ export function WhatsAppInstances() {
   const fetchQR = async (instanceId: string) => {
     setQrLoading(true);
     try {
-      const data = await callFunction('whatsapp-instance', { action: 'get-qrcode', instanceId });
+      const { data, error } = await supabase.functions.invoke('whatsapp-instance', {
+        body: { action: 'get-qrcode', instanceId },
+      });
+      if (error) throw error;
       const img = data?.data?.base64 || data?.data?.qrcode?.base64 || data?.data?.code;
       if (img) {
         setQrImage(img);
@@ -118,10 +98,6 @@ export function WhatsAppInstances() {
   };
 
   const handleGetQR = async (instanceId: string) => {
-    if (!isConfigured) {
-      toast({ title: '⚠️ Configure o backend primeiro', variant: 'destructive' });
-      return;
-    }
     setQrInstanceId(instanceId);
     setQrImage(null);
     setQrPairingCode(null);
@@ -131,56 +107,6 @@ export function WhatsAppInstances() {
 
   return (
     <div className="space-y-6">
-      {/* Backend Configuration Panel */}
-      <Card className="border-dashed">
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Server className="h-5 w-5 text-muted-foreground" />
-              <div>
-                <CardTitle className="text-base">Configuração do Backend</CardTitle>
-                <CardDescription className="text-xs">URL e chave do Supabase para as Edge Functions do WhatsApp</CardDescription>
-              </div>
-            </div>
-            <Badge variant={isConfigured ? 'default' : 'destructive'} className="gap-1">
-              {isConfigured ? <CheckCircle2 className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
-              {isConfigured ? 'Configurado' : 'Não configurado'}
-            </Badge>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="space-y-2">
-            <Label className="text-xs">URL do Backend</Label>
-            <Input
-              placeholder="https://xxx.supabase.co"
-              value={configUrl}
-              onChange={e => setConfigUrl(e.target.value)}
-              className="text-xs"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label className="text-xs">Chave Anônima (anon key)</Label>
-            <Input
-              type="password"
-              placeholder="eyJhbGciOiJIUzI1NiIs..."
-              value={configKey}
-              onChange={e => setConfigKey(e.target.value)}
-              className="text-xs"
-            />
-          </div>
-          <div className="flex gap-2">
-            <Button size="sm" onClick={handleSaveConfig} className="gap-1">
-              <Save className="h-3 w-3" />
-              Salvar
-            </Button>
-            <Button size="sm" variant="outline" onClick={handleResetConfig} className="gap-1">
-              <RotateCcw className="h-3 w-3" />
-              Resetar
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Connection Management */}
       <div className="flex items-center justify-between">
         <div>
