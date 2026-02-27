@@ -41,17 +41,13 @@ function extractErrorMessage(payload: unknown): string {
 /**
  * Attempts to call the Evolution API with two strategies:
  *
- * Strategy 1: HTTP with redirect: "manual" + insecure httpClient.
- *   - Sends to http:// URL with redirect:"manual" so the runtime does NOT
- *     auto-follow to https:// (which would trigger the TLS error).
- *   - If server returns 3xx with Location header, we rewrite it to http://
- *     and follow manually (still with the insecure client).
- *   - If the server responds with content (2xx or error), we use that.
+ * Strategy 1: HTTP-first + manual redirect control with explicit insecure client.
+ *   - Starts from http:// and follows redirects manually.
+ *   - Rewrites any https:// redirect target back to http://.
+ *   - Handles multiple redirects (up to a safe limit) to avoid false failures on chained 301/302.
  *
- * Strategy 2 (fallback): Direct fetch with insecure httpClient.
- *   - Tries the original URL (could be https) with the insecure client
- *     that has unsafelyIgnoreCertificateErrors set to the target hostname.
- *   - This works if the Edge Runtime actually honours the flag.
+ * Strategy 2 (fallback): Direct request to normalized URL with explicit insecure client.
+ *   - Uses fetch(..., { client }) with unsafelyIgnoreCertificateErrors: true.
  */
 async function callEvolutionApi({
   apiUrl,
@@ -71,61 +67,79 @@ async function callEvolutionApi({
     ...(body ? { "Content-Type": "application/json" } : {}),
   };
   const fetchBody = body ? JSON.stringify(body) : undefined;
-
-  // Extract hostname for the array-based client (Strategy 2 fallback)
-  let hostname = "evoapi.refinecubo.com.br";
-  try {
-    const n = getNormalizedUrl(apiUrl);
-    const withProto = /^https?:\/\//i.test(n) ? n : `https://${n}`;
-    hostname = new URL(withProto).hostname;
-  } catch { /* keep default */ }
-
   const errors: string[] = [];
 
-  // ── Strategy 1: HTTP + manual redirect control ──
+  let hostHint = "evoapi.refinecubo.com.br";
+  try {
+    const normalized = getNormalizedUrl(apiUrl);
+    const withProto = /^https?:\/\//i.test(normalized) ? normalized : `https://${normalized}`;
+    hostHint = new URL(withProto).hostname;
+  } catch {
+    // keep fallback host
+  }
+
+  const redirectStatuses = new Set([301, 302, 303, 307, 308]);
+
+  // ── Strategy 1: HTTP + manual redirect control (explicit insecure client) ──
   {
-    const httpUrl = `${toHttpUrl(apiUrl)}${path}`;
-    console.log(`[whatsapp-instance] Strategy1: ${method} ${httpUrl} (redirect:manual)`);
+    const client = Deno.createHttpClient({ unsafelyIgnoreCertificateErrors: true });
+    let currentUrl = `${toHttpUrl(apiUrl)}${path}`;
+    const maxRedirects = 8;
 
-    // Create a client just for this attempt
-    const client = Deno.createHttpClient({ unsafelyIgnoreCertificateErrors: [hostname] });
+    console.log(
+      `[whatsapp-instance] Strategy1: ${method} ${currentUrl} (redirect:manual, insecure-client:true)`
+    );
+
     try {
-      let response = await fetch(httpUrl, {
-        method,
-        headers,
-        body: fetchBody,
-        redirect: "manual",
-        client,
-      });
+      let redirects = 0;
 
-      // If redirected, follow manually rewriting https→http
-      if ([301, 302, 303, 307, 308].includes(response.status)) {
-        const location = response.headers.get("location");
-        if (location) {
-          const rewrittenUrl = location.replace(/^https:\/\//i, "http://");
-          console.log(`[whatsapp-instance] Strategy1: redirect → ${rewrittenUrl}`);
-          response = await fetch(rewrittenUrl, {
-            method,
-            headers,
-            body: fetchBody,
-            redirect: "manual",
-            client,
-          });
+      while (true) {
+        const response = await fetch(currentUrl, {
+          method,
+          headers,
+          body: fetchBody,
+          redirect: "manual",
+          client,
+        });
+
+        if (redirectStatuses.has(response.status)) {
+          const location = response.headers.get("location");
+          if (!location) {
+            errors.push(`Strategy1: redirect ${response.status} sem header location`);
+            console.warn(`[whatsapp-instance] ${errors[errors.length - 1]}`);
+            break;
+          }
+
+          if (redirects >= maxRedirects) {
+            errors.push(`Strategy1: redirect loop (>${maxRedirects})`);
+            console.warn(`[whatsapp-instance] ${errors[errors.length - 1]}`);
+            break;
+          }
+
+          let nextUrl: string;
+          try {
+            nextUrl = new URL(location, currentUrl).toString();
+          } catch {
+            nextUrl = location;
+          }
+
+          nextUrl = nextUrl.replace(/^https:\/\//i, "http://");
+          redirects += 1;
+          console.log(
+            `[whatsapp-instance] Strategy1: redirect ${response.status} (#${redirects}) → ${nextUrl}`
+          );
+          currentUrl = nextUrl;
+          continue;
         }
-      }
 
-      // If we got a real response (not another redirect), use it
-      if (![301, 302, 303, 307, 308].includes(response.status)) {
         const payload = await parseResponseBody(response);
         if (!response.ok) {
           throw new Error(`Evolution API [${response.status}]: ${extractErrorMessage(payload)}`);
         }
+
         console.log(`[whatsapp-instance] Strategy1: success ${response.status}`);
         return payload;
       }
-
-      errors.push(`Strategy1: still redirecting after rewrite (status ${response.status})`);
-      console.warn(`[whatsapp-instance] ${errors[errors.length - 1]}`);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       errors.push(`Strategy1: ${msg}`);
@@ -135,18 +149,113 @@ async function callEvolutionApi({
     }
   }
 
-  // ── Strategy 2: Direct fetch with insecure client (hostname array) ──
+  // ── Strategy 1b: try explicit port 8080 over HTTP (common Evolution setup) ──
+  {
+    let host: string | null = null;
+    try {
+      const normalized = getNormalizedUrl(apiUrl);
+      const withProto = /^https?:\/\//i.test(normalized) ? normalized : `https://${normalized}`;
+      host = new URL(withProto).hostname;
+    } catch {
+      host = null;
+    }
+
+    if (host) {
+      const url8080 = `http://${host}:8080${path}`;
+      console.log(`[whatsapp-instance] Strategy1b: ${method} ${url8080} (http:8080)`);
+
+      const client = Deno.createHttpClient({ unsafelyIgnoreCertificateErrors: true });
+      try {
+        const response = await fetch(url8080, {
+          method,
+          headers,
+          body: fetchBody,
+          redirect: "manual",
+          signal: AbortSignal.timeout(5000),
+          client,
+        });
+
+        if (!redirectStatuses.has(response.status)) {
+          const payload = await parseResponseBody(response);
+          if (!response.ok) {
+            throw new Error(`Evolution API [${response.status}]: ${extractErrorMessage(payload)}`);
+          }
+          console.log(`[whatsapp-instance] Strategy1b: success ${response.status}`);
+          return payload;
+        }
+
+        errors.push(`Strategy1b: redirect ${response.status} em ${url8080}`);
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        errors.push(`Strategy1b: ${msg}`);
+        console.error(`[whatsapp-instance] Strategy1b failed:`, msg);
+      } finally {
+        client.close();
+      }
+    }
+  }
+
+  // ── Strategy 1c: resolve DNS and call HTTP via IP (bypass host-level redirects) ──
+  {
+    try {
+      const ips = await Deno.resolveDns(hostHint, "A");
+      for (const ip of ips.slice(0, 2)) {
+        const ipUrl = `http://${ip}${path}`;
+        console.log(`[whatsapp-instance] Strategy1c: ${method} ${ipUrl} (host:${hostHint})`);
+
+        const client = Deno.createHttpClient({ unsafelyIgnoreCertificateErrors: true });
+        try {
+          const response = await fetch(ipUrl, {
+            method,
+            headers: { ...headers, host: hostHint },
+            body: fetchBody,
+            redirect: "manual",
+            signal: AbortSignal.timeout(5000),
+            client,
+          });
+
+          if (!redirectStatuses.has(response.status)) {
+            const payload = await parseResponseBody(response);
+            if (!response.ok) {
+              throw new Error(`Evolution API [${response.status}]: ${extractErrorMessage(payload)}`);
+            }
+            console.log(`[whatsapp-instance] Strategy1c: success ${response.status}`);
+            return payload;
+          }
+
+          errors.push(`Strategy1c: redirect ${response.status} via ${ip}`);
+        } catch (err: unknown) {
+          const msg = err instanceof Error ? err.message : String(err);
+          errors.push(`Strategy1c(${ip}): ${msg}`);
+          console.error(`[whatsapp-instance] Strategy1c failed (${ip}):`, msg);
+        } finally {
+          client.close();
+        }
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      errors.push(`Strategy1c: DNS ${msg}`);
+      console.error(`[whatsapp-instance] Strategy1c DNS failed:`, msg);
+    }
+  }
+
+  // ── Strategy 2: Direct URL with explicit insecure client ──
   {
     const normalized = getNormalizedUrl(apiUrl);
-    const directUrl = (/^https?:\/\//i.test(normalized) ? normalized : `https://${normalized}`) + path;
-    console.log(`[whatsapp-instance] Strategy2: ${method} ${directUrl} (insecure client)`);
+    const directUrl =
+      (/^https?:\/\//i.test(normalized) ? normalized : `https://${normalized}`) + path;
 
-    const client = Deno.createHttpClient({ unsafelyIgnoreCertificateErrors: [hostname] });
+    console.log(
+      `[whatsapp-instance] Strategy2: ${method} ${directUrl} (redirect:follow, insecure-client:true)`
+    );
+
+    const client = Deno.createHttpClient({ unsafelyIgnoreCertificateErrors: true });
     try {
       const response = await fetch(directUrl, {
         method,
         headers,
         body: fetchBody,
+        redirect: "follow",
         client,
       });
 
@@ -154,6 +263,7 @@ async function callEvolutionApi({
       if (!response.ok) {
         throw new Error(`Evolution API [${response.status}]: ${extractErrorMessage(payload)}`);
       }
+
       console.log(`[whatsapp-instance] Strategy2: success ${response.status}`);
       return payload;
     } catch (err: unknown) {
@@ -169,8 +279,7 @@ async function callEvolutionApi({
   const consolidated = errors.join(" | ");
   throw new Error(
     `Falha ao conectar com Evolution API. Detalhes: ${consolidated}. ` +
-    `Se o erro persistir com 'CaUsedAsEndEntity', o certificado SSL do servidor Evolution (${hostname}) ` +
-    `precisa ser corrigido (a CA está sendo usada como certificado final).`
+      `Se persistir 'CaUsedAsEndEntity', o SSL do servidor Evolution (${hostHint}) está inválido e precisa ser corrigido na origem.`
   );
 }
 
@@ -221,11 +330,20 @@ Deno.serve(async (req) => {
     }
 
     const instanceName = encodeURIComponent(instance.instance_name);
+    const configuredApiUrl = Deno.env.get("EVOLUTION_API_URL")?.trim();
+    const configuredApiKey = Deno.env.get("EVOLUTION_API_KEY")?.trim();
+
+    const evolutionApiUrl = configuredApiUrl || instance.api_url;
+    const evolutionApiKey = configuredApiKey || instance.api_key;
+
+    console.log(
+      `[whatsapp-instance] Using API URL source: ${configuredApiUrl ? "secret" : "instance"}`
+    );
 
     if (action === "check-status") {
       const result = await callEvolutionApi({
-        apiUrl: instance.api_url,
-        apiKey: instance.api_key,
+        apiUrl: evolutionApiUrl,
+        apiKey: evolutionApiKey,
         path: `/instance/connectionState/${instanceName}`,
       });
 
@@ -248,8 +366,8 @@ Deno.serve(async (req) => {
 
     if (action === "get-qrcode") {
       const result = await callEvolutionApi({
-        apiUrl: instance.api_url,
-        apiKey: instance.api_key,
+        apiUrl: evolutionApiUrl,
+        apiKey: evolutionApiKey,
         path: `/instance/connect/${instanceName}`,
       });
 
@@ -263,8 +381,8 @@ Deno.serve(async (req) => {
       const webhookUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/whatsapp-webhook`;
 
       const result = await callEvolutionApi({
-        apiUrl: instance.api_url,
-        apiKey: instance.api_key,
+        apiUrl: evolutionApiUrl,
+        apiKey: evolutionApiKey,
         path: `/webhook/set/${instanceName}`,
         method: "POST",
         body: {
