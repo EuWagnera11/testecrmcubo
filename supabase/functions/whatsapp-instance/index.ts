@@ -381,17 +381,22 @@ Deno.serve(async (req) => {
     }
 
     if (action === "set-webhook") {
-  return new Response(JSON.stringify({ 
-    success: true, 
-    message: "Webhook já configurado: https://n8n.refinecubo.com.br/webhook/webhook-evolution",
-    webhook_url: "https://n8n.refinecubo.com.br/webhook/webhook-evolution"
-  }), {
-    status: 200,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
-}
+      const webhookUrl = Deno.env.get("SUPABASE_URL") + "/functions/v1/whatsapp-webhook";
 
-      return new Response(JSON.stringify({ success: true, data: result }), {
+      const result = await callEvolutionApi({
+        apiUrl: evolutionApiUrl,
+        apiKey: evolutionApiKey,
+        path: `/webhook/set/${instanceName}`,
+        method: "POST",
+        body: {
+          url: webhookUrl,
+          webhook_by_events: false,
+          webhook_base64: false,
+          events: ["MESSAGES_UPSERT"],
+        },
+      });
+
+      return new Response(JSON.stringify({ success: true, data: result, webhook_url: webhookUrl }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

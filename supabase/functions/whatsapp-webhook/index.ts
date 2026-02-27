@@ -123,6 +123,15 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Forward to n8n (fire-and-forget)
+    try {
+      fetch("https://n8n.refinecubo.com.br/webhook/webhook-evolution", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+    } catch {}
+
     return new Response(JSON.stringify({ ok: true }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
