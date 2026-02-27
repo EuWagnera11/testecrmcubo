@@ -47,15 +47,31 @@ export function WhatsAppInstances() {
     }
   };
 
+  const [checkingStatus, setCheckingStatus] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
+
   const handleCheckStatus = async (instanceId: string) => {
+    setCheckingStatus(instanceId);
     try {
       const { data, error } = await supabase.functions.invoke('whatsapp-instance', {
         body: { action: 'check-status', instanceId },
       });
       if (error) throw error;
+      setRetryCount(0);
       toast({ title: `Status: ${data.status}` });
+      // Update status in DB
+      await supabase.from('whatsapp_instances').update({ status: data.status === 'open' ? 'open' : data.status }).eq('id', instanceId);
     } catch (err: any) {
-      toast({ title: 'Erro ao verificar status', description: err.message, variant: 'destructive' });
+      const newCount = retryCount + 1;
+      setRetryCount(newCount);
+      if (newCount >= 3) {
+        toast({ title: 'Falha ao conectar', description: 'Verifique a configuração da instância.', variant: 'destructive' });
+        setRetryCount(0);
+      } else {
+        toast({ title: 'Erro ao verificar status', description: err.message, variant: 'destructive' });
+      }
+    } finally {
+      setCheckingStatus(null);
     }
   };
 
@@ -179,9 +195,9 @@ export function WhatsAppInstances() {
               </CardHeader>
               <CardContent>
                 <div className="flex gap-2 flex-wrap">
-                  <Button size="sm" variant="outline" onClick={() => handleCheckStatus(instance.id)} className="gap-1">
+                  <Button size="sm" variant="outline" onClick={() => handleCheckStatus(instance.id)} disabled={checkingStatus === instance.id} className="gap-1">
                     <Wifi className="h-3 w-3" />
-                    Verificar Status
+                    {checkingStatus === instance.id ? 'Verificando...' : 'Verificar Status'}
                   </Button>
                   <Button size="sm" variant="outline" onClick={() => handleGetQR(instance.id)} className="gap-1">
                     <QrCode className="h-3 w-3" />
