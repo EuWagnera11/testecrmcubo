@@ -84,6 +84,7 @@ export function useWhatsAppInstances() {
       return data as WhatsAppInstance[];
     },
     enabled: !!user,
+    refetchInterval: 60000,
   });
 
   const createInstance = useMutation({
@@ -272,6 +273,30 @@ export function useTakeOverConversation() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['whatsapp-conversations'] });
+    },
+  });
+}
+
+export function useDeleteConversation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (conversationId: string) => {
+      // Delete messages first, then conversation
+      const { error: msgError } = await supabase
+        .from('whatsapp_messages')
+        .delete()
+        .eq('conversation_id', conversationId);
+      if (msgError) throw msgError;
+      const { error } = await supabase
+        .from('whatsapp_conversations')
+        .delete()
+        .eq('id', conversationId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['whatsapp-conversations'] });
+      queryClient.invalidateQueries({ queryKey: ['whatsapp-messages'] });
     },
   });
 }

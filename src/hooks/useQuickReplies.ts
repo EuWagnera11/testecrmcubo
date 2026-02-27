@@ -28,6 +28,7 @@ export function useQuickReplies() {
       return data as QuickReply[];
     },
     enabled: !!user,
+    refetchInterval: 30000,
   });
 
   const createReply = useMutation({

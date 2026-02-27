@@ -39,9 +39,10 @@ Deno.serve(async (req) => {
 
     const { instance_name, phone, ai_summary, is_bot_active } = body as Record<string, any>;
 
-    // Accept alternative text fields
+    // Accept alternative text fields with ai_summary as fallback
     const botText = (body.reply_text || body.text || body.message || body.content || "") as string;
-    const finalText = botText.trim() || "[Mensagem do bot não capturada]";
+    const aiSummaryText = (ai_summary || "") as string;
+    const finalText = botText.trim() || aiSummaryText.trim() || "Mensagem enviada pelo bot";
     const usedFallback = !botText.trim();
 
     if (!instance_name || !phone) {
