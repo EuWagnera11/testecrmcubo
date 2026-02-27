@@ -1,4 +1,4 @@
-import { Bell, Check, CheckCheck, Trash2, FolderPlus, UserPlus, MessageSquare, ListTodo } from 'lucide-react';
+import { Bell, Check, CheckCheck, Trash2, FolderPlus, UserPlus, MessageSquare, ListTodo, MessageCircle, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -24,6 +24,12 @@ const getNotificationIcon = (type: Notification['type']) => {
       return <ListTodo className="h-4 w-4 text-orange-500" />;
     case 'message_received':
       return <MessageSquare className="h-4 w-4 text-blue-500" />;
+    case 'whatsapp_new_contact':
+      return <MessageCircle className="h-4 w-4 text-emerald-500" />;
+    case 'whatsapp_handoff':
+      return <AlertTriangle className="h-4 w-4 text-amber-500" />;
+    case 'whatsapp_message':
+      return <MessageCircle className="h-4 w-4 text-emerald-500" />;
     default:
       return <Bell className="h-4 w-4" />;
   }
@@ -37,7 +43,9 @@ export function NotificationDropdown() {
     markAsRead(notification.id);
     
     // Navigate based on notification type
-    if (notification.data?.projectId) {
+    if (notification.type?.startsWith('whatsapp_')) {
+      navigate('/whatsapp');
+    } else if (notification.data?.projectId) {
       navigate(`/projetos/${notification.data.projectId}`);
     } else if (notification.data?.clientId) {
       navigate('/clientes');

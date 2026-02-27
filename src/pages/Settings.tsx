@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Users, UserCheck, UserX, Shield, Target, Save, Info, Palette, PenTool, TrendingUp, Share2, Crown, User, Camera, Trash2, Bell, DollarSign, Code, PhoneCall, Handshake, Film } from 'lucide-react';
+import { Users, UserCheck, UserX, Shield, Target, Save, Info, Palette, PenTool, TrendingUp, Share2, Crown, User, Camera, Trash2, Bell, DollarSign, Code, PhoneCall, Handshake, Film, Zap, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -19,6 +19,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { NotificationSettings } from '@/components/NotificationSettings';
 import { CommissionRulesManager } from '@/components/CommissionRulesManager';
+import { QuickRepliesManager } from '@/components/whatsapp/QuickRepliesManager';
 import { 
   appRoleLabels, 
   appRoleDescriptions, 
@@ -173,6 +174,7 @@ export default function Settings() {
           {isAdmin && <TabsTrigger value="commissions" className="px-4">Comissões</TabsTrigger>}
           {canEditTeamGoal && <TabsTrigger value="team" className="px-4">Meta da Equipe</TabsTrigger>}
           <TabsTrigger value="notifications" className="px-4">Notificações</TabsTrigger>
+          <TabsTrigger value="quick-replies" className="px-4">Respostas Rápidas</TabsTrigger>
           <TabsTrigger value="profile" className="px-4">Meu Perfil</TabsTrigger>
           </TabsList>
         </div>
@@ -630,6 +632,11 @@ export default function Settings() {
         {/* Notifications Tab */}
         <TabsContent value="notifications">
           <NotificationSettings />
+        </TabsContent>
+
+        {/* Quick Replies Tab */}
+        <TabsContent value="quick-replies">
+          <QuickRepliesManager />
         </TabsContent>
       </Tabs>
     </div>

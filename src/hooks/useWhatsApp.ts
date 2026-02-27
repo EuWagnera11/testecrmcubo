@@ -42,6 +42,9 @@ export interface WhatsAppConversation {
   ai_summary_at: string | null;
   is_bot_active: boolean;
   last_message_preview: string | null;
+  bot_paused_until: string | null;
+  resolved_at: string | null;
+  resolution_reason: string | null;
 }
 
 export interface WhatsAppMessage {
@@ -273,14 +276,20 @@ export function useTakeOverConversation() {
   });
 }
 
-export function useToggleBot() {
+export function useResolveConversation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ conversationId, active }: { conversationId: string; active: boolean }) => {
+    mutationFn: async ({ conversationId, reason }: { conversationId: string; reason: string }) => {
       const { error } = await supabase
         .from('whatsapp_conversations')
-        .update({ is_bot_active: active })
+        .update({
+          status: 'resolved',
+          resolved_at: new Date().toISOString(),
+          resolution_reason: reason,
+          is_bot_active: true,
+          bot_paused_until: null,
+        })
         .eq('id', conversationId);
       if (error) throw error;
     },
@@ -307,6 +316,25 @@ export function useWhatsAppUnreadCounts() {
         counts[iid] = (counts[iid] || 0) + (row.unread_count || 0);
       }
       return counts;
+    },
+    enabled: !!user,
+    refetchInterval: 15000,
+  });
+}
+
+export function useHandoffCount() {
+  const { user } = useAuth();
+
+  return useQuery({
+    queryKey: ['whatsapp-handoff-count'],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('whatsapp_conversations')
+        .select('id', { count: 'exact', head: true })
+        .eq('is_bot_active', false)
+        .gt('bot_paused_until', new Date().toISOString());
+      if (error) throw error;
+      return count ?? 0;
     },
     enabled: !!user,
     refetchInterval: 15000,

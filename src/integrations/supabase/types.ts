@@ -2907,6 +2907,39 @@ export type Database = {
           },
         ]
       }
+      quick_replies: {
+        Row: {
+          category: string | null
+          content: string
+          created_at: string | null
+          created_by: string
+          id: string
+          shortcut: string | null
+          title: string
+          use_count: number | null
+        }
+        Insert: {
+          category?: string | null
+          content: string
+          created_at?: string | null
+          created_by: string
+          id?: string
+          shortcut?: string | null
+          title: string
+          use_count?: number | null
+        }
+        Update: {
+          category?: string | null
+          content?: string
+          created_at?: string | null
+          created_by?: string
+          id?: string
+          shortcut?: string | null
+          title?: string
+          use_count?: number | null
+        }
+        Relationships: []
+      }
       sales_pipeline: {
         Row: {
           asaas_customer_id: string | null
@@ -3297,6 +3330,38 @@ export type Database = {
           },
         ]
       }
+      whatsapp_contact_notes: {
+        Row: {
+          contact_id: string
+          content: string
+          created_at: string | null
+          id: string
+          user_id: string
+        }
+        Insert: {
+          contact_id: string
+          content: string
+          created_at?: string | null
+          id?: string
+          user_id: string
+        }
+        Update: {
+          contact_id?: string
+          content?: string
+          created_at?: string | null
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_contact_notes_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       whatsapp_contacts: {
         Row: {
           assigned_to: string | null
@@ -3377,6 +3442,7 @@ export type Database = {
           ai_summary: string | null
           ai_summary_at: string | null
           assigned_to: string | null
+          bot_paused_until: string | null
           contact_id: string
           created_at: string
           id: string
@@ -3384,6 +3450,8 @@ export type Database = {
           is_bot_active: boolean | null
           last_message_at: string | null
           last_message_preview: string | null
+          resolution_reason: string | null
+          resolved_at: string | null
           status: string
           unread_count: number | null
           updated_at: string
@@ -3392,6 +3460,7 @@ export type Database = {
           ai_summary?: string | null
           ai_summary_at?: string | null
           assigned_to?: string | null
+          bot_paused_until?: string | null
           contact_id: string
           created_at?: string
           id?: string
@@ -3399,6 +3468,8 @@ export type Database = {
           is_bot_active?: boolean | null
           last_message_at?: string | null
           last_message_preview?: string | null
+          resolution_reason?: string | null
+          resolved_at?: string | null
           status?: string
           unread_count?: number | null
           updated_at?: string
@@ -3407,6 +3478,7 @@ export type Database = {
           ai_summary?: string | null
           ai_summary_at?: string | null
           assigned_to?: string | null
+          bot_paused_until?: string | null
           contact_id?: string
           created_at?: string
           id?: string
@@ -3414,6 +3486,8 @@ export type Database = {
           is_bot_active?: boolean | null
           last_message_at?: string | null
           last_message_preview?: string | null
+          resolution_reason?: string | null
+          resolved_at?: string | null
           status?: string
           unread_count?: number | null
           updated_at?: string

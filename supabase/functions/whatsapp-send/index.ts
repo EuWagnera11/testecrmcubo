@@ -126,6 +126,17 @@ Deno.serve(async (req) => {
           sent_by: userId,
           external_id: result?.key?.id || null,
         });
+
+        // Handoff: pause bot for 1 hour when human sends message
+        const pauseUntil = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+        await supabase
+          .from("whatsapp_conversations")
+          .update({
+            is_bot_active: false,
+            bot_paused_until: pauseUntil,
+            last_message_preview: message.substring(0, 100),
+          })
+          .eq("id", conversation.id);
       }
     }
 

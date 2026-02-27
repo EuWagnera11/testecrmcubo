@@ -90,7 +90,7 @@ Deno.serve(async (req) => {
           },
           { onConflict: "contact_id,instance_id" }
         )
-        .select("id, unread_count")
+        .select("id, unread_count, is_bot_active, bot_paused_until")
         .single();
 
       if (!conversation) {
@@ -130,16 +130,57 @@ Deno.serve(async (req) => {
           })
           .eq("id", conversation.id);
       }
-    }
 
-    // Forward to n8n (fire-and-forget)
-    try {
-      fetch("https://n8n.refinecubo.com.br/webhook/webhook-evolution", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-    } catch {}
+      // Handoff logic: decide whether to forward to n8n
+      let shouldForwardToN8n = true;
+
+      if (!fromMe) {
+        // Check if bot is paused (handoff active)
+        if (conversation.is_bot_active === false && conversation.bot_paused_until) {
+          const pausedUntil = new Date(conversation.bot_paused_until);
+          const now = new Date();
+
+          if (pausedUntil > now) {
+            // Bot is still paused — don't forward to n8n
+            shouldForwardToN8n = false;
+            console.log("Bot paused until", pausedUntil.toISOString(), "— skipping n8n forward");
+          } else {
+            // Pause expired — reactivate bot
+            await supabase
+              .from("whatsapp_conversations")
+              .update({
+                is_bot_active: true,
+                bot_paused_until: null,
+              })
+              .eq("id", conversation.id);
+            console.log("Bot pause expired — reactivated for conversation", conversation.id);
+          }
+        }
+      } else {
+        // fromMe messages don't need n8n forwarding
+        shouldForwardToN8n = false;
+      }
+
+      // Forward to n8n (fire-and-forget) only if bot is active
+      if (shouldForwardToN8n) {
+        try {
+          fetch("https://n8n.refinecubo.com.br/webhook/webhook-evolution", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          });
+        } catch {}
+      }
+    } else {
+      // Non-message events: still forward to n8n
+      try {
+        fetch("https://n8n.refinecubo.com.br/webhook/webhook-evolution", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+      } catch {}
+    }
 
     return new Response(JSON.stringify({ ok: true }), {
       status: 200,
