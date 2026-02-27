@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
-import { Plus, Trash2, Phone, Mail, DollarSign, ArrowRight, Filter, User, Download, Bell, CreditCard, QrCode, ExternalLink, Link2, CheckCircle2 } from 'lucide-react';
+import { Plus, Trash2, Phone, Mail, DollarSign, ArrowRight, Filter, User, Download, Bell, CreditCard, QrCode, ExternalLink, Link2, CheckCircle2, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -27,6 +27,7 @@ export default function Pipeline() {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [filterStage, setFilterStage] = useState<string>('all');
+  const [filterSource, setFilterSource] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [asaasDialog, setAsaasDialog] = useState<PipelineItem | null>(null);
   const [chargeForm, setChargeForm] = useState({ billingType: 'PIX', value: '', dueDate: '', description: '' });
@@ -50,11 +51,12 @@ export default function Pipeline() {
   const filteredItems = useMemo(() => {
     return items.filter(item => {
       const matchStage = filterStage === 'all' || item.stage === filterStage;
+      const matchSource = filterSource === 'all' || (filterSource === 'whatsapp' ? item.source === 'whatsapp' : item.source !== 'whatsapp');
       const matchSearch = item.contact_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.title.toLowerCase().includes(searchTerm.toLowerCase());
-      return matchStage && matchSearch;
+      return matchStage && matchSearch && matchSource;
     });
-  }, [items, filterStage, searchTerm]);
+  }, [items, filterStage, filterSource, searchTerm]);
 
   const stageGroups = useMemo(() => {
     const groups: Record<string, PipelineItem[]> = {};
@@ -318,7 +320,7 @@ export default function Pipeline() {
       </div>
 
       {/* Search & Filter */}
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <Input placeholder="Buscar leads..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="max-w-xs" />
         <Select value={filterStage} onValueChange={setFilterStage}>
           <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
@@ -327,6 +329,14 @@ export default function Pipeline() {
             {PIPELINE_STAGES.map(s => (
               <SelectItem key={s.key} value={s.key}>{s.label}</SelectItem>
             ))}
+          </SelectContent>
+        </Select>
+        <Select value={filterSource} onValueChange={setFilterSource}>
+          <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas origens</SelectItem>
+            <SelectItem value="whatsapp">WhatsApp</SelectItem>
+            <SelectItem value="other">Outras</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -363,6 +373,12 @@ export default function Pipeline() {
                         </div>
                         <p className="text-xs text-muted-foreground">{item.contact_name}</p>
                         <div className="flex flex-wrap gap-1">
+                          {item.source === 'whatsapp' && (
+                            <Badge variant="outline" className="text-xs gap-1 border-emerald-500/50 text-emerald-600">
+                              <MessageCircle className="h-3 w-3" />
+                              WhatsApp
+                            </Badge>
+                          )}
                           {item.value > 0 && (
                             <Badge variant="outline" className="text-xs gap-1">
                               <DollarSign className="h-3 w-3" />
