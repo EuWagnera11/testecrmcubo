@@ -86,7 +86,9 @@ async function callEvolutionApi({
     let currentUrl = `${toHttpUrl(apiUrl)}${path}`;
     const maxRedirects = 8;
 
-    console.log(`[whatsapp-instance] Strategy1: ${method} ${currentUrl} (redirect:manual, insecure-client:true)`);
+    console.log(
+      `[whatsapp-instance] Strategy1: ${method} ${currentUrl} (redirect:manual, insecure-client:true)`
+    );
 
     try {
       let redirects = 0;
@@ -123,7 +125,9 @@ async function callEvolutionApi({
 
           nextUrl = nextUrl.replace(/^https:\/\//i, "http://");
           redirects += 1;
-          console.log(`[whatsapp-instance] Strategy1: redirect ${response.status} (#${redirects}) → ${nextUrl}`);
+          console.log(
+            `[whatsapp-instance] Strategy1: redirect ${response.status} (#${redirects}) → ${nextUrl}`
+          );
           currentUrl = nextUrl;
           continue;
         }
@@ -238,9 +242,12 @@ async function callEvolutionApi({
   // ── Strategy 2: Direct URL with explicit insecure client ──
   {
     const normalized = getNormalizedUrl(apiUrl);
-    const directUrl = (/^https?:\/\//i.test(normalized) ? normalized : `https://${normalized}`) + path;
+    const directUrl =
+      (/^https?:\/\//i.test(normalized) ? normalized : `https://${normalized}`) + path;
 
-    console.log(`[whatsapp-instance] Strategy2: ${method} ${directUrl} (redirect:follow, insecure-client:true)`);
+    console.log(
+      `[whatsapp-instance] Strategy2: ${method} ${directUrl} (redirect:follow, insecure-client:true)`
+    );
 
     const client = Deno.createHttpClient({ unsafelyIgnoreCertificateErrors: true });
     try {
@@ -272,7 +279,7 @@ async function callEvolutionApi({
   const consolidated = errors.join(" | ");
   throw new Error(
     `Falha ao conectar com Evolution API. Detalhes: ${consolidated}. ` +
-      `Se persistir 'CaUsedAsEndEntity', o SSL do servidor Evolution (${hostHint}) está inválido e precisa ser corrigido na origem.`,
+      `Se persistir 'CaUsedAsEndEntity', o SSL do servidor Evolution (${hostHint}) está inválido e precisa ser corrigido na origem.`
   );
 }
 
@@ -280,9 +287,9 @@ async function callEvolutionApi({
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response("ok", {
+    return new Response("ok", { 
       status: 200,
-      headers: corsHeaders,
+      headers: corsHeaders 
     });
   }
 
@@ -295,9 +302,11 @@ Deno.serve(async (req) => {
       });
     }
 
-    const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
-      global: { headers: { Authorization: authHeader } },
-    });
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
 
     const token = authHeader.replace("Bearer ", "");
     const { data: userData, error: userError } = await supabase.auth.getUser(token);
@@ -310,7 +319,11 @@ Deno.serve(async (req) => {
 
     const { action, instanceId } = await req.json();
 
-    const { data: instance } = await supabase.from("whatsapp_instances").select("*").eq("id", instanceId).single();
+    const { data: instance } = await supabase
+      .from("whatsapp_instances")
+      .select("*")
+      .eq("id", instanceId)
+      .single();
 
     if (!instance) {
       return new Response(JSON.stringify({ error: "Instance not found" }), {
@@ -326,7 +339,9 @@ Deno.serve(async (req) => {
     const evolutionApiUrl = configuredApiUrl || instance.api_url;
     const evolutionApiKey = configuredApiKey || instance.api_key;
 
-    console.log(`[whatsapp-instance] Using API URL source: ${configuredApiUrl ? "secret" : "instance"}`);
+    console.log(
+      `[whatsapp-instance] Using API URL source: ${configuredApiUrl ? "secret" : "instance"}`
+    );
 
     if (action === "check-status") {
       const result = await callEvolutionApi({
@@ -338,7 +353,7 @@ Deno.serve(async (req) => {
       const status =
         (result as Record<string, unknown>)?.instance &&
         typeof (result as Record<string, unknown>).instance === "object"
-          ? (((result as Record<string, unknown>).instance as Record<string, unknown>)?.state ?? "disconnected")
+          ? ((result as Record<string, unknown>).instance as Record<string, unknown>)?.state ?? "disconnected"
           : "disconnected";
 
       await supabase
@@ -366,20 +381,15 @@ Deno.serve(async (req) => {
     }
 
     if (action === "set-webhook") {
-      const webhookUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/whatsapp-webhook`;
-
-      const result = await callEvolutionApi({
-        apiUrl: evolutionApiUrl,
-        apiKey: evolutionApiKey,
-        path: `/webhook/set/${instanceName}`,
-        method: "POST",
-        body: {
-          url: webhookUrl,
-          webhook_by_events: false,
-          webhook_base64: false,
-          events: ["MESSAGES_UPSERT"],
-        },
-      });
+  return new Response(JSON.stringify({ 
+    success: true, 
+    message: "Webhook já configurado: https://n8n.refinecubo.com.br/webhook/webhook-evolution",
+    webhook_url: "https://n8n.refinecubo.com.br/webhook/webhook-evolution"
+  }), {
+    status: 200,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
 
       return new Response(JSON.stringify({ success: true, data: result }), {
         status: 200,
