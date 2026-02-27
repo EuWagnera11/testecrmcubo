@@ -38,6 +38,10 @@ export interface WhatsAppConversation {
   unread_count: number;
   created_at: string;
   contact?: WhatsAppContact;
+  ai_summary: string | null;
+  ai_summary_at: string | null;
+  is_bot_active: boolean;
+  last_message_preview: string | null;
 }
 
 export interface WhatsAppMessage {
@@ -247,6 +251,41 @@ export function useMarkConversationRead() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['whatsapp-conversations'] });
       queryClient.invalidateQueries({ queryKey: ['whatsapp-unread-counts'] });
+    },
+  });
+}
+
+export function useTakeOverConversation() {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  return useMutation({
+    mutationFn: async (conversationId: string) => {
+      const { error } = await supabase
+        .from('whatsapp_conversations')
+        .update({ is_bot_active: false, assigned_to: user!.id })
+        .eq('id', conversationId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['whatsapp-conversations'] });
+    },
+  });
+}
+
+export function useToggleBot() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ conversationId, active }: { conversationId: string; active: boolean }) => {
+      const { error } = await supabase
+        .from('whatsapp_conversations')
+        .update({ is_bot_active: active })
+        .eq('id', conversationId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['whatsapp-conversations'] });
     },
   });
 }

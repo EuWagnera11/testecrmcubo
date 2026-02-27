@@ -6,6 +6,8 @@ import {
   useSendWhatsAppMessage,
   useMarkConversationRead,
   useWhatsAppUnreadCounts,
+  useTakeOverConversation,
+  useToggleBot,
   WhatsAppConversation,
   WhatsAppContact,
   WhatsAppInstance,
@@ -15,7 +17,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Send, Search, Phone, User, MessageSquare, Inbox, ArrowLeft } from 'lucide-react';
+import { Send, Search, Phone, User, MessageSquare, Inbox, ArrowLeft, Bot, UserCheck, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -23,6 +25,7 @@ import { WhatsAppNewChat } from './WhatsAppNewChat';
 import { WhatsAppTagManager } from './WhatsAppTagManager';
 import { WhatsAppConversationTagSelector, ConversationTagBadges } from './WhatsAppConversationTagSelector';
 import { useAllConversationTags } from '@/hooks/useWhatsAppTags';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 const INSTANCE_COLORS = [
   'bg-blue-500',
@@ -41,7 +44,6 @@ export function WhatsAppInbox() {
   const [activeInstanceId, setActiveInstanceId] = useState<string | null>(null);
   const { data: unreadCounts } = useWhatsAppUnreadCounts();
 
-  // "null" means unified view (all instances)
   const filterInstanceId = activeInstanceId ?? undefined;
   const { conversations, isLoading } = useWhatsAppConversations(filterInstanceId);
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
@@ -71,7 +73,6 @@ export function WhatsAppInbox() {
     return Object.values(unreadCounts).reduce((a, b) => a + b, 0);
   }, [unreadCounts]);
 
-  // Reset selected conversation when switching instance
   useEffect(() => {
     setSelectedConversation(null);
   }, [activeInstanceId]);
@@ -233,9 +234,16 @@ function ConversationItem({
         isActive && 'bg-accent'
       )}
     >
-      <Avatar className="h-10 w-10 flex-shrink-0">
-        <AvatarFallback className="bg-primary/10 text-primary text-xs">{initials}</AvatarFallback>
-      </Avatar>
+      <div className="relative">
+        <Avatar className="h-10 w-10 flex-shrink-0">
+          <AvatarFallback className="bg-primary/10 text-primary text-xs">{initials}</AvatarFallback>
+        </Avatar>
+        {conversation.is_bot_active && (
+          <span className="absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full bg-violet-500 flex items-center justify-center">
+            <Bot className="h-2.5 w-2.5 text-white" />
+          </span>
+        )}
+      </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between">
           <span className="font-medium text-sm truncate">{name}</span>
@@ -251,7 +259,7 @@ function ConversationItem({
               <span className={cn('h-2 w-2 rounded-full flex-shrink-0', getInstanceColor(instanceInfo.colorIndex))} />
             )}
             <span className="text-xs text-muted-foreground truncate">
-              {conversation.contact?.phone}
+              {conversation.last_message_preview || conversation.contact?.phone}
             </span>
           </div>
           {conversation.unread_count > 0 && (
@@ -282,8 +290,11 @@ function ChatArea({
   const { messages, isLoading } = useWhatsAppMessages(conversation.id);
   const sendMessage = useSendWhatsAppMessage();
   const markRead = useMarkConversationRead();
+  const takeOver = useTakeOverConversation();
+  const toggleBot = useToggleBot();
   const [input, setInput] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [showSummary, setShowSummary] = useState(false);
   const name = conversation.contact?.name || conversation.contact?.phone || 'Desconhecido';
 
   useEffect(() => {
@@ -308,6 +319,14 @@ function ChatArea({
     setInput('');
   };
 
+  const handleTakeOver = () => {
+    takeOver.mutate(conversation.id);
+  };
+
+  const handleToggleBot = () => {
+    toggleBot.mutate({ conversationId: conversation.id, active: !conversation.is_bot_active });
+  };
+
   return (
     <>
       {/* Chat header */}
@@ -330,6 +349,45 @@ function ChatArea({
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {conversation.is_bot_active ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1.5 border-violet-300 text-violet-600 hover:bg-violet-50" onClick={handleTakeOver}>
+                  <Bot className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Bot ativo</span>
+                  <UserCheck className="h-3.5 w-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Assumir conversa (desativar bot)</TooltipContent>
+            </Tooltip>
+          ) : (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground" onClick={handleToggleBot}>
+                  <Bot className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Ativar bot</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Reativar bot para esta conversa</TooltipContent>
+            </Tooltip>
+          )}
+
+          {conversation.ai_summary && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant={showSummary ? "secondary" : "ghost"}
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setShowSummary(!showSummary)}
+                >
+                  <Sparkles className="h-4 w-4 text-violet-500" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Resumo IA</TooltipContent>
+            </Tooltip>
+          )}
+
           {instanceName && (
             <Badge variant="outline" className="gap-1.5">
               <span className={cn('h-2 w-2 rounded-full', getInstanceColor(instanceColorIndex))} />
@@ -346,6 +404,24 @@ function ChatArea({
         </div>
       </div>
 
+      {/* AI Summary panel */}
+      {showSummary && conversation.ai_summary && (
+        <div className="px-4 py-3 border-b bg-violet-50 dark:bg-violet-950/20">
+          <div className="flex items-start gap-2">
+            <Sparkles className="h-4 w-4 text-violet-500 mt-0.5 flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-medium text-violet-700 dark:text-violet-300 mb-1">Resumo IA</p>
+              <p className="text-sm text-foreground whitespace-pre-wrap">{conversation.ai_summary}</p>
+              {conversation.ai_summary_at && (
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  Atualizado em {format(new Date(conversation.ai_summary_at), "dd/MM HH:mm", { locale: ptBR })}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-2">
         {isLoading ? (
@@ -353,25 +429,39 @@ function ChatArea({
         ) : messages.length === 0 ? (
           <div className="text-center text-muted-foreground text-sm">Nenhuma mensagem ainda</div>
         ) : (
-          messages.map(msg => (
-            <div
-              key={msg.id}
-              className={cn(
-                'max-w-[70%] rounded-xl px-3 py-2',
-                msg.sender_type === 'agent'
-                  ? 'ml-auto bg-primary text-primary-foreground'
-                  : 'bg-muted'
-              )}
-            >
-              {msg.content && <p className="text-sm whitespace-pre-wrap">{msg.content}</p>}
-              <p className={cn(
-                'text-[10px] mt-1',
-                msg.sender_type === 'agent' ? 'text-primary-foreground/70' : 'text-muted-foreground'
-              )}>
-                {format(new Date(msg.created_at), 'HH:mm')}
-              </p>
-            </div>
-          ))
+          messages.map(msg => {
+            const isBot = msg.sender_type === 'bot';
+            const isAgent = msg.sender_type === 'agent';
+            const isOutgoing = isBot || isAgent;
+
+            return (
+              <div
+                key={msg.id}
+                className={cn(
+                  'max-w-[70%] rounded-xl px-3 py-2',
+                  isBot
+                    ? 'ml-auto bg-violet-500 text-white'
+                    : isAgent
+                      ? 'ml-auto bg-primary text-primary-foreground'
+                      : 'bg-muted'
+                )}
+              >
+                {isBot && (
+                  <div className="flex items-center gap-1 mb-0.5">
+                    <Bot className="h-3 w-3" />
+                    <span className="text-[10px] font-medium opacity-80">Bot</span>
+                  </div>
+                )}
+                {msg.content && <p className="text-sm whitespace-pre-wrap">{msg.content}</p>}
+                <p className={cn(
+                  'text-[10px] mt-1',
+                  isOutgoing ? 'text-white/70' : 'text-muted-foreground'
+                )}>
+                  {format(new Date(msg.created_at), 'HH:mm')}
+                </p>
+              </div>
+            );
+          })
         )}
       </div>
 
