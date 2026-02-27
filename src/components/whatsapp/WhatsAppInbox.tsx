@@ -8,6 +8,7 @@ import {
   useWhatsAppUnreadCounts,
   useTakeOverConversation,
   useResolveConversation,
+  useDeleteConversation,
   WhatsAppConversation,
   WhatsAppContact,
   WhatsAppInstance,
@@ -17,7 +18,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Send, Search, Phone, MessageSquare, Inbox, ArrowLeft, Bot, UserCheck, CheckCircle2, AlertTriangle, Zap } from 'lucide-react';
+import { Send, Search, Phone, MessageSquare, Inbox, ArrowLeft, Bot, UserCheck, CheckCircle2, AlertTriangle, Zap, Trash2, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -28,12 +29,15 @@ import { useAllConversationTags } from '@/hooks/useWhatsAppTags';
 import { WhatsAppContactPanel } from './WhatsAppContactPanel';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuickReplies, replaceVariables } from '@/hooks/useQuickReplies';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import {
   Select,
@@ -44,6 +48,16 @@ import {
 } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 const INSTANCE_COLORS = [
   'bg-blue-500',
@@ -59,9 +73,10 @@ function getInstanceColor(index: number) {
 
 type ConversationFilter = 'all' | 'waiting' | 'attending' | 'resolved';
 
+// Correção 2: qualquer conversa com is_bot_active=false e não resolvida conta como waiting/attending
 function getConversationStatus(conv: WhatsAppConversation): ConversationFilter {
   if (conv.status === 'resolved') return 'resolved';
-  if (!conv.is_bot_active && conv.bot_paused_until && new Date(conv.bot_paused_until) > new Date()) {
+  if (!conv.is_bot_active) {
     return conv.assigned_to ? 'attending' : 'waiting';
   }
   return 'all';
@@ -78,6 +93,10 @@ export function WhatsAppInbox() {
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showContactPanel, setShowContactPanel] = useState(false);
+
+  // Correção 3: delete conversation
+  const deleteConv = useDeleteConversation();
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
 
   const isUnified = activeInstanceId === null;
   const { data: allConversationTags } = useAllConversationTags();
@@ -123,6 +142,23 @@ export function WhatsAppInbox() {
   }, [activeInstanceId]);
 
   const [showChat, setShowChat] = useState(false);
+
+  const handleDeleteConversation = () => {
+    if (!deleteTarget) return;
+    deleteConv.mutate(deleteTarget.id, {
+      onSuccess: () => {
+        if (selectedConversation === deleteTarget.id) {
+          setSelectedConversation(null);
+          setShowChat(false);
+        }
+        toast({ title: 'Conversa excluída' });
+        setDeleteTarget(null);
+      },
+      onError: () => {
+        toast({ title: 'Erro ao excluir', variant: 'destructive' });
+      },
+    });
+  };
 
   return (
     <div className="flex h-full">
@@ -183,8 +219,8 @@ export function WhatsAppInbox() {
           </div>
         )}
 
-        {/* Status filters */}
-        <div className="p-2 border-b">
+        {/* Status filters - Correção 8: sticky */}
+        <div className="p-2 border-b sticky top-0 z-10 bg-background">
           <div className="flex gap-1">
             {([
               { key: 'all' as const, label: 'Todas' },
@@ -244,6 +280,7 @@ export function WhatsAppInbox() {
                   setSelectedConversation(conv.id);
                   setShowChat(true);
                 }}
+                onDelete={(id, name) => setDeleteTarget({ id, name })}
                 showInstanceBadge={isUnified}
                 instanceInfo={instanceMap[conv.instance_id]}
                 tags={allConversationTags?.[conv.id] ?? []}
@@ -284,6 +321,24 @@ export function WhatsAppInbox() {
           onClose={() => setShowContactPanel(false)}
         />
       )}
+
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir conversa</AlertDialogTitle>
+            <AlertDialogDescription>
+              Excluir conversa de {deleteTarget?.name}? Mensagens serão removidas permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConversation} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
@@ -292,6 +347,7 @@ function ConversationItem({
   conversation,
   isActive,
   onClick,
+  onDelete,
   showInstanceBadge,
   instanceInfo,
   tags,
@@ -299,6 +355,7 @@ function ConversationItem({
   conversation: WhatsAppConversation & { contact: WhatsAppContact };
   isActive: boolean;
   onClick: () => void;
+  onDelete: (id: string, name: string) => void;
   showInstanceBadge?: boolean;
   instanceInfo?: { instance: WhatsAppInstance; colorIndex: number };
   tags?: Array<{ id: string; name: string; color: string }>;
@@ -308,61 +365,67 @@ function ConversationItem({
   const status = getConversationStatus(conversation);
 
   return (
-    <button
-      onClick={onClick}
+    <div
       className={cn(
-        'w-full flex items-center gap-3 px-3 py-3 text-left transition-colors hover:bg-accent/50',
+        'w-full flex items-center gap-3 px-3 py-3 text-left transition-colors hover:bg-accent/50 group',
         isActive && 'bg-accent'
       )}
     >
-      <div className="relative">
+      <button onClick={onClick} className="flex items-center gap-3 flex-1 min-w-0">
+        {/* Correção 6: removido badge roxa do avatar */}
         <Avatar className="h-10 w-10 flex-shrink-0">
           <AvatarFallback className="bg-primary/10 text-primary text-xs">{initials}</AvatarFallback>
         </Avatar>
-        {conversation.is_bot_active && (
-          <span className="absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full bg-violet-500 flex items-center justify-center">
-            <Bot className="h-2.5 w-2.5 text-white" />
-          </span>
-        )}
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5 min-w-0">
-            <span className="font-medium text-sm truncate">{name}</span>
-            {status === 'waiting' && (
-              <span className="h-2 w-2 rounded-full bg-amber-500 flex-shrink-0" title="Aguardando humano" />
-            )}
-            {status === 'attending' && (
-              <span className="h-2 w-2 rounded-full bg-blue-500 flex-shrink-0" title="Em atendimento" />
-            )}
-            {status === 'resolved' && (
-              <span className="h-2 w-2 rounded-full bg-emerald-500 flex-shrink-0" title="Resolvida" />
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <span className="font-medium text-sm truncate">{name}</span>
+              {status === 'waiting' && (
+                <span className="h-2 w-2 rounded-full bg-amber-500 flex-shrink-0" title="Aguardando humano" />
+              )}
+              {status === 'attending' && (
+                <span className="h-2 w-2 rounded-full bg-blue-500 flex-shrink-0" title="Em atendimento" />
+              )}
+              {status === 'resolved' && (
+                <span className="h-2 w-2 rounded-full bg-emerald-500 flex-shrink-0" title="Resolvida" />
+              )}
+            </div>
+            {conversation.last_message_at && (
+              <span className="text-[10px] text-muted-foreground">
+                {format(new Date(conversation.last_message_at), 'HH:mm', { locale: ptBR })}
+              </span>
             )}
           </div>
-          {conversation.last_message_at && (
-            <span className="text-[10px] text-muted-foreground">
-              {format(new Date(conversation.last_message_at), 'HH:mm', { locale: ptBR })}
-            </span>
-          )}
-        </div>
-        <div className="flex items-center justify-between gap-1">
-          <div className="flex items-center gap-1 min-w-0">
-            {showInstanceBadge && instanceInfo && (
-              <span className={cn('h-2 w-2 rounded-full flex-shrink-0', getInstanceColor(instanceInfo.colorIndex))} />
+          <div className="flex items-center justify-between gap-1">
+            <div className="flex items-center gap-1 min-w-0">
+              {showInstanceBadge && instanceInfo && (
+                <span className={cn('h-2 w-2 rounded-full flex-shrink-0', getInstanceColor(instanceInfo.colorIndex))} />
+              )}
+              <span className="text-xs text-muted-foreground truncate">
+                {conversation.last_message_preview || conversation.contact?.phone}
+              </span>
+            </div>
+            {conversation.unread_count > 0 && (
+              <Badge variant="default" className="h-5 w-5 rounded-full p-0 flex items-center justify-center text-[10px]">
+                {conversation.unread_count}
+              </Badge>
             )}
-            <span className="text-xs text-muted-foreground truncate">
-              {conversation.last_message_preview || conversation.contact?.phone}
-            </span>
           </div>
-          {conversation.unread_count > 0 && (
-            <Badge variant="default" className="h-5 w-5 rounded-full p-0 flex items-center justify-center text-[10px]">
-              {conversation.unread_count}
-            </Badge>
-          )}
+          <ConversationTagBadges tags={tags ?? []} />
         </div>
-        <ConversationTagBadges tags={tags ?? []} />
-      </div>
-    </button>
+      </button>
+      {/* Correção 3: botão excluir */}
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onDelete(conversation.id, name);
+        }}
+        className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive flex-shrink-0"
+        title="Excluir conversa"
+      >
+        <Trash2 className="h-3.5 w-3.5" />
+      </button>
+    </div>
   );
 }
 
@@ -395,6 +458,7 @@ function ChatArea({
   const [resolveCategory, setResolveCategory] = useState('');
   const [showQuickReplies, setShowQuickReplies] = useState(false);
   const [slashFilter, setSlashFilter] = useState<string | null>(null);
+  const [isSending, setIsSending] = useState(false);
 
   const name = conversation.contact?.name || conversation.contact?.phone || 'Desconhecido';
   const status = getConversationStatus(conversation);
@@ -419,13 +483,29 @@ function ChatArea({
     clinic: '',
   };
 
+  // Correção 9: loading + timeout
   const handleSend = () => {
-    if (!input.trim()) return;
-    sendMessage.mutate({
-      instanceId,
-      phone: conversation.contact.phone,
-      message: input.trim(),
-    });
+    if (!input.trim() || isSending) return;
+    setIsSending(true);
+    const timeout = setTimeout(() => {
+      setIsSending(false);
+      toast({ title: 'Envio demorou demais', description: 'Tente novamente', variant: 'destructive' });
+    }, 10000);
+
+    sendMessage.mutate(
+      { instanceId, phone: conversation.contact.phone, message: input.trim() },
+      {
+        onSuccess: () => {
+          clearTimeout(timeout);
+          setIsSending(false);
+        },
+        onError: () => {
+          clearTimeout(timeout);
+          setIsSending(false);
+          toast({ title: 'Falha no envio', description: 'Tente novamente', variant: 'destructive' });
+        },
+      }
+    );
     setInput('');
     setSlashFilter(null);
   };
@@ -458,10 +538,39 @@ function ChatArea({
     takeOver.mutate(conversation.id);
   };
 
-  const handleResolve = () => {
+  // Correção 10: pipeline integration on resolve
+  const handleResolve = async () => {
     if (!resolveCategory) return;
     const reason = resolveCategory + (resolveReason ? `: ${resolveReason}` : '');
     resolveConv.mutate({ conversationId: conversation.id, reason });
+
+    // Pipeline auto-update: check if lead exists, create if not
+    try {
+      const phone = conversation.contact?.phone;
+      if (phone) {
+        const { data: existingLeads } = await supabase
+          .from('pipeline_leads' as any)
+          .select('id, stage')
+          .eq('phone', phone)
+          .limit(1);
+
+        if (!existingLeads || existingLeads.length === 0) {
+          // Create new lead in pipeline
+          await supabase
+            .from('pipeline_leads' as any)
+            .insert({
+              name: conversation.contact?.name || phone,
+              phone,
+              source: 'whatsapp',
+              stage: 'cliente',
+              created_by: user?.id,
+            });
+        }
+      }
+    } catch {
+      // Pipeline integration is best-effort, don't block resolve
+    }
+
     setShowResolveDialog(false);
     setResolveReason('');
     setResolveCategory('');
@@ -491,7 +600,6 @@ function ChatArea({
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {/* Handoff actions */}
           {status === 'waiting' && (
             <Button variant="outline" size="sm" className="gap-1.5 text-amber-600 border-amber-300 hover:bg-amber-50" onClick={handleTakeOver}>
               <UserCheck className="h-3.5 w-3.5" />
@@ -581,22 +689,30 @@ function ChatArea({
         </div>
       )}
 
-      {/* Input */}
+      {/* Input - Correção 7: layout [Input] [Zap] [Enviar] */}
       <div className="p-3 border-t bg-card">
         <form
           onSubmit={e => {
             e.preventDefault();
             handleSend();
           }}
-          className="flex gap-2"
+          className="flex gap-2 items-center"
         >
+          <Input
+            value={input}
+            onChange={e => handleInputChange(e.target.value)}
+            placeholder="Digite / para atalhos..."
+            className="flex-1"
+            disabled={isSending}
+          />
+
           <Popover open={showQuickReplies} onOpenChange={setShowQuickReplies}>
             <PopoverTrigger asChild>
               <Button type="button" variant="ghost" size="icon" className="flex-shrink-0">
                 <Zap className="h-4 w-4" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent align="start" className="w-72 p-0 max-h-60 overflow-y-auto">
+            <PopoverContent align="end" className="w-72 p-0 max-h-60 overflow-y-auto">
               {replies.length === 0 ? (
                 <p className="p-3 text-sm text-muted-foreground">Nenhuma resposta rápida</p>
               ) : (
@@ -618,15 +734,8 @@ function ChatArea({
             </PopoverContent>
           </Popover>
 
-          <Input
-            value={input}
-            onChange={e => handleInputChange(e.target.value)}
-            placeholder="Digite / para atalhos..."
-            className="flex-1"
-            disabled={sendMessage.isPending}
-          />
-          <Button type="submit" size="icon" disabled={!input.trim() || sendMessage.isPending}>
-            <Send className="h-4 w-4" />
+          <Button type="submit" size="icon" disabled={!input.trim() || isSending} className="flex-shrink-0">
+            {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
           </Button>
         </form>
       </div>
