@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.lead-webhook]
 verify_jwt = false
+
+[functions.whatsapp-bot-update]
+verify_jwt = false

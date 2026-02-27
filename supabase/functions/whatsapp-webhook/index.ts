@@ -111,13 +111,22 @@ Deno.serve(async (req) => {
         media_type: data.message?.imageMessage ? "image" : null,
       });
 
-      // Update unread count if from contact
+      // Update conversation: unread count + last_message_preview
+      const preview = (messageContent || "").substring(0, 100);
       if (!fromMe) {
         await supabase
           .from("whatsapp_conversations")
           .update({
             unread_count: (conversation.unread_count || 0) + 1,
             last_message_at: new Date().toISOString(),
+            last_message_preview: preview || null,
+          })
+          .eq("id", conversation.id);
+      } else {
+        await supabase
+          .from("whatsapp_conversations")
+          .update({
+            last_message_preview: preview || null,
           })
           .eq("id", conversation.id);
       }

@@ -3374,34 +3374,46 @@ export type Database = {
       }
       whatsapp_conversations: {
         Row: {
+          ai_summary: string | null
+          ai_summary_at: string | null
           assigned_to: string | null
           contact_id: string
           created_at: string
           id: string
           instance_id: string
+          is_bot_active: boolean | null
           last_message_at: string | null
+          last_message_preview: string | null
           status: string
           unread_count: number | null
           updated_at: string
         }
         Insert: {
+          ai_summary?: string | null
+          ai_summary_at?: string | null
           assigned_to?: string | null
           contact_id: string
           created_at?: string
           id?: string
           instance_id: string
+          is_bot_active?: boolean | null
           last_message_at?: string | null
+          last_message_preview?: string | null
           status?: string
           unread_count?: number | null
           updated_at?: string
         }
         Update: {
+          ai_summary?: string | null
+          ai_summary_at?: string | null
           assigned_to?: string | null
           contact_id?: string
           created_at?: string
           id?: string
           instance_id?: string
+          is_bot_active?: boolean | null
           last_message_at?: string | null
+          last_message_preview?: string | null
           status?: string
           unread_count?: number | null
           updated_at?: string
