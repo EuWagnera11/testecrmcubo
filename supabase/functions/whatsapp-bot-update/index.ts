@@ -73,7 +73,7 @@ Deno.serve(async (req) => {
         },
         { onConflict: "contact_id,instance_id" }
       )
-      .select("id")
+      .select("id, is_bot_active, bot_paused_until")
       .single();
 
     if (!conversation) {
@@ -81,6 +81,18 @@ Deno.serve(async (req) => {
         JSON.stringify({ error: "Failed to upsert conversation" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    // Check if bot is paused (handoff active) — reject bot messages during pause
+    if (conversation.is_bot_active === false && conversation.bot_paused_until) {
+      const pausedUntil = new Date(conversation.bot_paused_until);
+      if (pausedUntil > new Date()) {
+        console.log("Bot paused until", pausedUntil.toISOString(), "— rejecting bot update");
+        return new Response(
+          JSON.stringify({ ok: false, paused: true, paused_until: pausedUntil.toISOString() }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
     }
 
     // Insert bot message

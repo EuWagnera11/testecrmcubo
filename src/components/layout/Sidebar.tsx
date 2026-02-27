@@ -19,6 +19,8 @@ import {
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useHandoffCount } from '@/hooks/useWhatsApp';
+import { Badge } from '@/components/ui/badge';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -46,6 +48,7 @@ const navItems = [
 export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: SidebarProps) {
   const location = useLocation();
   const { isAdmin, isDirector } = useUserRole();
+  const { data: handoffCount } = useHandoffCount();
   
   const filteredNavItems = navItems.filter(item => {
     if (item.directorOnly) return isAdmin || isDirector;
@@ -144,6 +147,11 @@ export function Sidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: Side
                       <item.icon className="h-4 w-4 flex-shrink-0" />
                       {/* Always show label on mobile, hide on desktop when collapsed */}
                       <span className={cn("font-medium", isCollapsed && "lg:hidden")}>{item.label}</span>
+                      {item.path === '/whatsapp' && (handoffCount ?? 0) > 0 && (
+                        <Badge variant="destructive" className={cn("h-4 min-w-4 rounded-full px-1 text-[10px] ml-auto", isCollapsed && "lg:hidden")}>
+                          {handoffCount}
+                        </Badge>
+                      )}
                     </NavLink>
                   </li>
                 );

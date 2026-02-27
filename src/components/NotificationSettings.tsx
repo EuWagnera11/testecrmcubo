@@ -1,4 +1,4 @@
-import { Bell, Mail, MessageSquare, FileText, CreditCard, FolderKanban, Users, CheckCircle, Clock } from 'lucide-react';
+import { Bell, Mail, MessageSquare, FileText, CreditCard, FolderKanban, Users, CheckCircle, Clock, MessageCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -171,6 +171,20 @@ export function NotificationSettings() {
               <Switch
                 checked={(preferences as any).notify_clients ?? true}
                 onCheckedChange={(checked) => handleToggle('notify_clients', checked)}
+              />
+            </div>
+
+            <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
+              <div className="flex items-center gap-3">
+                <MessageCircle className="h-5 w-5 text-emerald-500" />
+                <div>
+                  <Label className="font-medium">WhatsApp</Label>
+                  <p className="text-sm text-muted-foreground">Novos contatos, handoffs e mensagens</p>
+                </div>
+              </div>
+              <Switch
+                checked={(preferences as any).notify_whatsapp ?? true}
+                onCheckedChange={(checked) => handleToggle('notify_whatsapp', checked)}
               />
             </div>
           </div>

@@ -6,7 +6,7 @@ import { RealtimeChannel } from '@supabase/supabase-js';
 
 export interface Notification {
   id: string;
-  type: 'project_created' | 'client_created' | 'task_assigned' | 'message_received' | 'project_updated' | 'change_request_created';
+  type: 'project_created' | 'client_created' | 'task_assigned' | 'message_received' | 'project_updated' | 'change_request_created' | 'whatsapp_new_contact' | 'whatsapp_handoff' | 'whatsapp_message';
   title: string;
   description: string;
   read: boolean;
@@ -268,6 +268,65 @@ export function useNotifications() {
             });
 
             queryClient.invalidateQueries({ queryKey: ['project-change-requests'] });
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'whatsapp_conversations',
+          },
+          async (payload) => {
+            const contact = payload.new;
+            if (!contact) return;
+
+            // Fetch contact name
+            const { data: contactData } = await supabase
+              .from('whatsapp_contacts')
+              .select('name, phone')
+              .eq('id', contact.contact_id)
+              .single();
+
+            const contactName = contactData?.name || contactData?.phone || 'Novo contato';
+
+            addNotification({
+              type: 'whatsapp_new_contact',
+              title: 'Novo contato WhatsApp',
+              description: `${contactName} iniciou uma conversa`,
+              data: { conversationId: contact.id },
+            });
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'whatsapp_conversations',
+          },
+          async (payload) => {
+            const conv = payload.new;
+            const old = payload.old;
+            if (!conv || !old) return;
+
+            // Detect handoff: bot was active, now paused
+            if (old.is_bot_active === true && conv.is_bot_active === false && conv.bot_paused_until) {
+              const { data: contactData } = await supabase
+                .from('whatsapp_contacts')
+                .select('name, phone')
+                .eq('id', conv.contact_id)
+                .single();
+
+              const contactName = contactData?.name || contactData?.phone || 'Contato';
+
+              addNotification({
+                type: 'whatsapp_handoff',
+                title: '🆘 Handoff ativado',
+                description: `${contactName} precisa de atendimento humano`,
+                data: { conversationId: conv.id },
+              });
+            }
           }
         )
         .subscribe();
