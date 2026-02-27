@@ -1,59 +1,71 @@
 
-Objetivo
-Resolver a falha da backend function `whatsapp-instance` no botão “QR Code”, eliminando o erro `invalid peer certificate: CaUsedAsEndEntity` com uma estratégia robusta que combine as duas opções que você sugeriu (priorizando a que funcionar em runtime).
 
-Diagnóstico encontrado
-- O fluxo de Conexões chama `whatsapp-instance` com ações:
-  - `check-status`
-  - `get-qrcode`
-  - `set-webhook`
-- O erro atual ocorre dentro de `callEvolutionApi`, ao tentar acessar `https://evoapi.refinecubo.com.br/...`.
-- Mesmo iniciando por `http://`, o request está sendo redirecionado para `https://`, e aí quebra no TLS.
-- Hoje a function usa `unsafelyIgnoreCertificateErrors` por hostname, mas isso não está resolvendo no runtime atual.
-- Observação importante de dados: neste projeto não existe `public.whatsapp_settings`; o módulo atual usa `public.whatsapp_instances` (inclusive no frontend e nas backend functions).
+# Adicionar Config Manual de Backend no modulo WhatsApp
 
-Plano de implementação
-1) Reforçar o client TLS inseguro de forma explícita no `fetch` (Opção 1)
-- No `callEvolutionApi`, criar um `httpClient` com:
-  - `Deno.createHttpClient({ unsafelyIgnoreCertificateErrors: true })`
-- Passar sempre explicitamente no `fetch`:
-  - `fetch(url, { client: httpClient, ...options })`
-- Remover uso condicional/spread para evitar qualquer ambiguidade no runtime.
-- Fechar o client em `finally` para evitar vazamento de recurso.
+## Resumo
+Adicionar na aba "Conexoes" do WhatsApp um painel de configuracao onde o usuario pode informar a URL e chave de um backend alternativo. Essas credenciais sao salvas no localStorage e usadas em todas as chamadas de Edge Functions do modulo WhatsApp (QR Code, Status, Webhook, envio de mensagens).
 
-2) Forçar tentativa HTTP antes de HTTPS e controlar redirecionamento (Opção 2 com fallback)
-- Ajustar geração de URLs candidatas para testar em ordem:
-  1. URL forçada em `http://...`
-  2. URL original normalizada
-- Para a tentativa HTTP, controlar redirect para não “escapar” automaticamente para HTTPS sem tratamento.
-- Se vier `Location` com `https://`, reescrever para `http://` e tentar mais uma vez.
-- Se ainda falhar, seguir para próxima estratégia e registrar logs claros por tentativa.
+## O que existe hoje
+- O modulo WhatsApp ja tem: formulario de Nova Conexao, lista de conexoes com badges de status, botoes de acao (QR Code, Status, Webhook, Deletar).
+- Todas as chamadas usam `supabase.functions.invoke()` que aponta para o backend do Lovable Cloud (`ognblcupazzctxxhsyau`).
+- A UI ja atende a maioria dos requisitos listados (cards, badges, toasts, mobile-friendly).
 
-3) Melhorar observabilidade e erro final
-- Padronizar logs por tentativa (`método`, `url`, `status`, `motivo da falha`).
-- Retornar erro final consolidado, informando claramente quando todas as estratégias falharem por TLS.
-- Manter parse de payload de erro da Evolution para facilitar diagnóstico em produção.
+## O que sera adicionado
 
-4) Garantir compatibilidade com as 3 ações existentes
-- Validar que as mudanças em `callEvolutionApi` não quebram:
-  - `get-qrcode`
-  - `check-status`
-  - `set-webhook`
+### 1. Painel de Configuracao de Backend (topo da aba Conexoes)
+- Card com dois campos: **URL do Backend** e **Chave Anonima**
+- Valores padrao: `https://jdedyngozlmdjldhxwkw.supabase.co` e a chave informada
+- Botao "Salvar" que persiste no `localStorage` (`WA_SUPABASE_URL` e `WA_SUPABASE_ANON_KEY`)
+- Indicador visual (badge verde/vermelho) mostrando se esta configurado
+- Botao "Resetar" para voltar ao backend padrao do projeto
 
-Validação após implementação
-- Teste funcional na UI:
-  1. Conexões → clicar “QR Code”
-  2. Conexões → “Verificar Status”
-  3. Conexões → “Configurar Webhook”
-- Critérios de sucesso:
-  - Não aparecer mais `Edge Function returned a non-2xx status code` por `CaUsedAsEndEntity`.
-  - QR Code ou pairing code retornar normalmente.
-  - Logs da function sem erro de certificado nas tentativas que concluírem.
+### 2. Hook utilitario `useWhatsAppBackend`
+- Novo hook que le os valores do localStorage
+- Retorna funcao `callFunction(functionName, body)` que faz `fetch` direto na URL configurada (em vez de `supabase.functions.invoke`)
+- Validacao: se chave nao estiver configurada, lanca erro com mensagem amigavel
 
-Riscos e tratamento
-- Se o servidor remoto forçar HTTPS e o runtime realmente ignorar `unsafelyIgnoreCertificateErrors` mesmo explícito:
-  - manteremos fallback HTTP + controle de redirect;
-  - se ainda assim falhar, a function passará a retornar diagnóstico objetivo para ação no servidor Evolution (cadeia SSL inválida).
-- Isso evita erro genérico e deixa claro o próximo passo técnico.
+### 3. Atualizar chamadas no WhatsAppInstances.tsx
+- `handleCheckStatus`, `handleGetQR`, `handleSetWebhook` passam a usar o hook `useWhatsAppBackend` em vez de `supabase.functions.invoke`
+- Toast de aviso se o backend nao estiver configurado
 
-Se você aprovar, eu implemento exatamente essa correção no `supabase/functions/whatsapp-instance/index.ts` e em seguida valido o fluxo completo de QR Code/conexão.
+### 4. Atualizar chamadas no useWhatsApp.ts
+- `useSendWhatsAppMessage` tambem passa a usar o backend configuravel
+- As queries de dados (conversas, mensagens, templates, instancias) continuam no backend do projeto (dados ficam aqui)
+
+### 5. QR Code em Modal (melhoria)
+- Em vez de abrir em nova janela, mostrar o QR Code em um Dialog/Modal dentro da propria tela
+- Auto-refresh a cada 15 segundos
+
+## Secao Tecnica
+
+### Arquivos a criar
+- `src/hooks/useWhatsAppBackend.ts` - hook para gerenciar URL/key do localStorage e fazer chamadas
+
+### Arquivos a modificar
+- `src/components/whatsapp/WhatsAppInstances.tsx` - adicionar painel de config no topo + modal de QR Code + usar novo hook
+- `src/hooks/useWhatsApp.ts` - atualizar `useSendWhatsAppMessage` para usar backend configuravel
+
+### Logica do hook useWhatsAppBackend
+```text
+function useWhatsAppBackend():
+  url = localStorage.get('WA_SUPABASE_URL') || default
+  key = localStorage.get('WA_SUPABASE_ANON_KEY') || ''
+  
+  callFunction(name, body):
+    if !key: throw "Configure o backend primeiro"
+    fetch(url + '/functions/v1/' + name, {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + key, Content-Type: 'application/json' },
+      body: JSON.stringify(body)
+    })
+  
+  return { url, key, setConfig, clearConfig, callFunction, isConfigured }
+```
+
+### Fluxo do usuario
+1. Acessa WhatsApp > Conexoes
+2. Ve o painel "Configuracao do Backend" no topo
+3. Cola a URL e chave do backend desejado
+4. Clica "Salvar" - valores persistem no localStorage
+5. Todas as acoes (QR Code, Status, etc.) passam a chamar o backend configurado
+6. Dados das conversas/mensagens continuam no banco do projeto atual
