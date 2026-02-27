@@ -1,73 +1,127 @@
 
 
-# Correcao de 4 Bugs Criticos no CRM WhatsApp
+# 10 Correcoes Criticas + Melhorias UX no WhatsApp CRM
 
-## Bug 1 — whatsapp-bot-update: Robustez contra payloads malformados
+## Correcao 1 — Bot mensagem vazia "[Mensagem do bot nao capturada]"
 
-O erro "JSON parameter needs to be valid JSON" vem do n8n, nao da Edge Function. Porem, a Edge Function precisa ser mais robusta para aceitar payloads com campos vazios ou alternativos.
+**Problema**: Os logs mostram `reply_text: ""` vindo do n8n. O fallback atual salva `"[Mensagem do bot nao capturada]"` que e confuso para o usuario.
 
-### Correcoes no `supabase/functions/whatsapp-bot-update/index.ts`:
-- Envolver `req.json()` em try-catch separado com fallback para `req.text()` + parse manual
-- Aceitar campos alternativos: `reply_text` OU `text` OU `message` OU `content`
-- Se `reply_text` vier vazio mas existir em outro campo, usar o fallback
-- Remover a validacao rigida que retorna 400 quando `reply_text` esta vazio — em vez disso, tentar extrair de campos alternativos primeiro
-- Adicionar log detalhado do body recebido para debug
+**Solucao**: No `whatsapp-bot-update/index.ts`, quando `reply_text` esta vazio mas `ai_summary` tem conteudo, usar o `ai_summary` como texto da mensagem. Caso contrario, usar fallback amigavel `"Mensagem enviada pelo bot"` (sem colchetes).
 
-### Correcoes no n8n (instrucoes para o usuario):
-- O erro "JSON parameter needs to be valid JSON" e causado pelas expressoes `{{ }}` do n8n que resolvem para strings vazias
-- O body correto deve usar: `$('Enviar texto').first().json.data.message.conversation`
-- Nao ha como corrigir isso via codigo — e configuracao do n8n
+```text
+Prioridade de texto:
+1. reply_text (se nao vazio)
+2. text / message / content (campos alternativos)
+3. ai_summary (como ultimo recurso antes do fallback)
+4. "Mensagem enviada pelo bot" (fallback limpo)
+```
 
-## Bug 2 — Dashboard mostra "Desconectado"
-
-O Dashboard compara `inst.status === 'connected'`, mas o campo `status` na tabela `whatsapp_instances` armazena `'open'` (valor que vem da Evolution API), nao `'connected'`.
-
-### Correcoes no `src/pages/Dashboard.tsx`:
-- Linha 660: trocar `inst.status === 'connected'` para `inst.status === 'open'`
-- Isso alinha com o que ja funciona corretamente na tela de Conexoes (`WhatsAppInstances.tsx` linha 174)
-
-### Melhoria na tela de Conexoes (`WhatsAppInstances.tsx`):
-- Adicionar estado de loading no botao "Verificar Status" com texto "Verificando..."
-- Contador de tentativas: apos 3 falhas consecutivas, mostrar toast com "Falha ao conectar. Verifique a configuracao."
-- Atualizar o status da instancia no banco apos verificacao bem-sucedida
-
-## Bug 3 — Fallback quando whatsapp-bot-update falha
-
-Quando o n8n envia payload invalido, a mensagem do bot nao e salva no CRM. Isso quebra notificacoes e pipeline.
-
-### Correcoes no `supabase/functions/whatsapp-bot-update/index.ts`:
-- Mesmo com payload parcialmente invalido, salvar a mensagem com o que estiver disponivel
-- Se `reply_text` estiver vazio apos todos os fallbacks, salvar com content = "[Mensagem do bot nao capturada]"
-- Sempre retornar `{ ok: true }` com campo `warning` se houve fallback, em vez de 400
-- Isso garante que o Supabase Realtime dispara o evento e as notificacoes funcionam
-
-## Bug 4 — "Tipo CRM: desconhecido" no resumo
-
-Esse campo vem do n8n (node "Construir Contexto"), nao do CRM. Nao ha como corrigir via codigo do CRM.
-
-### O que podemos fazer no CRM:
-- No `whatsapp-bot-update`, se o campo `ai_summary` contiver "desconhecido" ou "Tipo CRM: desconhecido", limpar/remover essa parte antes de salvar
-- Usar regex para sanitizar: `ai_summary.replace(/Tipo CRM:\s*desconhecido[,;\s]*/gi, '')`
-
-### Instrucoes para o n8n (para o usuario):
-- No node "Construir Contexto", adicionar logica para remover `clientData.tipo` quando igual a "desconhecido"
+**Arquivo**: `supabase/functions/whatsapp-bot-update/index.ts`
 
 ---
 
-## Secao Tecnica
+## Correcao 2 — Filtro "Aguardando" sempre mostra 0
 
-### Arquivos modificados
+**Problema**: A funcao `getConversationStatus()` no frontend retorna `'all'` para conversas com bot ativo. Conversas com `is_bot_active = false` mas sem `bot_paused_until` (ex: handoff manual) nao sao capturadas.
 
-| Arquivo | Mudanca |
+**Solucao**: Ajustar a logica para considerar qualquer conversa com `is_bot_active = false` e status diferente de `'resolved'` como "waiting" (se sem assigned_to) ou "attending" (se com assigned_to), independente de `bot_paused_until`.
+
+**Arquivo**: `src/components/whatsapp/WhatsAppInbox.tsx` (funcao `getConversationStatus`)
+
+---
+
+## Correcao 3 — Sem botao "Excluir conversa"
+
+**Solucao**: Adicionar hook `useDeleteConversation` em `useWhatsApp.ts` que deleta mensagens + conversa. Adicionar icone de lixeira em cada item da lista de conversas com dialog de confirmacao.
+
+**Arquivos**: `src/hooks/useWhatsApp.ts`, `src/components/whatsapp/WhatsAppInbox.tsx`
+
+---
+
+## Correcao 4 — Instancia sempre "Desconectado"
+
+**Problema**: O status so atualiza quando o usuario clica "Verificar Status" manualmente. O campo `status` no banco pode estar desatualizado.
+
+**Solucao**: Adicionar `refetchInterval: 60000` na query de instancias para recarregar automaticamente. No `handleCheckStatus`, ja atualiza o banco (isso ja funciona). Adicionar auto-check ao montar o componente de instancias.
+
+**Arquivo**: `src/hooks/useWhatsApp.ts` (useWhatsAppInstances), `src/components/whatsapp/WhatsAppInstances.tsx`
+
+---
+
+## Correcao 5 — Templates nao aparecem nos atalhos
+
+**Problema**: `useQuickReplies` nao tem `refetchInterval`, entao novos templates so aparecem ao recarregar a pagina.
+
+**Solucao**: Adicionar `refetchInterval: 30000` na query de `quick_replies`.
+
+**Arquivo**: `src/hooks/useQuickReplies.ts`
+
+---
+
+## Correcao 6 — Badge roxa no avatar do contato (remover)
+
+**Problema**: Na lista de conversas, o avatar mostra um icone de Bot roxo quando `is_bot_active = true`. Isso e confuso pois o label "Bot" ja aparece nas mensagens.
+
+**Solucao**: Remover o badge do avatar na lista de conversas (linhas 322-326 do ConversationItem).
+
+**Arquivo**: `src/components/whatsapp/WhatsAppInbox.tsx`
+
+---
+
+## Correcao 7 — Layout do input: botao Zap sobrepondo
+
+**Problema**: O botao de atalhos rapidos (Zap) fica ao lado esquerdo do input, empurrando o layout.
+
+**Solucao**: Reorganizar o layout do input para: `[Input grande] [Zap] [Enviar]`. Mover o botao Zap para depois do input. Adicionar loading spinner no botao Enviar durante o envio.
+
+**Arquivo**: `src/components/whatsapp/WhatsAppInbox.tsx`
+
+---
+
+## Correcao 8 — Filtros somem quando abre conversa (mobile)
+
+**Problema**: No mobile, ao selecionar uma conversa, a lista (com filtros) fica `hidden`. Ao voltar, os filtros estao la, mas o estado do filtro pode ter sido resetado.
+
+**Solucao**: Garantir que `statusFilter` persiste ao navegar entre conversas. Os filtros ja sao sticky no topo do painel de lista, mas adicionar `sticky top-0 z-10 bg-background` para garantir visibilidade durante scroll.
+
+**Arquivo**: `src/components/whatsapp/WhatsAppInbox.tsx`
+
+---
+
+## Correcao 9 — Performance: mensagens demoram >5s
+
+**Solucao**: 
+- Adicionar `isPending` visual no botao Enviar (spinner)
+- Otimistic update: adicionar mensagem na lista local antes da resposta do servidor
+- Timeout de 10s com toast de erro e opcao de retry
+
+**Arquivo**: `src/components/whatsapp/WhatsAppInbox.tsx`
+
+---
+
+## Correcao 10 — Pipeline nao conectado ao WhatsApp
+
+**Problema**: Resolver uma conversa nao cria/move lead no pipeline automaticamente.
+
+**Solucao**: Na funcao `handleResolve`, apos resolver a conversa, verificar se ja existe um lead no pipeline com o telefone do contato. Se nao existir, criar um novo. Se existir, mover para o stage adequado. Isso sera feito no frontend (nao precisa de trigger SQL).
+
+**Arquivo**: `src/components/whatsapp/WhatsAppInbox.tsx`
+
+---
+
+## Secao Tecnica - Resumo de Arquivos
+
+| Arquivo | Mudancas |
 |---|---|
-| `supabase/functions/whatsapp-bot-update/index.ts` | Try-catch no parse, fallback de campos, sanitizacao ai_summary |
-| `src/pages/Dashboard.tsx` | Corrigir comparacao de status: `'open'` em vez de `'connected'` |
-| `src/components/whatsapp/WhatsAppInstances.tsx` | Loading state no botao status, retry com contador |
+| `supabase/functions/whatsapp-bot-update/index.ts` | Fallback inteligente: usar ai_summary como texto, fallback limpo |
+| `src/components/whatsapp/WhatsAppInbox.tsx` | Filtro aguardando corrigido, excluir conversa, layout input, remover badge avatar, loading envio, sticky filtros, pipeline integration |
+| `src/hooks/useWhatsApp.ts` | Hook deleteConversation, refetchInterval instancias |
+| `src/hooks/useQuickReplies.ts` | refetchInterval: 30000 |
 
-### Resumo das mudancas por bug
+### Ordem de implementacao
 
-**Bug 1**: Edge Function aceita payloads flexiveis (campos alternativos, fallback para texto vazio)
-**Bug 2**: Dashboard usa `status === 'open'` (1 linha corrigida)
-**Bug 3**: Mensagem sempre salva mesmo com payload parcial (fallback "[Mensagem do bot nao capturada]")
-**Bug 4**: Sanitizacao automatica do ai_summary removendo "Tipo CRM: desconhecido"
+1. Edge Function (correcao 1 - bot mensagem)
+2. Hook useWhatsApp (correcoes 3, 4)
+3. Hook useQuickReplies (correcao 5)
+4. WhatsAppInbox (correcoes 2, 6, 7, 8, 9, 10 - tudo junto)
 
