@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Users, FolderKanban, TrendingUp, DollarSign, Plus, ArrowRight, Calendar, ChevronLeft, ChevronRight, Target, Pencil, TrendingDown } from 'lucide-react';
+import { Users, FolderKanban, TrendingUp, DollarSign, Plus, ArrowRight, Calendar, ChevronLeft, ChevronRight, Target, Pencil, TrendingDown, MessageCircle, Bot, Clock, UserCheck, AlertTriangle, Wifi, WifiOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -14,6 +14,8 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { useFinancial } from '@/hooks/useFinancial';
 import { useMonthlyGoals } from '@/hooks/useMonthlyGoals';
 import { useProjectsProfitability } from '@/hooks/useProjectsProfitability';
+import { useWhatsAppDashboardMetrics, useWhatsAppMessageVolume, useWhatsAppSegments } from '@/hooks/useWhatsAppDashboard';
+import { useWhatsAppInstances } from '@/hooks/useWhatsApp';
 import { Link } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, Cell } from 'recharts';
 import { format, parseISO, startOfMonth, isAfter, isBefore, subMonths, addMonths } from 'date-fns';
@@ -38,6 +40,10 @@ export default function Dashboard() {
   const { transactions } = useFinancial();
   const { getGoalForMonth, upsertGoal } = useMonthlyGoals();
   const { projects: profitProjects, totalProfit, totalRevenue, totalPayouts, averageMargin } = useProjectsProfitability();
+  const { data: waMetrics } = useWhatsAppDashboardMetrics();
+  const { data: waVolume } = useWhatsAppMessageVolume();
+  const { data: waSegments } = useWhatsAppSegments();
+  const { instances: waInstances } = useWhatsAppInstances();
   
   const canSeeFinancials = isAdmin || isDirector;
 
@@ -507,6 +513,190 @@ export default function Dashboard() {
           </Card>
         </>
       )}
+
+      {/* WhatsApp Section */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <MessageCircle className="h-5 w-5 text-primary" />
+            WhatsApp
+          </h2>
+          <Button variant="ghost" size="sm" asChild>
+            <Link to="/whatsapp" className="text-primary text-xs sm:text-sm">
+              Abrir Inbox <ArrowRight className="ml-1 h-4 w-4" />
+            </Link>
+          </Button>
+        </div>
+
+        {/* WhatsApp KPIs */}
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+          <Card className="glass-card">
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider">Bot Ativo</p>
+                  <p className="text-2xl font-bold mt-1">{waMetrics?.activeConversations ?? 0}</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">Conversas agora</p>
+                </div>
+                <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Bot className="h-4 w-4 text-primary" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="glass-card">
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider">Aguardando</p>
+                  <p className={cn("text-2xl font-bold mt-1", (waMetrics?.waitingHuman ?? 0) > 0 && "text-amber-500")}>{waMetrics?.waitingHuman ?? 0}</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">Precisam humano</p>
+                </div>
+                <div className="h-8 w-8 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                  <AlertTriangle className="h-4 w-4 text-amber-500" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="glass-card">
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider">Resolvidas</p>
+                  <p className="text-2xl font-bold mt-1 text-emerald-500">{waMetrics?.resolvedToday ?? 0}</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">Hoje</p>
+                </div>
+                <div className="h-8 w-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                  <UserCheck className="h-4 w-4 text-emerald-500" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="glass-card">
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider">Tempo Resp.</p>
+                  <p className="text-2xl font-bold mt-1">
+                    {waMetrics?.avgResponseTime != null ? `${Math.round(waMetrics.avgResponseTime)}s` : '—'}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">Média bot</p>
+                </div>
+                <div className="h-8 w-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                  <Clock className="h-4 w-4 text-blue-500" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="glass-card">
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider">Handoff</p>
+                  <p className="text-2xl font-bold mt-1">{waMetrics?.handoffRate?.toFixed(0) ?? 0}%</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">Pediram humano</p>
+                </div>
+                <div className="h-8 w-8 rounded-lg bg-violet-500/10 flex items-center justify-center">
+                  <UserCheck className="h-4 w-4 text-violet-500" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {/* Message Volume Chart */}
+          {waVolume && waVolume.length > 0 && (
+            <Card className="border-border/50 glass-card lg:col-span-2">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base font-semibold">Volume de Mensagens (7 dias)</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-56">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={waVolume} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+                      <XAxis 
+                        dataKey="date" 
+                        tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+                        axisLine={{ stroke: 'hsl(var(--border))' }}
+                      />
+                      <YAxis 
+                        tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
+                        axisLine={{ stroke: 'hsl(var(--border))' }}
+                      />
+                      <Tooltip 
+                        contentStyle={{ 
+                          background: 'hsl(var(--card))', 
+                          border: '1px solid hsl(var(--border))',
+                          borderRadius: '12px'
+                        }}
+                      />
+                      <Legend />
+                      <Bar dataKey="customer" name="Clientes" fill="hsl(217, 91%, 60%)" radius={[3, 3, 0, 0]} />
+                      <Bar dataKey="bot" name="Bot" fill="hsl(271, 91%, 65%)" radius={[3, 3, 0, 0]} />
+                      <Bar dataKey="human" name="Humano" fill="hsl(142, 76%, 36%)" radius={[3, 3, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Right column: Instances + Segments */}
+          <div className="space-y-4">
+            {/* Instance Status */}
+            <Card className="border-border/50 glass-card">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base font-semibold">Instâncias</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {waInstances.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Nenhuma instância configurada.</p>
+                ) : (
+                  waInstances.map(inst => (
+                    <div key={inst.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/30">
+                      <span className="text-sm font-medium">{inst.name}</span>
+                      <div className="flex items-center gap-1.5">
+                        {inst.status === 'connected' ? (
+                          <>
+                            <Wifi className="h-3.5 w-3.5 text-emerald-500" />
+                            <span className="text-xs text-emerald-500">Conectado</span>
+                          </>
+                        ) : (
+                          <Link to="/whatsapp" className="flex items-center gap-1.5 hover:underline">
+                            <WifiOff className="h-3.5 w-3.5 text-destructive" />
+                            <span className="text-xs text-destructive">Desconectado</span>
+                          </Link>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Top Segments */}
+            {waSegments && waSegments.length > 0 && (
+              <Card className="border-border/50 glass-card">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base font-semibold">Top Segmentos</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {waSegments.map((seg, i) => (
+                    <div key={seg.name} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="h-2.5 w-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: seg.color }} />
+                        <span className="text-sm">{seg.name}</span>
+                      </div>
+                      <Badge variant="secondary" className="text-xs">{seg.count}</Badge>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
