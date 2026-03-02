@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { WhatsAppInbox } from '@/components/whatsapp/WhatsAppInbox';
 import { WhatsAppInstances } from '@/components/whatsapp/WhatsAppInstances';
-import { WhatsAppTemplates } from '@/components/whatsapp/WhatsAppTemplates';
+import { QuickRepliesManager } from '@/components/whatsapp/QuickRepliesManager';
 import { MessageSquare, Settings2, FileText } from 'lucide-react';
 
 export default function WhatsApp() {
@@ -40,7 +40,7 @@ export default function WhatsApp() {
         </TabsContent>
 
         <TabsContent value="templates" className="flex-1 overflow-auto mt-0 p-6">
-          <WhatsAppTemplates />
+          <QuickRepliesManager />
         </TabsContent>
 
         <TabsContent value="instances" className="flex-1 overflow-auto mt-0 p-6">

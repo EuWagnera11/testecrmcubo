@@ -19,7 +19,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { NotificationSettings } from '@/components/NotificationSettings';
 import { CommissionRulesManager } from '@/components/CommissionRulesManager';
-import { QuickRepliesManager } from '@/components/whatsapp/QuickRepliesManager';
+
 import { 
   appRoleLabels, 
   appRoleDescriptions, 
@@ -174,7 +174,7 @@ export default function Settings() {
           {isAdmin && <TabsTrigger value="commissions" className="px-4">Comissões</TabsTrigger>}
           {canEditTeamGoal && <TabsTrigger value="team" className="px-4">Meta da Equipe</TabsTrigger>}
           <TabsTrigger value="notifications" className="px-4">Notificações</TabsTrigger>
-          <TabsTrigger value="quick-replies" className="px-4">Respostas Rápidas</TabsTrigger>
+          
           <TabsTrigger value="profile" className="px-4">Meu Perfil</TabsTrigger>
           </TabsList>
         </div>
@@ -634,10 +634,6 @@ export default function Settings() {
           <NotificationSettings />
         </TabsContent>
 
-        {/* Quick Replies Tab */}
-        <TabsContent value="quick-replies">
-          <QuickRepliesManager />
-        </TabsContent>
       </Tabs>
     </div>
   );

@@ -220,19 +220,19 @@ export function WhatsAppInbox() {
         )}
 
         {/* Status filters - Correção 8: sticky */}
-        <div className="p-2 border-b sticky top-0 z-10 bg-background">
-          <div className="flex gap-1">
+        <div className="p-2 border-b sticky top-0 z-10 bg-background min-w-0">
+          <div className="flex gap-1 overflow-x-auto scrollbar-hide">
             {([
               { key: 'all' as const, label: 'Todas' },
-              { key: 'waiting' as const, label: '🆘 Aguardando', count: statusCounts.waiting },
-              { key: 'attending' as const, label: '🔵 Atendendo', count: statusCounts.attending },
-              { key: 'resolved' as const, label: '✅ Resolvidas', count: statusCounts.resolved },
+              { key: 'waiting' as const, label: 'Aguardando', count: statusCounts.waiting },
+              { key: 'attending' as const, label: 'Atendendo', count: statusCounts.attending },
+              { key: 'resolved' as const, label: 'Resolvidas', count: statusCounts.resolved },
             ]).map(f => (
               <button
                 key={f.key}
                 onClick={() => setStatusFilter(f.key)}
                 className={cn(
-                  'px-2 py-1 rounded text-[11px] font-medium transition-colors whitespace-nowrap',
+                  'px-2 py-1 rounded text-[11px] font-medium transition-colors whitespace-nowrap flex-shrink-0',
                   statusFilter === f.key
                     ? 'bg-primary text-primary-foreground'
                     : 'bg-muted text-muted-foreground hover:bg-accent'
@@ -256,9 +256,7 @@ export function WhatsAppInbox() {
             />
           </div>
           <div className="flex gap-2">
-            {(activeInstanceId || instances?.[0]?.id) && (
-              <WhatsAppNewChat instanceId={activeInstanceId || instances[0].id} />
-            )}
+            <WhatsAppNewChat />
             <WhatsAppTagManager />
           </div>
         </div>
@@ -682,7 +680,7 @@ function ChatArea({
               ) : replies.length === 0 ? (
                 <div className="p-3 text-center">
                   <p className="text-sm text-muted-foreground mb-1">Nenhuma resposta rápida</p>
-                  <p className="text-xs text-muted-foreground">Crie em Configurações → Respostas Rápidas</p>
+                  <p className="text-xs text-muted-foreground">Crie na aba Templates do WhatsApp</p>
                 </div>
               ) : (
                 replies.map(r => (
