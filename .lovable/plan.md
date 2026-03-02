@@ -1,127 +1,134 @@
 
 
-# 10 Correcoes Criticas + Melhorias UX no WhatsApp CRM
+# 5 Correcoes e Melhorias: Dark Mode, Nova Conversa, Atalhos, Layout e Duplicatas
 
-## Correcao 1 — Bot mensagem vazia "[Mensagem do bot nao capturada]"
+## 1. Dark/Light Mode Toggle no Header
 
-**Problema**: Os logs mostram `reply_text: ""` vindo do n8n. O fallback atual salva `"[Mensagem do bot nao capturada]"` que e confuso para o usuario.
+O hook `useTheme` ja existe e funciona perfeitamente (localStorage + sync com perfil + prefers-color-scheme). O Tailwind ja esta configurado com `darkMode: ["class"]` e variaveis CSS dark ja existem em `index.css`.
 
-**Solucao**: No `whatsapp-bot-update/index.ts`, quando `reply_text` esta vazio mas `ai_summary` tem conteudo, usar o `ai_summary` como texto da mensagem. Caso contrario, usar fallback amigavel `"Mensagem enviada pelo bot"` (sem colchetes).
+**Mudanca**: Adicionar botao toggle no `Header.tsx` entre NotificationDropdown e avatar.
+
+**Arquivo**: `src/components/layout/Header.tsx`
+- Importar `useTheme` e icones `Moon`/`Sun`
+- Adicionar botao que alterna entre light/dark/system
+- Click simples: toggle light <-> dark
+- Tooltip mostrando estado atual
+
+---
+
+## 2. Simplificar Modal "Nova Conversa"
+
+**Arquivo**: `src/components/whatsapp/WhatsAppNewChat.tsx`
+- Remover import de `useWhatsAppTemplates` e `Select` components
+- Remover bloco do template selector (linhas 53-67)
+- Tornar mensagem opcional: se vazia, criar conversa sem enviar
+- Alterar validacao: exigir apenas telefone
+- Se mensagem vazia, criar contato + conversa via Supabase direto (sem chamar whatsapp-send)
+- Se mensagem preenchida, enviar via `sendMessage.mutateAsync` como hoje
+- Normalizar telefone antes de salvar
+- Botao "Iniciar" em vez de "Enviar"
+
+---
+
+## 3. Respostas Rapidas — comportamento correto
+
+**Arquivo**: `src/components/whatsapp/WhatsAppInbox.tsx`
+- Remover logica de detecao de "/" no `handleInputChange` (linhas 513-519)
+- Remover estado `slashFilter` e `filteredReplies` baseado nele
+- Remover bloco "Slash autocomplete" do JSX (linhas 676-690)
+- Manter apenas o Popover do botao Zap que ja funciona corretamente (abre lista, clica, preenche campo)
+- Trocar placeholder "Digite / para atalhos..." por "Digite uma mensagem"
+
+---
+
+## 4. Layout Input — botoes a esquerda
+
+**Arquivo**: `src/components/whatsapp/WhatsAppInbox.tsx`
+- Reorganizar o form de input (linhas 693-741):
 
 ```text
-Prioridade de texto:
-1. reply_text (se nao vazio)
-2. text / message / content (campos alternativos)
-3. ai_summary (como ultimo recurso antes do fallback)
-4. "Mensagem enviada pelo bot" (fallback limpo)
+Layout novo: [Zap] [Send] [Input campo largo]
 ```
 
-**Arquivo**: `supabase/functions/whatsapp-bot-update/index.ts`
+- Mover Popover do Zap para antes do Input
+- Mover botao Send para antes do Input
+- Input continua com `flex-1`
 
 ---
 
-## Correcao 2 — Filtro "Aguardando" sempre mostra 0
+## 5. Bug de duplicacao de contato — normalizar telefone
 
-**Problema**: A funcao `getConversationStatus()` no frontend retorna `'all'` para conversas com bot ativo. Conversas com `is_bot_active = false` mas sem `bot_paused_until` (ex: handoff manual) nao sao capturadas.
+### 5a. Funcao normalizePhone nas Edge Functions
 
-**Solucao**: Ajustar a logica para considerar qualquer conversa com `is_bot_active = false` e status diferente de `'resolved'` como "waiting" (se sem assigned_to) ou "attending" (se com assigned_to), independente de `bot_paused_until`.
+Criar funcao utilitaria que:
+- Remove tudo que nao e digito
+- Remove sufixos `@s.whatsapp.net` / `@c.us`
+- Detecta e remove `55` duplicado no inicio (ex: `555585...` -> `5585...`)
+- Retorna apenas digitos normalizados
 
-**Arquivo**: `src/components/whatsapp/WhatsAppInbox.tsx` (funcao `getConversationStatus`)
+### 5b. Aplicar em 3 lugares
 
----
+**`supabase/functions/whatsapp-webhook/index.ts`** (linha 44):
+- Trocar `const phone = remoteJid.split("@")[0]` por `normalizePhone(remoteJid)`
 
-## Correcao 3 — Sem botao "Excluir conversa"
+**`supabase/functions/whatsapp-send/index.ts`** (linha 101):
+- Aplicar `normalizePhone(phone)` antes do upsert de contato
 
-**Solucao**: Adicionar hook `useDeleteConversation` em `useWhatsApp.ts` que deleta mensagens + conversa. Adicionar icone de lixeira em cada item da lista de conversas com dialog de confirmacao.
+**`src/components/whatsapp/WhatsAppNewChat.tsx`**:
+- Aplicar normalizacao no frontend antes de enviar
 
-**Arquivos**: `src/hooks/useWhatsApp.ts`, `src/components/whatsapp/WhatsAppInbox.tsx`
+### 5c. Migracao para corrigir duplicatas existentes
 
----
+Migracao SQL que:
+- Identifica contatos com telefones que se normalizam para o mesmo valor
+- Mantem o mais antigo (menor `created_at`)
+- Migra conversas e mensagens do duplicado para o original
+- Deleta o contato duplicado
 
-## Correcao 4 — Instancia sempre "Desconectado"
+```sql
+-- Identificar e corrigir duplicatas de contatos
+-- Normaliza removendo 55 duplicado no inicio
+WITH normalized AS (
+  SELECT id, phone, created_at,
+    CASE
+      WHEN phone ~ '^55\d{12,13}$' AND substring(phone from 3 for 2) = '55'
+        THEN '55' || substring(phone from 5)
+      ELSE phone
+    END AS norm_phone
+  FROM whatsapp_contacts
+),
+dupes AS (
+  SELECT norm_phone, 
+    array_agg(id ORDER BY created_at ASC) AS ids,
+    count(*) AS cnt
+  FROM normalized
+  GROUP BY norm_phone
+  HAVING count(*) > 1
+)
+SELECT * FROM dupes;
+-- Manual review before executing deletes
+```
 
-**Problema**: O status so atualiza quando o usuario clica "Verificar Status" manualmente. O campo `status` no banco pode estar desatualizado.
-
-**Solucao**: Adicionar `refetchInterval: 60000` na query de instancias para recarregar automaticamente. No `handleCheckStatus`, ja atualiza o banco (isso ja funciona). Adicionar auto-check ao montar o componente de instancias.
-
-**Arquivo**: `src/hooks/useWhatsApp.ts` (useWhatsAppInstances), `src/components/whatsapp/WhatsAppInstances.tsx`
-
----
-
-## Correcao 5 — Templates nao aparecem nos atalhos
-
-**Problema**: `useQuickReplies` nao tem `refetchInterval`, entao novos templates so aparecem ao recarregar a pagina.
-
-**Solucao**: Adicionar `refetchInterval: 30000` na query de `quick_replies`.
-
-**Arquivo**: `src/hooks/useQuickReplies.ts`
-
----
-
-## Correcao 6 — Badge roxa no avatar do contato (remover)
-
-**Problema**: Na lista de conversas, o avatar mostra um icone de Bot roxo quando `is_bot_active = true`. Isso e confuso pois o label "Bot" ja aparece nas mensagens.
-
-**Solucao**: Remover o badge do avatar na lista de conversas (linhas 322-326 do ConversationItem).
-
-**Arquivo**: `src/components/whatsapp/WhatsAppInbox.tsx`
-
----
-
-## Correcao 7 — Layout do input: botao Zap sobrepondo
-
-**Problema**: O botao de atalhos rapidos (Zap) fica ao lado esquerdo do input, empurrando o layout.
-
-**Solucao**: Reorganizar o layout do input para: `[Input grande] [Zap] [Enviar]`. Mover o botao Zap para depois do input. Adicionar loading spinner no botao Enviar durante o envio.
-
-**Arquivo**: `src/components/whatsapp/WhatsAppInbox.tsx`
-
----
-
-## Correcao 8 — Filtros somem quando abre conversa (mobile)
-
-**Problema**: No mobile, ao selecionar uma conversa, a lista (com filtros) fica `hidden`. Ao voltar, os filtros estao la, mas o estado do filtro pode ter sido resetado.
-
-**Solucao**: Garantir que `statusFilter` persiste ao navegar entre conversas. Os filtros ja sao sticky no topo do painel de lista, mas adicionar `sticky top-0 z-10 bg-background` para garantir visibilidade durante scroll.
-
-**Arquivo**: `src/components/whatsapp/WhatsAppInbox.tsx`
+Um botao "Corrigir duplicatas" nao sera adicionado na UI neste momento — a correcao sera feita via migracao SQL unica + prevencao nas Edge Functions.
 
 ---
 
-## Correcao 9 — Performance: mensagens demoram >5s
-
-**Solucao**: 
-- Adicionar `isPending` visual no botao Enviar (spinner)
-- Otimistic update: adicionar mensagem na lista local antes da resposta do servidor
-- Timeout de 10s com toast de erro e opcao de retry
-
-**Arquivo**: `src/components/whatsapp/WhatsAppInbox.tsx`
-
----
-
-## Correcao 10 — Pipeline nao conectado ao WhatsApp
-
-**Problema**: Resolver uma conversa nao cria/move lead no pipeline automaticamente.
-
-**Solucao**: Na funcao `handleResolve`, apos resolver a conversa, verificar se ja existe um lead no pipeline com o telefone do contato. Se nao existir, criar um novo. Se existir, mover para o stage adequado. Isso sera feito no frontend (nao precisa de trigger SQL).
-
-**Arquivo**: `src/components/whatsapp/WhatsAppInbox.tsx`
-
----
-
-## Secao Tecnica - Resumo de Arquivos
+## Secao Tecnica — Resumo de Arquivos
 
 | Arquivo | Mudancas |
 |---|---|
-| `supabase/functions/whatsapp-bot-update/index.ts` | Fallback inteligente: usar ai_summary como texto, fallback limpo |
-| `src/components/whatsapp/WhatsAppInbox.tsx` | Filtro aguardando corrigido, excluir conversa, layout input, remover badge avatar, loading envio, sticky filtros, pipeline integration |
-| `src/hooks/useWhatsApp.ts` | Hook deleteConversation, refetchInterval instancias |
-| `src/hooks/useQuickReplies.ts` | refetchInterval: 30000 |
+| `src/components/layout/Header.tsx` | Toggle dark/light mode com useTheme |
+| `src/components/whatsapp/WhatsAppNewChat.tsx` | Remover templates, mensagem opcional, normalizar telefone |
+| `src/components/whatsapp/WhatsAppInbox.tsx` | Remover slash autocomplete, trocar placeholder, layout botoes esquerda |
+| `supabase/functions/whatsapp-webhook/index.ts` | normalizePhone no parse do JID |
+| `supabase/functions/whatsapp-send/index.ts` | normalizePhone no upsert de contato |
+| Migracao SQL | Corrigir duplicatas existentes |
 
 ### Ordem de implementacao
 
-1. Edge Function (correcao 1 - bot mensagem)
-2. Hook useWhatsApp (correcoes 3, 4)
-3. Hook useQuickReplies (correcao 5)
-4. WhatsAppInbox (correcoes 2, 6, 7, 8, 9, 10 - tudo junto)
+1. Header toggle (independente)
+2. WhatsAppNewChat simplificado (independente)
+3. WhatsAppInbox (slash removal + layout)
+4. Edge Functions (normalizePhone)
+5. Migracao SQL (duplicatas)
 
