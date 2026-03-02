@@ -167,7 +167,7 @@ export function WhatsAppInbox() {
     <div className="flex h-full">
       {/* Conversation list */}
       <div className={cn(
-        "w-[300px] border-r flex flex-col flex-shrink-0",
+        "w-[340px] border-r flex flex-col flex-shrink-0",
         showChat && "hidden md:flex"
       )}>
         {/* Instance selector */}
@@ -226,10 +226,10 @@ export function WhatsAppInbox() {
         <div className="p-1.5 border-b sticky top-0 z-10 bg-background">
           <div className="grid grid-cols-4 gap-1">
             {([
-              { key: 'all' as const, label: 'Todas' },
-              { key: 'waiting' as const, label: 'Aguardando', count: statusCounts.waiting },
-              { key: 'attending' as const, label: 'Atendendo', count: statusCounts.attending },
-              { key: 'resolved' as const, label: 'Resolvidas', count: statusCounts.resolved },
+              { key: 'all' as const, label: '📋 Todas' },
+              { key: 'waiting' as const, label: '⏳ Aguardando', count: statusCounts.waiting },
+              { key: 'attending' as const, label: '💬 Atendendo', count: statusCounts.attending },
+              { key: 'resolved' as const, label: '✅ Resolvidas', count: statusCounts.resolved },
             ]).map(f => (
               <button
                 key={f.key}
@@ -511,10 +511,10 @@ function ChatArea({
   const handleInputChange = (value: string) => {
     setInput(value);
     // Check for shortcut match
-    const trimmed = value.trim().toLowerCase();
-    if (trimmed && replies.length > 0) {
+    const words = value.toLowerCase().split(/\s+/).filter(Boolean);
+    if (words.length > 0 && replies.length > 0) {
       const match = replies.find(
-        r => r.shortcut && trimmed === r.shortcut.toLowerCase()
+        r => r.shortcut && words.some(w => w === r.shortcut!.toLowerCase())
       );
       setSuggestion(match || null);
     } else {
