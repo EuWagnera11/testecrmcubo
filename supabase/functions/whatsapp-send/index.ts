@@ -8,11 +8,16 @@ const corsHeaders = {
 
 function normalizePhone(raw: string): string {
   let digits = raw.replace(/@.*$/, '').replace(/\D/g, '');
+  // Remove duplicate 55 prefix
   if (digits.startsWith('55') && digits.length > 13) {
     const rest = digits.slice(2);
     if (rest.startsWith('55') && (rest.length - 2 === 10 || rest.length - 2 === 11)) {
       digits = '55' + rest.slice(2);
     }
+  }
+  // Add 55 for local numbers (10-11 digits)
+  if ((digits.length === 10 || digits.length === 11) && !digits.startsWith('55')) {
+    digits = '55' + digits;
   }
   return digits;
 }
