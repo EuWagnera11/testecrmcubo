@@ -6,20 +6,19 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useSendWhatsAppMessage, useWhatsAppInstances } from '@/hooks/useWhatsApp';
-import { Plus } from 'lucide-react';
+import { Plus, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useQueryClient } from '@tanstack/react-query';
 
 function normalizePhone(raw: string): string {
   let digits = raw.replace(/\D/g, '');
-  // Remove duplicate 55 prefix
   if (digits.startsWith('55') && digits.length > 13) {
     const rest = digits.slice(2);
     if (rest.startsWith('55') && (rest.length - 2 === 10 || rest.length - 2 === 11)) {
       digits = '55' + rest.slice(2);
     }
   }
-  // Add 55 for local numbers
   if ((digits.length === 10 || digits.length === 11) && !digits.startsWith('55')) {
     digits = '55' + digits;
   }
@@ -47,15 +46,21 @@ function formatPhoneBR(value: string): string {
   return result;
 }
 
-export function WhatsAppNewChat() {
+interface WhatsAppNewChatProps {
+  onConversationCreated?: (id: string) => void;
+}
+
+export function WhatsAppNewChat({ onConversationCreated }: WhatsAppNewChatProps) {
   const [open, setOpen] = useState(false);
   const [phoneDisplay, setPhoneDisplay] = useState('');
   const [phoneDigits, setPhoneDigits] = useState('');
   const [message, setMessage] = useState('');
   const [selectedInstanceId, setSelectedInstanceId] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
   const sendMessage = useSendWhatsAppMessage();
   const { instances } = useWhatsAppInstances();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const openInstances = instances.filter(i => i.status === 'open' || i.status === 'connected');
 
@@ -76,41 +81,58 @@ export function WhatsAppNewChat() {
     }
 
     const normalizedPhone = normalizePhone(phoneDigits);
+    setIsCreating(true);
 
     try {
+      // Upsert contact
+      const { data: contact } = await supabase
+        .from('whatsapp_contacts')
+        .upsert({ phone: normalizedPhone, source: 'manual' }, { onConflict: 'phone' })
+        .select('id')
+        .single();
+
+      if (!contact) throw new Error('Erro ao criar contato');
+
+      // Upsert conversation
+      const { data: conversation } = await supabase
+        .from('whatsapp_conversations')
+        .upsert(
+          {
+            contact_id: contact.id,
+            instance_id: selectedInstanceId,
+            last_message_at: new Date().toISOString(),
+            status: 'open',
+          },
+          { onConflict: 'contact_id,instance_id' }
+        )
+        .select('id')
+        .single();
+
+      if (!conversation) throw new Error('Erro ao criar conversa');
+
+      // Send message if provided
       if (message.trim()) {
         await sendMessage.mutateAsync({ instanceId: selectedInstanceId, phone: normalizedPhone, message });
-        toast({ title: 'Mensagem enviada!' });
-      } else {
-        const { data: contact } = await supabase
-          .from('whatsapp_contacts')
-          .upsert({ phone: normalizedPhone, source: 'manual' }, { onConflict: 'phone' })
-          .select('id')
-          .single();
-
-        if (contact) {
-          await supabase
-            .from('whatsapp_conversations')
-            .upsert(
-              {
-                contact_id: contact.id,
-                instance_id: selectedInstanceId,
-                last_message_at: new Date().toISOString(),
-                status: 'open',
-              },
-              { onConflict: 'contact_id,instance_id' }
-            );
-        }
-        toast({ title: 'Conversa iniciada!' });
       }
 
+      // Close modal and navigate immediately
       setOpen(false);
       setPhoneDigits('');
       setPhoneDisplay('');
       setMessage('');
       setSelectedInstanceId('');
+
+      // Invalidate queries in background
+      queryClient.invalidateQueries({ queryKey: ['whatsapp-conversations'] });
+
+      // Navigate to the new conversation
+      onConversationCreated?.(conversation.id);
+
+      toast({ title: message.trim() ? 'Mensagem enviada!' : 'Conversa iniciada!' });
     } catch (err: any) {
       toast({ title: 'Erro', description: err.message, variant: 'destructive' });
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -162,8 +184,8 @@ export function WhatsAppNewChat() {
           </div>
         </div>
         <DialogFooter>
-          <Button onClick={handleSend} disabled={sendMessage.isPending || !selectedInstanceId}>
-            {sendMessage.isPending ? 'Iniciando...' : 'Iniciar'}
+          <Button onClick={handleSend} disabled={isCreating || !selectedInstanceId}>
+            {isCreating ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Iniciando...</> : 'Iniciar'}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -28,7 +28,7 @@ import { WhatsAppConversationTagSelector, ConversationTagBadges } from './WhatsA
 import { useAllConversationTags } from '@/hooks/useWhatsAppTags';
 import { WhatsAppContactPanel } from './WhatsAppContactPanel';
 import { useAuth } from '@/contexts/AuthContext';
-import { useQuickReplies, replaceVariables } from '@/hooks/useQuickReplies';
+import { useQuickReplies, replaceVariables, QuickReply } from '@/hooks/useQuickReplies';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import {
@@ -73,7 +73,6 @@ function getInstanceColor(index: number) {
 
 type ConversationFilter = 'all' | 'waiting' | 'attending' | 'resolved';
 
-// Correção 2: qualquer conversa com is_bot_active=false e não resolvida conta como waiting/attending
 function getConversationStatus(conv: WhatsAppConversation): ConversationFilter {
   if (conv.status === 'resolved') return 'resolved';
   if (!conv.is_bot_active) {
@@ -94,7 +93,6 @@ export function WhatsAppInbox() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showContactPanel, setShowContactPanel] = useState(false);
 
-  // Correção 3: delete conversation
   const deleteConv = useDeleteConversation();
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
 
@@ -160,11 +158,16 @@ export function WhatsAppInbox() {
     });
   };
 
+  const handleConversationCreated = (id: string) => {
+    setSelectedConversation(id);
+    setShowChat(true);
+  };
+
   return (
     <div className="flex h-full">
       {/* Conversation list */}
       <div className={cn(
-        "w-full md:w-80 lg:w-[320px] border-r flex flex-col",
+        "w-[260px] border-r flex flex-col flex-shrink-0",
         showChat && "hidden md:flex"
       )}>
         {/* Instance selector */}
@@ -175,7 +178,7 @@ export function WhatsAppInbox() {
                 <button
                   onClick={() => setActiveInstanceId(null)}
                   className={cn(
-                    'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors whitespace-nowrap',
+                    'flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium transition-colors whitespace-nowrap',
                     isUnified
                       ? 'bg-primary text-primary-foreground'
                       : 'bg-muted text-muted-foreground hover:bg-accent'
@@ -198,7 +201,7 @@ export function WhatsAppInbox() {
                       key={inst.id}
                       onClick={() => setActiveInstanceId(inst.id)}
                       className={cn(
-                        'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors whitespace-nowrap',
+                        'flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium transition-colors whitespace-nowrap',
                         isActive
                           ? 'bg-primary text-primary-foreground'
                           : 'bg-muted text-muted-foreground hover:bg-accent'
@@ -219,8 +222,8 @@ export function WhatsAppInbox() {
           </div>
         )}
 
-        {/* Status filters - Correção 8: sticky */}
-        <div className="p-2 border-b sticky top-0 z-10 bg-background min-w-0">
+        {/* Status filters */}
+        <div className="p-1.5 border-b sticky top-0 z-10 bg-background min-w-0">
           <div className="flex gap-1 overflow-x-auto scrollbar-hide">
             {([
               { key: 'all' as const, label: 'Todas' },
@@ -232,7 +235,7 @@ export function WhatsAppInbox() {
                 key={f.key}
                 onClick={() => setStatusFilter(f.key)}
                 className={cn(
-                  'px-2 py-1 rounded text-[11px] font-medium transition-colors whitespace-nowrap flex-shrink-0',
+                  'px-2 py-1 rounded text-xs font-medium transition-colors whitespace-nowrap flex-shrink-0',
                   statusFilter === f.key
                     ? 'bg-primary text-primary-foreground'
                     : 'bg-muted text-muted-foreground hover:bg-accent'
@@ -245,27 +248,27 @@ export function WhatsAppInbox() {
           </div>
         </div>
 
-        <div className="p-3 space-y-2">
+        <div className="p-2 space-y-1.5">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
             <Input
               placeholder="Buscar conversa..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
-              className="pl-9 h-9"
+              className="pl-8 h-8 text-[13px]"
             />
           </div>
-          <div className="flex gap-2">
-            <WhatsAppNewChat />
+          <div className="flex gap-1.5">
+            <WhatsAppNewChat onConversationCreated={handleConversationCreated} />
             <WhatsAppTagManager />
           </div>
         </div>
 
         <ScrollArea className="flex-1">
           {isLoading ? (
-            <div className="p-4 text-center text-muted-foreground text-sm">Carregando...</div>
+            <div className="p-4 text-center text-muted-foreground text-xs">Carregando...</div>
           ) : filteredConversations.length === 0 ? (
-            <div className="p-4 text-center text-muted-foreground text-sm">
+            <div className="p-4 text-center text-muted-foreground text-xs">
               {instances.length === 0 ? 'Configure uma conexão primeiro' : 'Nenhuma conversa'}
             </div>
           ) : (
@@ -290,7 +293,7 @@ export function WhatsAppInbox() {
 
       {/* Chat area */}
       <div className={cn(
-        "flex-1 flex flex-col",
+        "flex-1 flex flex-col min-w-0",
         !showChat && "hidden md:flex"
       )}>
         {selectedConv ? (
@@ -306,7 +309,7 @@ export function WhatsAppInbox() {
           <div className="flex-1 flex items-center justify-center text-muted-foreground">
             <div className="text-center space-y-2">
               <MessageSquare className="h-12 w-12 mx-auto opacity-30" />
-              <p>Selecione uma conversa</p>
+              <p className="text-sm">Selecione uma conversa</p>
             </div>
           </div>
         )}
@@ -365,63 +368,61 @@ function ConversationItem({
   return (
     <div
       className={cn(
-        'w-full flex items-center gap-3 px-3 py-3 text-left transition-colors hover:bg-accent/50 group',
+        'w-full flex items-center gap-2 p-2 text-left transition-colors hover:bg-accent/50 group relative cursor-pointer',
         isActive && 'bg-accent'
       )}
+      onClick={onClick}
     >
-      <button onClick={onClick} className="flex items-center gap-3 flex-1 min-w-0">
-        {/* Correção 6: removido badge roxa do avatar */}
-        <Avatar className="h-10 w-10 flex-shrink-0">
-          <AvatarFallback className="bg-primary/10 text-primary text-xs">{initials}</AvatarFallback>
-        </Avatar>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5 min-w-0">
-              <span className="font-medium text-sm truncate">{name}</span>
-              {status === 'waiting' && (
-                <span className="h-2 w-2 rounded-full bg-amber-500 flex-shrink-0" title="Aguardando humano" />
-              )}
-              {status === 'attending' && (
-                <span className="h-2 w-2 rounded-full bg-blue-500 flex-shrink-0" title="Em atendimento" />
-              )}
-              {status === 'resolved' && (
-                <span className="h-2 w-2 rounded-full bg-emerald-500 flex-shrink-0" title="Resolvida" />
-              )}
-            </div>
-            {conversation.last_message_at && (
-              <span className="text-[10px] text-muted-foreground">
-                {format(new Date(conversation.last_message_at), 'HH:mm', { locale: ptBR })}
-              </span>
+      <Avatar className="h-8 w-8 flex-shrink-0">
+        <AvatarFallback className="bg-primary/10 text-primary text-[10px]">{initials}</AvatarFallback>
+      </Avatar>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1 min-w-0">
+            <span className="font-medium text-[13px] truncate">{name}</span>
+            {status === 'waiting' && (
+              <span className="h-1.5 w-1.5 rounded-full bg-amber-500 flex-shrink-0" title="Aguardando humano" />
+            )}
+            {status === 'attending' && (
+              <span className="h-1.5 w-1.5 rounded-full bg-blue-500 flex-shrink-0" title="Em atendimento" />
+            )}
+            {status === 'resolved' && (
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 flex-shrink-0" title="Resolvida" />
             )}
           </div>
-          <div className="flex items-center justify-between gap-1">
-            <div className="flex items-center gap-1 min-w-0">
-              {showInstanceBadge && instanceInfo && (
-                <span className={cn('h-2 w-2 rounded-full flex-shrink-0', getInstanceColor(instanceInfo.colorIndex))} />
-              )}
-              <span className="text-xs text-muted-foreground truncate">
-                {conversation.last_message_preview || conversation.contact?.phone}
-              </span>
-            </div>
-            {conversation.unread_count > 0 && (
-              <Badge variant="default" className="h-5 w-5 rounded-full p-0 flex items-center justify-center text-[10px]">
-                {conversation.unread_count}
-              </Badge>
-            )}
-          </div>
-          <ConversationTagBadges tags={tags ?? []} />
+          {conversation.last_message_at && (
+            <span className="text-[10px] text-muted-foreground flex-shrink-0">
+              {format(new Date(conversation.last_message_at), 'HH:mm', { locale: ptBR })}
+            </span>
+          )}
         </div>
-      </button>
-      {/* Correção 3: botão excluir */}
+        <div className="flex items-center justify-between gap-1">
+          <div className="flex items-center gap-1 min-w-0">
+            {showInstanceBadge && instanceInfo && (
+              <span className={cn('h-1.5 w-1.5 rounded-full flex-shrink-0', getInstanceColor(instanceInfo.colorIndex))} />
+            )}
+            <span className="text-[11px] text-muted-foreground truncate max-w-[180px]">
+              {conversation.last_message_preview || conversation.contact?.phone}
+            </span>
+          </div>
+          {conversation.unread_count > 0 && (
+            <Badge variant="default" className="h-4 w-4 rounded-full p-0 flex items-center justify-center text-[9px]">
+              {conversation.unread_count}
+            </Badge>
+          )}
+        </div>
+        <ConversationTagBadges tags={tags ?? []} />
+      </div>
+      {/* Delete button - absolute hover */}
       <button
         onClick={(e) => {
           e.stopPropagation();
           onDelete(conversation.id, name);
         }}
-        className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive flex-shrink-0"
+        className="opacity-0 group-hover:opacity-100 transition-opacity absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
         title="Excluir conversa"
       >
-        <Trash2 className="h-3.5 w-3.5" />
+        <Trash2 className="h-3 w-3" />
       </button>
     </div>
   );
@@ -456,11 +457,18 @@ function ChatArea({
   const [resolveCategory, setResolveCategory] = useState('');
   const [showQuickReplies, setShowQuickReplies] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [suggestion, setSuggestion] = useState<QuickReply | null>(null);
 
   const name = conversation.contact?.name || conversation.contact?.phone || 'Desconhecido';
   const status = getConversationStatus(conversation);
   const isWaitingOrAttending = status === 'waiting' || status === 'attending';
   const isAssignedToMe = conversation.assigned_to === user?.id;
+
+  const contactContext = {
+    name: conversation.contact?.name || '',
+    phone: conversation.contact?.phone || '',
+    clinic: '',
+  };
 
   useEffect(() => {
     if (conversation.unread_count > 0) {
@@ -474,13 +482,6 @@ function ChatArea({
     }
   }, [messages]);
 
-  const contactContext = {
-    name: conversation.contact?.name || '',
-    phone: conversation.contact?.phone || '',
-    clinic: '',
-  };
-
-  // Correção 9: loading + timeout
   const handleSend = () => {
     if (!input.trim() || isSending) return;
     setIsSending(true);
@@ -504,11 +505,47 @@ function ChatArea({
       }
     );
     setInput('');
-    // cleared
+    setSuggestion(null);
   };
 
   const handleInputChange = (value: string) => {
     setInput(value);
+    // Check for shortcut match
+    const trimmed = value.trim().toLowerCase();
+    if (trimmed && replies.length > 0) {
+      const match = replies.find(
+        r => r.shortcut && trimmed === r.shortcut.toLowerCase()
+      );
+      setSuggestion(match || null);
+    } else {
+      setSuggestion(null);
+    }
+  };
+
+  const applySuggestion = () => {
+    if (!suggestion) return;
+    const content = replaceVariables(suggestion.content, contactContext);
+    setInput(content);
+    incrementUseCount.mutate(suggestion.id);
+    setSuggestion(null);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (suggestion) {
+      if (e.key === 'Tab' || e.key === 'Enter') {
+        e.preventDefault();
+        applySuggestion();
+        return;
+      }
+      if (e.key === 'Escape') {
+        setSuggestion(null);
+        return;
+      }
+    }
+    if (e.key === 'Enter' && !e.shiftKey && !suggestion) {
+      e.preventDefault();
+      handleSend();
+    }
   };
 
   const handleSelectQuickReply = (reply: typeof replies[0]) => {
@@ -522,13 +559,11 @@ function ChatArea({
     takeOver.mutate(conversation.id);
   };
 
-  // Correção 10: pipeline integration on resolve
   const handleResolve = async () => {
     if (!resolveCategory) return;
     const reason = resolveCategory + (resolveReason ? `: ${resolveReason}` : '');
     resolveConv.mutate({ conversationId: conversation.id, reason });
 
-    // Pipeline auto-update: check if lead exists, create if not
     try {
       const phone = conversation.contact?.phone;
       if (phone) {
@@ -539,7 +574,6 @@ function ChatArea({
           .limit(1);
 
         if (!existingLeads || existingLeads.length === 0) {
-          // Create new lead in pipeline
           await supabase
             .from('pipeline_leads' as any)
             .insert({
@@ -552,7 +586,7 @@ function ChatArea({
         }
       }
     } catch {
-      // Pipeline integration is best-effort, don't block resolve
+      // Pipeline integration is best-effort
     }
 
     setShowResolveDialog(false);
@@ -563,52 +597,52 @@ function ChatArea({
   return (
     <>
       {/* Chat header */}
-      <div className="flex items-center gap-3 px-4 py-4 border-b bg-card">
+      <div className="flex items-center gap-2 px-3 h-12 border-b bg-card flex-shrink-0">
         {onBack && (
-          <Button variant="ghost" size="icon" className="md:hidden h-8 w-8 flex-shrink-0" onClick={onBack}>
+          <Button variant="ghost" size="icon" className="md:hidden h-7 w-7 flex-shrink-0" onClick={onBack}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
         )}
         <div
-          className="flex items-center gap-3 cursor-pointer hover:bg-muted/50 rounded-lg px-2 py-1 transition-colors flex-1"
+          className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 rounded-lg px-1.5 py-1 transition-colors flex-1 min-w-0"
           onClick={onToggleContactPanel}
         >
-          <Avatar className="h-9 w-9">
-            <AvatarFallback className="bg-primary/10 text-primary text-xs">
+          <Avatar className="h-8 w-8">
+            <AvatarFallback className="bg-primary/10 text-primary text-[10px]">
               {name.slice(0, 2).toUpperCase()}
             </AvatarFallback>
           </Avatar>
-          <div>
-            <p className="font-medium text-sm">{name}</p>
-            <p className="text-xs text-muted-foreground flex items-center gap-1">
-              <Phone className="h-3 w-3" />
+          <div className="min-w-0">
+            <p className="font-medium text-[13px] truncate">{name}</p>
+            <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+              <Phone className="h-2.5 w-2.5" />
               {conversation.contact?.phone}
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 flex-shrink-0">
           {status === 'waiting' && (
-            <Button variant="outline" size="sm" className="gap-1.5 text-amber-600 border-amber-300 hover:bg-amber-50" onClick={handleTakeOver}>
-              <UserCheck className="h-3.5 w-3.5" />
+            <Button variant="outline" size="sm" className="gap-1 text-amber-600 border-amber-300 hover:bg-amber-50 h-7 text-xs" onClick={handleTakeOver}>
+              <UserCheck className="h-3 w-3" />
               <span className="hidden sm:inline">Assumir</span>
             </Button>
           )}
           {isWaitingOrAttending && isAssignedToMe && (
-            <Button variant="outline" size="sm" className="gap-1.5 text-emerald-600 border-emerald-300 hover:bg-emerald-50" onClick={() => setShowResolveDialog(true)}>
-              <CheckCircle2 className="h-3.5 w-3.5" />
+            <Button variant="outline" size="sm" className="gap-1 text-emerald-600 border-emerald-300 hover:bg-emerald-50 h-7 text-xs" onClick={() => setShowResolveDialog(true)}>
+              <CheckCircle2 className="h-3 w-3" />
               <span className="hidden sm:inline">Resolver</span>
             </Button>
           )}
           {status === 'waiting' && (
-            <Badge variant="outline" className="gap-1 text-amber-600 border-amber-300">
-              <AlertTriangle className="h-3 w-3" />
+            <Badge variant="outline" className="gap-1 text-amber-600 border-amber-300 text-[10px]">
+              <AlertTriangle className="h-2.5 w-2.5" />
               Aguardando
             </Badge>
           )}
 
           {instanceName && (
-            <Badge variant="outline" className="gap-1.5">
-              <span className={cn('h-2 w-2 rounded-full', getInstanceColor(instanceColorIndex))} />
+            <Badge variant="outline" className="gap-1 text-[10px]">
+              <span className={cn('h-1.5 w-1.5 rounded-full', getInstanceColor(instanceColorIndex))} />
               {instanceName}
             </Badge>
           )}
@@ -617,11 +651,11 @@ function ChatArea({
       </div>
 
       {/* Messages */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-5 space-y-3">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-2">
         {isLoading ? (
-          <div className="text-center text-muted-foreground text-sm">Carregando mensagens...</div>
+          <div className="text-center text-muted-foreground text-xs">Carregando mensagens...</div>
         ) : messages.length === 0 ? (
-          <div className="text-center text-muted-foreground text-sm">Nenhuma mensagem ainda</div>
+          <div className="text-center text-muted-foreground text-xs">Nenhuma mensagem ainda</div>
         ) : (
           messages.map(msg => {
             const isBot = msg.sender_type === 'bot';
@@ -632,7 +666,7 @@ function ChatArea({
               <div
                 key={msg.id}
                 className={cn(
-                  'max-w-[70%] rounded-xl px-3 py-2',
+                  'max-w-[70%] rounded-xl px-3 py-1.5',
                   isBot
                     ? 'ml-auto bg-violet-500 text-white'
                     : isAgent
@@ -642,13 +676,13 @@ function ChatArea({
               >
                 {isBot && (
                   <div className="flex items-center gap-1 mb-0.5">
-                    <Bot className="h-3 w-3" />
-                    <span className="text-[10px] font-medium opacity-80">Bot</span>
+                    <Bot className="h-2.5 w-2.5" />
+                    <span className="text-[9px] font-medium opacity-80">Bot</span>
                   </div>
                 )}
-                {msg.content && <p className="text-[15px] whitespace-pre-wrap">{msg.content}</p>}
+                {msg.content && <p className="text-[13px] whitespace-pre-wrap">{msg.content}</p>}
                 <p className={cn(
-                  'text-[10px] mt-1',
+                  'text-[9px] mt-0.5',
                   isOutgoing ? 'text-white/70' : 'text-muted-foreground'
                 )}>
                   {format(new Date(msg.created_at), 'HH:mm')}
@@ -659,57 +693,75 @@ function ChatArea({
         )}
       </div>
 
-      {/* Input - Layout: [Zap] [Send] [Input] */}
-      <div className="p-4 border-t bg-card">
+      {/* Input area */}
+      <div className="py-2 px-3 border-t bg-card relative">
+        {/* Shortcut suggestion popup */}
+        {suggestion && (
+          <div className="absolute bottom-full left-3 right-3 mb-1 bg-popover border rounded-lg shadow-lg p-2 z-20">
+            <div className="flex items-center gap-2">
+              <Zap className="h-3.5 w-3.5 text-amber-500 flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <span className="text-xs font-medium">/{suggestion.shortcut}</span>
+                <span className="text-[11px] text-muted-foreground ml-1.5">→</span>
+                <span className="text-[11px] text-muted-foreground ml-1.5 truncate">
+                  {replaceVariables(suggestion.content, contactContext).substring(0, 60)}
+                </span>
+              </div>
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-1">Tab ou Enter para usar · Esc para dispensar</p>
+          </div>
+        )}
+
         <form
           onSubmit={e => {
             e.preventDefault();
             handleSend();
           }}
-          className="flex gap-2 items-center"
+          className="flex gap-1.5 items-center"
         >
           <Popover open={showQuickReplies} onOpenChange={setShowQuickReplies}>
             <PopoverTrigger asChild>
-              <Button type="button" variant="ghost" size="icon" className="flex-shrink-0">
+              <Button type="button" variant="ghost" size="icon" className="flex-shrink-0 h-8 w-8">
                 <Zap className="h-4 w-4" />
               </Button>
             </PopoverTrigger>
             <PopoverContent align="start" className="w-72 p-0 max-h-60 overflow-y-auto">
               {!replies ? (
-                <p className="p-3 text-sm text-muted-foreground">Carregando templates...</p>
+                <p className="p-3 text-xs text-muted-foreground">Carregando templates...</p>
               ) : replies.length === 0 ? (
                 <div className="p-3 text-center">
-                  <p className="text-sm text-muted-foreground mb-1">Nenhuma resposta rápida</p>
-                  <p className="text-xs text-muted-foreground">Crie na aba Templates do WhatsApp</p>
+                  <p className="text-xs text-muted-foreground mb-1">Nenhuma resposta rápida</p>
+                  <p className="text-[10px] text-muted-foreground">Crie na aba Templates do WhatsApp</p>
                 </div>
               ) : (
                 replies.map(r => (
                   <button
                     key={r.id}
                     type="button"
-                    className="w-full text-left px-3 py-2 hover:bg-accent text-sm border-b last:border-b-0"
+                    className="w-full text-left px-3 py-1.5 hover:bg-accent text-xs border-b last:border-b-0"
                     onClick={() => handleSelectQuickReply(r)}
                   >
                     <div className="flex items-center gap-1.5">
                       <span className="font-medium">{r.title}</span>
                       {r.shortcut && <span className="text-[10px] text-muted-foreground">/{r.shortcut}</span>}
                     </div>
-                    <p className="text-xs text-muted-foreground truncate">{r.content.substring(0, 60)}</p>
+                    <p className="text-[10px] text-muted-foreground truncate">{r.content.substring(0, 60)}</p>
                   </button>
                 ))
               )}
             </PopoverContent>
           </Popover>
 
-          <Button type="submit" size="icon" disabled={!input.trim() || isSending} className="flex-shrink-0">
-            {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+          <Button type="submit" size="icon" disabled={!input.trim() || isSending} className="flex-shrink-0 h-8 w-8">
+            {isSending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
           </Button>
 
           <Input
             value={input}
             onChange={e => handleInputChange(e.target.value)}
+            onKeyDown={handleKeyDown}
             placeholder="Digite uma mensagem"
-            className="flex-1"
+            className="flex-1 h-8 text-[13px]"
             disabled={isSending}
           />
         </form>
