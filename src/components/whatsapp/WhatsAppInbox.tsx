@@ -457,7 +457,6 @@ function ChatArea({
   const [resolveReason, setResolveReason] = useState('');
   const [resolveCategory, setResolveCategory] = useState('');
   const [showQuickReplies, setShowQuickReplies] = useState(false);
-  const [slashFilter, setSlashFilter] = useState<string | null>(null);
   const [isSending, setIsSending] = useState(false);
 
   const name = conversation.contact?.name || conversation.contact?.phone || 'Desconhecido';
@@ -507,32 +506,19 @@ function ChatArea({
       }
     );
     setInput('');
-    setSlashFilter(null);
+    // cleared
   };
 
   const handleInputChange = (value: string) => {
     setInput(value);
-    if (value.startsWith('/')) {
-      setSlashFilter(value.slice(1).toLowerCase());
-    } else {
-      setSlashFilter(null);
-    }
   };
 
   const handleSelectQuickReply = (reply: typeof replies[0]) => {
     const content = replaceVariables(reply.content, contactContext);
     setInput(content);
-    setSlashFilter(null);
     setShowQuickReplies(false);
     incrementUseCount.mutate(reply.id);
   };
-
-  const filteredReplies = slashFilter !== null
-    ? replies.filter(r =>
-        (r.shortcut && r.shortcut.toLowerCase().startsWith(slashFilter)) ||
-        r.title.toLowerCase().includes(slashFilter)
-      )
-    : replies;
 
   const handleTakeOver = () => {
     takeOver.mutate(conversation.id);
@@ -672,24 +658,7 @@ function ChatArea({
         )}
       </div>
 
-      {/* Slash autocomplete */}
-      {slashFilter !== null && filteredReplies.length > 0 && (
-        <div className="mx-3 mb-1 border rounded-lg bg-popover shadow-md max-h-40 overflow-y-auto">
-          {filteredReplies.map(r => (
-            <button
-              key={r.id}
-              type="button"
-              className="w-full text-left px-3 py-2 hover:bg-accent text-sm flex items-center gap-2"
-              onClick={() => handleSelectQuickReply(r)}
-            >
-              <span className="font-medium">{r.shortcut ? `/${r.shortcut}` : r.title}</span>
-              <span className="text-muted-foreground truncate">{r.content.substring(0, 50)}</span>
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Input - Correção 7: layout [Input] [Zap] [Enviar] */}
+      {/* Input - Layout: [Zap] [Send] [Input] */}
       <div className="p-3 border-t bg-card">
         <form
           onSubmit={e => {
@@ -698,21 +667,13 @@ function ChatArea({
           }}
           className="flex gap-2 items-center"
         >
-          <Input
-            value={input}
-            onChange={e => handleInputChange(e.target.value)}
-            placeholder="Digite / para atalhos..."
-            className="flex-1"
-            disabled={isSending}
-          />
-
           <Popover open={showQuickReplies} onOpenChange={setShowQuickReplies}>
             <PopoverTrigger asChild>
               <Button type="button" variant="ghost" size="icon" className="flex-shrink-0">
                 <Zap className="h-4 w-4" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent align="end" className="w-72 p-0 max-h-60 overflow-y-auto">
+            <PopoverContent align="start" className="w-72 p-0 max-h-60 overflow-y-auto">
               {replies.length === 0 ? (
                 <p className="p-3 text-sm text-muted-foreground">Nenhuma resposta rápida</p>
               ) : (
@@ -737,6 +698,14 @@ function ChatArea({
           <Button type="submit" size="icon" disabled={!input.trim() || isSending} className="flex-shrink-0">
             {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
           </Button>
+
+          <Input
+            value={input}
+            onChange={e => handleInputChange(e.target.value)}
+            placeholder="Digite uma mensagem"
+            className="flex-1"
+            disabled={isSending}
+          />
         </form>
       </div>
 

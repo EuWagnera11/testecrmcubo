@@ -6,6 +6,17 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+function normalizePhone(raw: string): string {
+  let digits = raw.replace(/@.*$/, '').replace(/\D/g, '');
+  if (digits.startsWith('55') && digits.length > 13) {
+    const rest = digits.slice(2);
+    if (rest.startsWith('55') && (rest.length - 2 === 10 || rest.length - 2 === 11)) {
+      digits = '55' + rest.slice(2);
+    }
+  }
+  return digits;
+}
+
 function toHttp(url: string): string {
   return url.replace(/^https:\/\//, "http://");
 }
@@ -95,10 +106,11 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Upsert contact
+    // Upsert contact with normalized phone
+    const normalizedPhone = normalizePhone(phone);
     const { data: contact } = await supabase
       .from("whatsapp_contacts")
-      .upsert({ phone, source: "manual" }, { onConflict: "phone" })
+      .upsert({ phone: normalizedPhone, source: "manual" }, { onConflict: "phone" })
       .select("id")
       .single();
 
