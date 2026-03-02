@@ -154,8 +154,8 @@ export function WhatsAppInbox() {
         toast({ title: 'Conversa excluída' });
         setDeleteTarget(null);
       },
-      onError: () => {
-        toast({ title: 'Erro ao excluir', variant: 'destructive' });
+      onError: (err: any) => {
+        toast({ title: 'Erro ao excluir', description: err?.message || 'Verifique suas permissões', variant: 'destructive' });
       },
     });
   };
@@ -164,7 +164,7 @@ export function WhatsAppInbox() {
     <div className="flex h-full">
       {/* Conversation list */}
       <div className={cn(
-        "w-full md:w-80 border-r flex flex-col",
+        "w-full md:w-80 lg:w-[320px] border-r flex flex-col",
         showChat && "hidden md:flex"
       )}>
         {/* Instance selector */}
@@ -565,25 +565,28 @@ function ChatArea({
   return (
     <>
       {/* Chat header */}
-      <div className="flex items-center gap-3 px-4 py-3 border-b bg-card">
+      <div className="flex items-center gap-3 px-4 py-4 border-b bg-card">
         {onBack && (
           <Button variant="ghost" size="icon" className="md:hidden h-8 w-8 flex-shrink-0" onClick={onBack}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
         )}
-        <button onClick={onToggleContactPanel} className="cursor-pointer">
+        <div
+          className="flex items-center gap-3 cursor-pointer hover:bg-muted/50 rounded-lg px-2 py-1 transition-colors flex-1"
+          onClick={onToggleContactPanel}
+        >
           <Avatar className="h-9 w-9">
             <AvatarFallback className="bg-primary/10 text-primary text-xs">
               {name.slice(0, 2).toUpperCase()}
             </AvatarFallback>
           </Avatar>
-        </button>
-        <div className="flex-1">
-          <p className="font-medium text-sm">{name}</p>
-          <p className="text-xs text-muted-foreground flex items-center gap-1">
-            <Phone className="h-3 w-3" />
-            {conversation.contact?.phone}
-          </p>
+          <div>
+            <p className="font-medium text-sm">{name}</p>
+            <p className="text-xs text-muted-foreground flex items-center gap-1">
+              <Phone className="h-3 w-3" />
+              {conversation.contact?.phone}
+            </p>
+          </div>
         </div>
         <div className="flex items-center gap-2">
           {status === 'waiting' && (
@@ -616,7 +619,7 @@ function ChatArea({
       </div>
 
       {/* Messages */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-2">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto p-5 space-y-3">
         {isLoading ? (
           <div className="text-center text-muted-foreground text-sm">Carregando mensagens...</div>
         ) : messages.length === 0 ? (
@@ -645,7 +648,7 @@ function ChatArea({
                     <span className="text-[10px] font-medium opacity-80">Bot</span>
                   </div>
                 )}
-                {msg.content && <p className="text-sm whitespace-pre-wrap">{msg.content}</p>}
+                {msg.content && <p className="text-[15px] whitespace-pre-wrap">{msg.content}</p>}
                 <p className={cn(
                   'text-[10px] mt-1',
                   isOutgoing ? 'text-white/70' : 'text-muted-foreground'
@@ -659,7 +662,7 @@ function ChatArea({
       </div>
 
       {/* Input - Layout: [Zap] [Send] [Input] */}
-      <div className="p-3 border-t bg-card">
+      <div className="p-4 border-t bg-card">
         <form
           onSubmit={e => {
             e.preventDefault();
@@ -674,8 +677,13 @@ function ChatArea({
               </Button>
             </PopoverTrigger>
             <PopoverContent align="start" className="w-72 p-0 max-h-60 overflow-y-auto">
-              {replies.length === 0 ? (
-                <p className="p-3 text-sm text-muted-foreground">Nenhuma resposta rápida</p>
+              {!replies ? (
+                <p className="p-3 text-sm text-muted-foreground">Carregando templates...</p>
+              ) : replies.length === 0 ? (
+                <div className="p-3 text-center">
+                  <p className="text-sm text-muted-foreground mb-1">Nenhuma resposta rápida</p>
+                  <p className="text-xs text-muted-foreground">Crie em Configurações → Respostas Rápidas</p>
+                </div>
               ) : (
                 replies.map(r => (
                   <button
