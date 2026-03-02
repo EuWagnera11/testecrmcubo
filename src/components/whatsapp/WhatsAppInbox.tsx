@@ -223,26 +223,26 @@ export function WhatsAppInbox() {
         )}
 
         {/* Status filters */}
-        <div className="p-1.5 border-b sticky top-0 z-10 bg-background min-w-0">
-          <div className="flex gap-1 overflow-x-auto scrollbar-hide">
+        <div className="p-1.5 border-b sticky top-0 z-10 bg-background">
+          <div className="grid grid-cols-4 gap-0.5">
             {([
               { key: 'all' as const, label: 'Todas' },
-              { key: 'waiting' as const, label: 'Aguardando', count: statusCounts.waiting },
-              { key: 'attending' as const, label: 'Atendendo', count: statusCounts.attending },
-              { key: 'resolved' as const, label: 'Resolvidas', count: statusCounts.resolved },
+              { key: 'waiting' as const, label: 'Aguard.', count: statusCounts.waiting },
+              { key: 'attending' as const, label: 'Atend.', count: statusCounts.attending },
+              { key: 'resolved' as const, label: 'Resolv.', count: statusCounts.resolved },
             ]).map(f => (
               <button
                 key={f.key}
                 onClick={() => setStatusFilter(f.key)}
                 className={cn(
-                  'px-2 py-1 rounded text-xs font-medium transition-colors whitespace-nowrap flex-shrink-0',
+                  'py-1 rounded text-[11px] font-medium transition-colors text-center truncate',
                   statusFilter === f.key
                     ? 'bg-primary text-primary-foreground'
                     : 'bg-muted text-muted-foreground hover:bg-accent'
                 )}
               >
                 {f.label}
-                {f.count ? ` (${f.count})` : ''}
+                {f.count ? ` ${f.count}` : ''}
               </button>
             ))}
           </div>
@@ -697,7 +697,10 @@ function ChatArea({
       <div className="py-2 px-3 border-t bg-card relative">
         {/* Shortcut suggestion popup */}
         {suggestion && (
-          <div className="absolute bottom-full left-3 right-3 mb-1 bg-popover border rounded-lg shadow-lg p-2 z-20">
+          <div
+            className="absolute bottom-full left-3 right-3 mb-1 bg-popover border rounded-lg shadow-lg p-2 z-20 cursor-pointer hover:bg-accent/50 transition-colors"
+            onClick={applySuggestion}
+          >
             <div className="flex items-center gap-2">
               <Zap className="h-3.5 w-3.5 text-amber-500 flex-shrink-0" />
               <div className="flex-1 min-w-0">
@@ -708,7 +711,7 @@ function ChatArea({
                 </span>
               </div>
             </div>
-            <p className="text-[10px] text-muted-foreground mt-1">Tab ou Enter para usar · Esc para dispensar</p>
+            <p className="text-[10px] text-muted-foreground mt-1">Tab, Enter ou clique para usar · Esc para dispensar</p>
           </div>
         )}
 
