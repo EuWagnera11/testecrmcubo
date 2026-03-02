@@ -108,7 +108,15 @@ export function useWhatsAppInstances() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['whatsapp-instances'] }),
   });
 
-  return { ...query, instances: query.data ?? [], createInstance, deleteInstance };
+  const updateInstance = useMutation({
+    mutationFn: async ({ id, ...updates }: { id: string; name?: string; api_url?: string; api_key?: string; instance_name?: string }) => {
+      const { error } = await supabase.from('whatsapp_instances').update(updates).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['whatsapp-instances'] }),
+  });
+
+  return { ...query, instances: query.data ?? [], createInstance, deleteInstance, updateInstance };
 }
 
 export function useWhatsAppConversations(instanceId?: string) {
@@ -220,7 +228,15 @@ export function useWhatsAppTemplates() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['whatsapp-templates'] }),
   });
 
-  return { ...query, templates: query.data ?? [], createTemplate, deleteTemplate };
+  const updateTemplate = useMutation({
+    mutationFn: async ({ id, ...updates }: { id: string; name?: string; content?: string; category?: string }) => {
+      const { error } = await supabase.from('whatsapp_templates').update(updates).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['whatsapp-templates'] }),
+  });
+
+  return { ...query, templates: query.data ?? [], createTemplate, deleteTemplate, updateTemplate };
 }
 
 export function useSendWhatsAppMessage() {
@@ -282,17 +298,14 @@ export function useDeleteConversation() {
 
   return useMutation({
     mutationFn: async (conversationId: string) => {
-      // Delete messages first, then conversation
-      const { error: msgError } = await supabase
-        .from('whatsapp_messages')
-        .delete()
-        .eq('conversation_id', conversationId);
-      if (msgError) throw msgError;
-      const { error } = await supabase
+      // CASCADE handles messages + tags automatically
+      const { data, error } = await supabase
         .from('whatsapp_conversations')
         .delete()
-        .eq('id', conversationId);
+        .eq('id', conversationId)
+        .select('id');
       if (error) throw error;
+      if (!data || data.length === 0) throw new Error('Sem permissão para excluir esta conversa');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['whatsapp-conversations'] });
