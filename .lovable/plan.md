@@ -1,109 +1,113 @@
 
 
-# 6 Correcoes: Templates Unificados, Seletor de Instancia, Duplicatas, Autoformato, Delete e Layout
+# Rodada 6 — Navegacao Imediata, Zoom-out, Atalhos Automaticos, Delete Hover e Auditoria
 
-## 1. Mover Respostas Rapidas para aba Templates do WhatsApp
-
-**Situacao atual**: Existem 2 tabelas separadas (`quick_replies` e `whatsapp_templates`) e 2 interfaces separadas (`QuickRepliesManager` em Configuracoes e `WhatsAppTemplates` na aba Templates). O popover de atalhos rapidos no chat usa `quick_replies`.
-
-**Solucao**: Unificar tudo na aba Templates do WhatsApp, usando a tabela `quick_replies` como fonte unica (pois tem campos mais completos: shortcut, use_count, variaveis).
-
-**Mudancas**:
-
-| Arquivo | Acao |
-|---|---|
-| `src/pages/WhatsApp.tsx` | Substituir `WhatsAppTemplates` por `QuickRepliesManager` na aba Templates |
-| `src/pages/Settings.tsx` | Remover aba "Respostas Rapidas" e import de `QuickRepliesManager` |
-| `src/components/whatsapp/WhatsAppInbox.tsx` | Atualizar texto "Crie em Configuracoes" para "Crie na aba Templates" no popover vazio |
-
-A tabela `whatsapp_templates` e o componente `WhatsAppTemplates.tsx` ficam inalterados (podem ser removidos depois se desejado), mas nao serao mais referenciados.
-
----
-
-## 2. Seletor de Instancia no modal Nova Conversa
+## 1. Nova Conversa — navegar imediatamente ao chat
 
 **Arquivo**: `src/components/whatsapp/WhatsAppNewChat.tsx`
 
-**Mudancas**:
-- Remover prop `instanceId` fixa
-- Adicionar `useWhatsAppInstances` para buscar instancias disponiveis
-- Adicionar dropdown `Select` com instancias (filtrando `status = 'open'` se possivel)
-- Campo obrigatorio — nao permitir iniciar sem selecionar instancia
-- Usar `instanceId` selecionado ao enviar mensagem ou criar conversa
-
-**Prop atualizada**: `WhatsAppNewChat` deixa de receber `instanceId` como prop; busca internamente.
-
-**Ajuste no `WhatsAppInbox.tsx`**: Remover passagem de `instanceId` para `WhatsAppNewChat`.
-
----
-
-## 3. Normalizacao de telefone (duplicatas)
-
-**Problema real**: A funcao `normalizePhone` no `whatsapp-webhook` nao adiciona `55` para numeros locais (10-11 digitos), diferente do que ja foi corrigido anteriormente. O `whatsapp-send` tambem nao.
-
-**Verificacao**: O webhook ja tem tratamento para numeros 10/11 digitos adicionando `55`. O `whatsapp-send` nao tem. O frontend `WhatsAppNewChat` tambem nao.
-
-**Correcoes**:
-- `supabase/functions/whatsapp-send/index.ts`: Adicionar tratamento para numeros sem DDI (10-11 digitos -> prefixar com 55)
-- `src/components/whatsapp/WhatsAppNewChat.tsx`: Mesma logica de normalizacao no frontend
-
----
-
-## 4. Autoformato de telefone no modal
-
-**Arquivo**: `src/components/whatsapp/WhatsAppNewChat.tsx`
+O componente precisa receber um callback `onConversationCreated(id)` para notificar o `WhatsAppInbox` sobre a nova conversa.
 
 **Mudancas**:
-- Criar funcao `formatPhoneBR(value)` que formata em tempo real para exibicao: `+55 (85) 9 9167-0420`
-- Manter estado interno com digitos puros para envio
-- `onChange`: extrair digitos, formatar, exibir
-- `onSubmit`: usar digitos puros normalizados
+- Adicionar prop `onConversationCreated?: (id: string) => void`
+- No `handleSend`: apos insert/upsert bem-sucedido, extrair o `id` da conversa criada
+- Chamar `onConversationCreated(id)` ANTES de fechar modal
+- Fechar modal e limpar campos
+- Loading state no botao "Iniciar" durante processo
 
----
+**Arquivo**: `src/components/whatsapp/WhatsAppInbox.tsx`
+- Passar callback para `WhatsAppNewChat`:
+```text
+<WhatsAppNewChat onConversationCreated={(id) => {
+  setSelectedConversation(id);
+  setShowChat(true);
+}} />
+```
+- Invalidar queries de conversas para que a lista atualize em background
 
-## 5. Bug Delete no filtro "Todas"
-
-**Analise**: O filtro "Todas" mostra conversas com `getConversationStatus` retornando `'all'` (bot ativo, nao resolvida). Essas conversas passam pelo mesmo `onDelete` handler que as outras. O problema nao esta no filtro em si, mas possivelmente na RLS.
-
-**Solucao**: Verificar se `useDeleteConversation` esta usando `.select('id')` para detectar falhas de RLS. Ja esta implementado corretamente. Adicionar `console.log` temporario para debug e melhorar o toast de erro com detalhes especificos.
-
-**Arquivo**: `src/hooks/useWhatsApp.ts` — garantir que o `deleteConversation` retorna erro claro.
-
----
-
-## 6. Layout — filtros transbordando
+## 2. Zoom-out geral + preview ultima mensagem
 
 **Arquivo**: `src/components/whatsapp/WhatsAppInbox.tsx`
 
-**Mudancas nos filtros de status (linhas 222-246)**:
-- Adicionar `overflow-x-auto` no container dos filtros
-- Usar texto compacto com contadores inline: `"Todas"`, `"Aguardando (2)"`, `"Atendendo"`, `"Resolvidas"`
-- Remover emojis dos labels dos filtros para economizar espaco
-- Garantir `flex-shrink-0` em cada botao de filtro
+Reducao de tamanhos em toda a interface:
 
-**Mudancas no layout geral**:
-- Sidebar: manter `w-80 lg:w-[320px]`
-- Filtros: `flex gap-1 overflow-x-auto` com `scrollbar-hide`
-- Container principal dos filtros: `min-w-0` para respeitar flex
+| Elemento | Antes | Depois |
+|---|---|---|
+| Sidebar width | `w-80 lg:w-[320px]` | `w-[260px]` |
+| Avatar | `h-10 w-10` | `h-8 w-8` |
+| Nome texto | `text-sm` | `text-[13px]` |
+| Timestamp | `text-[10px]` | `text-[10px]` (ok) |
+| Item padding | `px-3 py-3` | `p-2` |
+| Item gap | `gap-3` | `gap-2` |
+| Chat header | `py-4` | `py-2`, header `h-12` |
+| Chat header avatar | `h-9 w-9` | `h-8 w-8` |
+| Baloes texto | `text-[15px]` | `text-[13px]`, `px-3` |
+| Input area | `p-4` | `py-2 px-3` |
+| Messages padding | `p-5` | `p-4` |
+| Filtros | `text-[11px]` | `text-xs py-1 px-2` |
+
+Preview da ultima mensagem ja existe via `last_message_preview`. Garantir truncamento com `max-w-[180px]`.
+
+## 3. Atalhos — sugestao automatica ao digitar
+
+**Arquivo**: `src/components/whatsapp/WhatsAppInbox.tsx` (ChatArea)
+
+**Mudancas**:
+- Adicionar estado `suggestion` no ChatArea: `const [suggestion, setSuggestion] = useState<QuickReply | null>(null)`
+- No `handleInputChange`: verificar se o valor digitado bate exatamente com algum `shortcut` de `replies`
+- Se bater: mostrar popup de sugestao ACIMA do input
+- Tab ou Enter (quando sugestao visivel): aceitar sugestao, preencher input com conteudo (variaveis substituidas)
+- Esc: dispensar sugestao
+- Se usuario continuar digitando alem do atalho: sugestao desaparece
+- Ao aceitar: chamar `incrementUseCount`
+
+**Variaveis**: Usar `replaceVariables` existente com `contactContext` (nome, telefone, clinica)
+
+**Layout do popup**:
+```text
+Acima do input, posicao absolute bottom-full:
+[icone Zap] "atalho" -> Preview do conteudo (truncado)
+Tab ou Enter para usar
+```
+
+**Logica de teclas**: Adicionar `onKeyDown` no Input:
+- Se `suggestion` existe e tecla = Tab ou Enter: preventDefault, aplicar template
+- Se tecla = Escape: setSuggestion(null)
+
+## 4. Botao excluir — hover na lista (ja implementado, ajuste fino)
+
+O botao de excluir ja existe com `opacity-0 group-hover:opacity-100`. Apenas ajustar:
+- Posicao: `absolute right-2 top-1/2 -translate-y-1/2` em vez de inline
+- Container do item: adicionar `relative`
+- Confirmar funcionamento em todos os filtros (ja usa mesmo `onDelete` handler)
+
+## 5. Auditoria geral
+
+Verificar e corrigir silenciosamente:
+
+**Console warning**: `WhatsAppInstances` — "Function components cannot be given refs". O componente renderiza multiplos `Dialog` no mesmo nivel. O warning vem de `Dialog` recebendo ref sem `forwardRef`. Solucao: envolver `WhatsAppInstances` em fragmento ou verificar se os Dialogs extras estao dentro de condicionais corretas.
+
+**Dashboard hooks**: `useWhatsAppDashboardMetrics` — queries usam campos `is_bot_active`, `bot_paused_until`, `status`, `resolved_at` que existem no schema. OK.
+
+**RLS**: Tabelas `quick_replies`, `whatsapp_contact_notes`, `whatsapp_instances` ja tem RLS com policies ALL para autenticados. OK.
+
+**Edge Functions**: `whatsapp-webhook` e `whatsapp-send` ja tem `normalizePhone`. OK.
+
+**Dark mode**: CSS ja corrigido para matiz neutra 222. OK.
 
 ---
 
-## Secao Tecnica — Resumo de Arquivos
+## Secao Tecnica — Arquivos
 
 | Arquivo | Mudancas |
 |---|---|
-| `src/pages/WhatsApp.tsx` | Trocar WhatsAppTemplates por QuickRepliesManager na aba Templates |
-| `src/pages/Settings.tsx` | Remover aba quick-replies e import |
-| `src/components/whatsapp/WhatsAppNewChat.tsx` | Seletor de instancia, autoformato telefone, normalizacao |
-| `src/components/whatsapp/WhatsAppInbox.tsx` | Texto popover vazio, layout filtros compacto com overflow, remover prop instanceId do NewChat |
-| `src/hooks/useWhatsApp.ts` | Melhorar erro no deleteConversation |
-| `supabase/functions/whatsapp-send/index.ts` | Adicionar normalizacao 10-11 digitos |
+| `src/components/whatsapp/WhatsAppNewChat.tsx` | Prop `onConversationCreated`, retornar id apos insert, loading state |
+| `src/components/whatsapp/WhatsAppInbox.tsx` | Zoom-out (tamanhos menores), sugestao de atalho no input, callback NewChat, delete posicao absolute |
+| `src/components/whatsapp/WhatsAppInstances.tsx` | Fix ref warning (minor) |
 
 ### Ordem de implementacao
 
-1. Templates unificados (WhatsApp.tsx + Settings.tsx)
-2. Nova Conversa com seletor de instancia + autoformato (WhatsAppNewChat.tsx)
-3. Normalizacao telefone (whatsapp-send)
-4. Layout filtros (WhatsAppInbox.tsx)
-5. Delete debug (useWhatsApp.ts)
+1. WhatsAppNewChat — navegacao imediata com callback
+2. WhatsAppInbox — zoom-out + sugestao atalho + delete hover refinado + callback
+3. WhatsAppInstances — fix warning
 
