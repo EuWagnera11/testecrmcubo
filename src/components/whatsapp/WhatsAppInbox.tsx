@@ -167,7 +167,7 @@ export function WhatsAppInbox() {
     <div className="flex h-full">
       {/* Conversation list */}
       <div className={cn(
-        "w-[260px] border-r flex flex-col flex-shrink-0",
+        "w-[300px] border-r flex flex-col flex-shrink-0",
         showChat && "hidden md:flex"
       )}>
         {/* Instance selector */}
@@ -224,12 +224,12 @@ export function WhatsAppInbox() {
 
         {/* Status filters */}
         <div className="p-1.5 border-b sticky top-0 z-10 bg-background">
-          <div className="grid grid-cols-4 gap-0.5">
+          <div className="grid grid-cols-4 gap-1">
             {([
               { key: 'all' as const, label: 'Todas' },
-              { key: 'waiting' as const, label: 'Aguard.', count: statusCounts.waiting },
-              { key: 'attending' as const, label: 'Atend.', count: statusCounts.attending },
-              { key: 'resolved' as const, label: 'Resolv.', count: statusCounts.resolved },
+              { key: 'waiting' as const, label: 'Aguardando', count: statusCounts.waiting },
+              { key: 'attending' as const, label: 'Atendendo', count: statusCounts.attending },
+              { key: 'resolved' as const, label: 'Resolvidas', count: statusCounts.resolved },
             ]).map(f => (
               <button
                 key={f.key}
