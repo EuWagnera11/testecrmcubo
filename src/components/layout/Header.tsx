@@ -1,4 +1,4 @@
-import { Menu, LogOut, Settings, User } from 'lucide-react';
+import { Menu, LogOut, Settings, User, Moon, Sun } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import {
@@ -13,6 +13,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { NotificationDropdown } from '@/components/NotificationDropdown';
 import { useProfile } from '@/hooks/useProfile';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useTheme } from '@/hooks/useTheme';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 
 interface HeaderProps {
   onMenuClick: () => void;
@@ -23,6 +25,7 @@ export function Header({ onMenuClick }: HeaderProps) {
   const { profile } = useProfile();
   const { isAdmin, isDirector } = useUserRole();
   const navigate = useNavigate();
+  const { theme, setTheme, isDark } = useTheme();
 
   const getInitials = (name: string | undefined) => {
     if (!name) return 'U';
@@ -53,6 +56,24 @@ export function Header({ onMenuClick }: HeaderProps) {
 
         <div className="flex items-center gap-2">
           <NotificationDropdown />
+
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9"
+                  onClick={() => setTheme(isDark ? 'light' : 'dark')}
+                >
+                  {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {theme === 'system' ? 'Tema do sistema' : isDark ? 'Modo escuro' : 'Modo claro'}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

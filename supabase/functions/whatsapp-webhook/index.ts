@@ -6,6 +6,17 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
+function normalizePhone(raw: string): string {
+  let digits = raw.replace(/@.*$/, '').replace(/\D/g, '');
+  if (digits.startsWith('55') && digits.length > 13) {
+    const rest = digits.slice(2);
+    if (rest.startsWith('55') && (rest.length - 2 === 10 || rest.length - 2 === 11)) {
+      digits = '55' + rest.slice(2);
+    }
+  }
+  return digits;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -40,8 +51,8 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Extract phone number from JID
-      const phone = remoteJid.split("@")[0];
+      // Extract and normalize phone number from JID
+      const phone = normalizePhone(remoteJid);
 
       // Find instance
       const { data: instance } = await supabase
