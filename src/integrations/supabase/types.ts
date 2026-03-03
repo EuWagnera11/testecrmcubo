@@ -83,6 +83,27 @@ export type Database = {
           },
         ]
       }
+      agent_memory: {
+        Row: {
+          id: string
+          messages: Json | null
+          phone: string
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          messages?: Json | null
+          phone: string
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          messages?: Json | null
+          phone?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       ai_chat_conversations: {
         Row: {
           created_at: string
@@ -144,6 +165,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      andre_crisis_log: {
+        Row: {
+          client_name: string | null
+          client_phone: string
+          clinica: string | null
+          created_at: string | null
+          crisis_type: string
+          id: string
+          message_received: string | null
+          resolved: boolean | null
+          response_sent: string | null
+          routed_to: string | null
+        }
+        Insert: {
+          client_name?: string | null
+          client_phone: string
+          clinica?: string | null
+          created_at?: string | null
+          crisis_type: string
+          id?: string
+          message_received?: string | null
+          resolved?: boolean | null
+          response_sent?: string | null
+          routed_to?: string | null
+        }
+        Update: {
+          client_name?: string | null
+          client_phone?: string
+          clinica?: string | null
+          created_at?: string | null
+          crisis_type?: string
+          id?: string
+          message_received?: string | null
+          resolved?: boolean | null
+          response_sent?: string | null
+          routed_to?: string | null
+        }
+        Relationships: []
       }
       audit_logs: {
         Row: {
@@ -3226,6 +3286,33 @@ export type Database = {
         }
         Relationships: []
       }
+      team_routing: {
+        Row: {
+          active: boolean | null
+          area: string
+          created_at: string | null
+          id: string
+          priority: number | null
+          responsible_name: string
+        }
+        Insert: {
+          active?: boolean | null
+          area: string
+          created_at?: string | null
+          id?: string
+          priority?: number | null
+          responsible_name: string
+        }
+        Update: {
+          active?: boolean | null
+          area?: string
+          created_at?: string | null
+          id?: string
+          priority?: number | null
+          responsible_name?: string
+        }
+        Relationships: []
+      }
       transaction_categories: {
         Row: {
           color: string | null
@@ -3282,43 +3369,64 @@ export type Database = {
       }
       webhook_leads: {
         Row: {
+          atendido_fora_horario: boolean | null
+          conversation_stage: string | null
           created_at: string | null
           email: string | null
           extra_data: Json | null
+          faixa_investimento: string | null
           id: string
           imported: boolean | null
           message: string | null
           name: string
+          origem_canal: string | null
           phone: string | null
           pipeline_item_id: string | null
+          routed_to: string | null
+          segmento: string | null
           source: string | null
           updated_at: string | null
+          urgente: boolean | null
         }
         Insert: {
+          atendido_fora_horario?: boolean | null
+          conversation_stage?: string | null
           created_at?: string | null
           email?: string | null
           extra_data?: Json | null
+          faixa_investimento?: string | null
           id?: string
           imported?: boolean | null
           message?: string | null
           name: string
+          origem_canal?: string | null
           phone?: string | null
           pipeline_item_id?: string | null
+          routed_to?: string | null
+          segmento?: string | null
           source?: string | null
           updated_at?: string | null
+          urgente?: boolean | null
         }
         Update: {
+          atendido_fora_horario?: boolean | null
+          conversation_stage?: string | null
           created_at?: string | null
           email?: string | null
           extra_data?: Json | null
+          faixa_investimento?: string | null
           id?: string
           imported?: boolean | null
           message?: string | null
           name?: string
+          origem_canal?: string | null
           phone?: string | null
           pipeline_item_id?: string | null
+          routed_to?: string | null
+          segmento?: string | null
           source?: string | null
           updated_at?: string | null
+          urgente?: boolean | null
         }
         Relationships: [
           {
@@ -3329,6 +3437,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      whatsapp_contact_memory: {
+        Row: {
+          collection_stage: string | null
+          contact_phone: string
+          dados_coletados: Json | null
+          history: Json | null
+          id: string
+          last_intent: string | null
+          summary: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          collection_stage?: string | null
+          contact_phone: string
+          dados_coletados?: Json | null
+          history?: Json | null
+          id?: string
+          last_intent?: string | null
+          summary?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          collection_stage?: string | null
+          contact_phone?: string
+          dados_coletados?: Json | null
+          history?: Json | null
+          id?: string
+          last_intent?: string | null
+          summary?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       whatsapp_contact_notes: {
         Row: {
@@ -3445,6 +3586,9 @@ export type Database = {
           bot_paused_until: string | null
           contact_id: string
           created_at: string
+          fora_horario: boolean | null
+          handoff: boolean | null
+          handoff_area: string | null
           id: string
           instance_id: string
           is_bot_active: boolean | null
@@ -3455,6 +3599,7 @@ export type Database = {
           status: string
           unread_count: number | null
           updated_at: string
+          urgente: boolean | null
         }
         Insert: {
           ai_summary?: string | null
@@ -3463,6 +3608,9 @@ export type Database = {
           bot_paused_until?: string | null
           contact_id: string
           created_at?: string
+          fora_horario?: boolean | null
+          handoff?: boolean | null
+          handoff_area?: string | null
           id?: string
           instance_id: string
           is_bot_active?: boolean | null
@@ -3473,6 +3621,7 @@ export type Database = {
           status?: string
           unread_count?: number | null
           updated_at?: string
+          urgente?: boolean | null
         }
         Update: {
           ai_summary?: string | null
@@ -3481,6 +3630,9 @@ export type Database = {
           bot_paused_until?: string | null
           contact_id?: string
           created_at?: string
+          fora_horario?: boolean | null
+          handoff?: boolean | null
+          handoff_area?: string | null
           id?: string
           instance_id?: string
           is_bot_active?: boolean | null
@@ -3491,6 +3643,7 @@ export type Database = {
           status?: string
           unread_count?: number | null
           updated_at?: string
+          urgente?: boolean | null
         }
         Relationships: [
           {
