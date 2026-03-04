@@ -1,64 +1,113 @@
 
 
-# Pagina de Exportacao de Dados e SQL do Sistema
+# Rodada 6 — Navegacao Imediata, Zoom-out, Atalhos Automaticos, Delete Hover e Auditoria
 
-## Resumo
+## 1. Nova Conversa — navegar imediatamente ao chat
 
-Criar uma nova pagina acessivel pelo sidebar (somente admin/director) que permite exportar todos os dados de cada tabela do banco em CSV e visualizar/copiar o SQL de criacao das tabelas para migracao.
+**Arquivo**: `src/components/whatsapp/WhatsAppNewChat.tsx`
 
-## Estrutura
+O componente precisa receber um callback `onConversationCreated(id)` para notificar o `WhatsAppInbox` sobre a nova conversa.
 
-### 1. Nova rota e menu no sidebar
+**Mudancas**:
+- Adicionar prop `onConversationCreated?: (id: string) => void`
+- No `handleSend`: apos insert/upsert bem-sucedido, extrair o `id` da conversa criada
+- Chamar `onConversationCreated(id)` ANTES de fechar modal
+- Fechar modal e limpar campos
+- Loading state no botao "Iniciar" durante processo
 
-- Rota: `/exportar-dados` 
-- Label no sidebar: "Exportar Dados" com icone `Database`
-- Visivel apenas para admin/director (mesmo padrao de `directorOnly`)
+**Arquivo**: `src/components/whatsapp/WhatsAppInbox.tsx`
+- Passar callback para `WhatsAppNewChat`:
+```text
+<WhatsAppNewChat onConversationCreated={(id) => {
+  setSelectedConversation(id);
+  setShowChat(true);
+}} />
+```
+- Invalidar queries de conversas para que a lista atualize em background
 
-### 2. Nova pagina `src/pages/DataExport.tsx`
+## 2. Zoom-out geral + preview ultima mensagem
 
-Interface dividida em duas abas (Tabs):
+**Arquivo**: `src/components/whatsapp/WhatsAppInbox.tsx`
 
-**Aba "Exportar CSV"**
-- Grid de cards, um por tabela do banco (agrupados por categoria)
-- Categorias visuais:
-  - **Clientes & Pipeline**: clients, sales_pipeline, webhook_leads, proposals, client_interactions, client_files, client_messages, client_month_closures
-  - **Projetos**: projects, project_members, project_tasks, project_fields, project_messages, project_change_requests, campaigns, campaign_metrics, project_social_calendar, project_creatives, project_branding, project_strategy, etc.
-  - **Financeiro**: financial_transactions, transaction_categories, contracts, contract_templates, closure_commissions, commission_rules, project_payouts, payment_reminders
-  - **WhatsApp**: whatsapp_contacts, whatsapp_conversations, whatsapp_messages, whatsapp_instances, whatsapp_contact_notes, whatsapp_conversation_tags, whatsapp_tags, whatsapp_contact_memory, agent_memory
-  - **Usuarios & Sistema**: profiles, user_roles, audit_logs, activity_logs, notification_preferences, achievements, onboarding_steps, courses, team_goals, monthly_goals, calendar_events
-  - **Automacoes & Templates**: automation_flows, project_workflows, scheduled_reports, project_templates, quick_replies
-- Cada card mostra nome da tabela + botao "Exportar CSV"
-- Botao "Exportar Tudo" no topo que baixa um ZIP (ou exporta tabela por tabela)
-- Ao clicar, faz `supabase.from('tabela').select('*')` e converte para CSV no frontend usando logica pura (sem lib extra)
-- Paginacao automatica para tabelas com mais de 1000 rows (loop ate esgotar)
+Reducao de tamanhos em toda a interface:
 
-**Aba "SQL das Tabelas"**
-- Textarea readonly com o SQL completo de CREATE TABLE de todas as tabelas
-- SQL gerado estaticamente no codigo (hardcoded baseado no types.ts atual) -- nao e possivel consultar `information_schema` via client
-- Botao "Copiar SQL" que copia tudo para o clipboard
-- Inclui tambem as funcoes de seguranca (is_admin, has_role, etc.)
+| Elemento | Antes | Depois |
+|---|---|---|
+| Sidebar width | `w-80 lg:w-[320px]` | `w-[260px]` |
+| Avatar | `h-10 w-10` | `h-8 w-8` |
+| Nome texto | `text-sm` | `text-[13px]` |
+| Timestamp | `text-[10px]` | `text-[10px]` (ok) |
+| Item padding | `px-3 py-3` | `p-2` |
+| Item gap | `gap-3` | `gap-2` |
+| Chat header | `py-4` | `py-2`, header `h-12` |
+| Chat header avatar | `h-9 w-9` | `h-8 w-8` |
+| Baloes texto | `text-[15px]` | `text-[13px]`, `px-3` |
+| Input area | `p-4` | `py-2 px-3` |
+| Messages padding | `p-5` | `p-4` |
+| Filtros | `text-[11px]` | `text-xs py-1 px-2` |
 
-### 3. Logica de exportacao CSV
+Preview da ultima mensagem ja existe via `last_message_preview`. Garantir truncamento com `max-w-[180px]`.
 
-Novo utilitario `src/lib/csvExport.ts`:
-- Funcao `exportTableToCSV(tableName)`: busca todos os registros via Supabase client, converte para CSV, dispara download
-- Funcao `jsonToCSV(data)`: converte array de objetos em string CSV com headers automaticos
-- Funcao `downloadCSV(csvString, filename)`: cria blob e dispara download via `<a>` temporario
-- Loop de paginacao: busca em blocos de 1000 usando `.range(from, to)` ate retornar menos de 1000
+## 3. Atalhos — sugestao automatica ao digitar
 
-### 4. Protecao de acesso
+**Arquivo**: `src/components/whatsapp/WhatsAppInbox.tsx` (ChatArea)
 
-- Rota envolvida em `AdminRoute` (somente admin) ou verificacao `directorOnly` no sidebar
-- RLS ja protege os dados -- so exporta o que o usuario autenticado tem permissao de ver
+**Mudancas**:
+- Adicionar estado `suggestion` no ChatArea: `const [suggestion, setSuggestion] = useState<QuickReply | null>(null)`
+- No `handleInputChange`: verificar se o valor digitado bate exatamente com algum `shortcut` de `replies`
+- Se bater: mostrar popup de sugestao ACIMA do input
+- Tab ou Enter (quando sugestao visivel): aceitar sugestao, preencher input com conteudo (variaveis substituidas)
+- Esc: dispensar sugestao
+- Se usuario continuar digitando alem do atalho: sugestao desaparece
+- Ao aceitar: chamar `incrementUseCount`
 
-## Arquivos
+**Variaveis**: Usar `replaceVariables` existente com `contactContext` (nome, telefone, clinica)
 
-| Arquivo | Acao |
+**Layout do popup**:
+```text
+Acima do input, posicao absolute bottom-full:
+[icone Zap] "atalho" -> Preview do conteudo (truncado)
+Tab ou Enter para usar
+```
+
+**Logica de teclas**: Adicionar `onKeyDown` no Input:
+- Se `suggestion` existe e tecla = Tab ou Enter: preventDefault, aplicar template
+- Se tecla = Escape: setSuggestion(null)
+
+## 4. Botao excluir — hover na lista (ja implementado, ajuste fino)
+
+O botao de excluir ja existe com `opacity-0 group-hover:opacity-100`. Apenas ajustar:
+- Posicao: `absolute right-2 top-1/2 -translate-y-1/2` em vez de inline
+- Container do item: adicionar `relative`
+- Confirmar funcionamento em todos os filtros (ja usa mesmo `onDelete` handler)
+
+## 5. Auditoria geral
+
+Verificar e corrigir silenciosamente:
+
+**Console warning**: `WhatsAppInstances` — "Function components cannot be given refs". O componente renderiza multiplos `Dialog` no mesmo nivel. O warning vem de `Dialog` recebendo ref sem `forwardRef`. Solucao: envolver `WhatsAppInstances` em fragmento ou verificar se os Dialogs extras estao dentro de condicionais corretas.
+
+**Dashboard hooks**: `useWhatsAppDashboardMetrics` — queries usam campos `is_bot_active`, `bot_paused_until`, `status`, `resolved_at` que existem no schema. OK.
+
+**RLS**: Tabelas `quick_replies`, `whatsapp_contact_notes`, `whatsapp_instances` ja tem RLS com policies ALL para autenticados. OK.
+
+**Edge Functions**: `whatsapp-webhook` e `whatsapp-send` ja tem `normalizePhone`. OK.
+
+**Dark mode**: CSS ja corrigido para matiz neutra 222. OK.
+
+---
+
+## Secao Tecnica — Arquivos
+
+| Arquivo | Mudancas |
 |---|---|
-| `src/pages/DataExport.tsx` | Criar -- pagina principal com tabs |
-| `src/lib/csvExport.ts` | Criar -- utilitarios de exportacao |
-| `src/components/layout/Sidebar.tsx` | Editar -- adicionar item "Exportar Dados" |
-| `src/App.tsx` | Editar -- adicionar rota `/exportar-dados` |
+| `src/components/whatsapp/WhatsAppNewChat.tsx` | Prop `onConversationCreated`, retornar id apos insert, loading state |
+| `src/components/whatsapp/WhatsAppInbox.tsx` | Zoom-out (tamanhos menores), sugestao de atalho no input, callback NewChat, delete posicao absolute |
+| `src/components/whatsapp/WhatsAppInstances.tsx` | Fix ref warning (minor) |
 
-Nenhuma migracao de banco necessaria. Tudo e leitura de dados existentes.
+### Ordem de implementacao
+
+1. WhatsAppNewChat — navegacao imediata com callback
+2. WhatsAppInbox — zoom-out + sugestao atalho + delete hover refinado + callback
+3. WhatsAppInstances — fix warning
 
