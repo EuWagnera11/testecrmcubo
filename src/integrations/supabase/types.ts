@@ -1442,56 +1442,6 @@ export type Database = {
           },
         ]
       }
-      pipeline_meetings: {
-        Row: {
-          confirmation_sent_at: string | null
-          created_at: string
-          created_by: string
-          id: string
-          location: string | null
-          meeting_link: string | null
-          notes: string | null
-          pipeline_item_id: string
-          reminder_sent_at: string | null
-          scheduled_at: string
-          status: string
-        }
-        Insert: {
-          confirmation_sent_at?: string | null
-          created_at?: string
-          created_by: string
-          id?: string
-          location?: string | null
-          meeting_link?: string | null
-          notes?: string | null
-          pipeline_item_id: string
-          reminder_sent_at?: string | null
-          scheduled_at: string
-          status?: string
-        }
-        Update: {
-          confirmation_sent_at?: string | null
-          created_at?: string
-          created_by?: string
-          id?: string
-          location?: string | null
-          meeting_link?: string | null
-          notes?: string | null
-          pipeline_item_id?: string
-          reminder_sent_at?: string | null
-          scheduled_at?: string
-          status?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "pipeline_meetings_pipeline_item_id_fkey"
-            columns: ["pipeline_item_id"]
-            isOneToOne: false
-            referencedRelation: "sales_pipeline"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       post_notifications: {
         Row: {
           created_at: string
