@@ -27,6 +27,7 @@ import Pipeline from "./pages/Pipeline";
 import GlobalCalendar from "./pages/GlobalCalendar";
 import TeamReports from "./pages/TeamReports";
 import ActivityLogPage from "./pages/ActivityLog";
+import DataExport from "./pages/DataExport";
 
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
@@ -104,6 +105,7 @@ const AppRoutes = () => (
         <Route path="agenda" element={<GlobalCalendar />} />
         <Route path="equipe" element={<TeamReports />} />
         <Route path="atividades" element={<ActivityLogPage />} />
+        <Route path="exportar-dados" element={<AdminRoute><DataExport /></AdminRoute>} />
         
         <Route path="configuracoes" element={<Settings />} />
       </Route>

@@ -14,7 +14,8 @@ import {
   Kanban,
   CalendarDays,
   UsersRound,
-  Activity
+  Activity,
+  Database
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -42,6 +43,7 @@ const navItems = [
   { icon: Wallet, label: 'Financeiro', path: '/financeiro', directorOnly: true },
   { icon: GraduationCap, label: 'Estudos', path: '/estudos' },
   { icon: Activity, label: 'Atividades', path: '/atividades' },
+  { icon: Database, label: 'Exportar Dados', path: '/exportar-dados', directorOnly: true },
   { icon: Settings, label: 'Configurações', path: '/configuracoes' },
 ];
 
