@@ -1,110 +1,113 @@
 
 
-# Agendamento de Reunioes no Pipeline + Notificacoes ao Lead
+# Rodada 6 — Navegacao Imediata, Zoom-out, Atalhos Automaticos, Delete Hover e Auditoria
 
-## Resumo
+## 1. Nova Conversa — navegar imediatamente ao chat
 
-O SDR conversa com o lead, define um horario manualmente no CRM, e ao confirmar o agendamento o sistema envia automaticamente uma mensagem de confirmacao (WhatsApp + Email) e um lembrete 20 minutos antes.
+**Arquivo**: `src/components/whatsapp/WhatsAppNewChat.tsx`
 
-## Mudancas
+O componente precisa receber um callback `onConversationCreated(id)` para notificar o `WhatsAppInbox` sobre a nova conversa.
 
-### 1. Banco de dados
+**Mudancas**:
+- Adicionar prop `onConversationCreated?: (id: string) => void`
+- No `handleSend`: apos insert/upsert bem-sucedido, extrair o `id` da conversa criada
+- Chamar `onConversationCreated(id)` ANTES de fechar modal
+- Fechar modal e limpar campos
+- Loading state no botao "Iniciar" durante processo
 
-**Novo estagio no pipeline**: Adicionar `meeting` entre `contacted` e `qualified` nos `PIPELINE_STAGES`.
+**Arquivo**: `src/components/whatsapp/WhatsAppInbox.tsx`
+- Passar callback para `WhatsAppNewChat`:
+```text
+<WhatsAppNewChat onConversationCreated={(id) => {
+  setSelectedConversation(id);
+  setShowChat(true);
+}} />
+```
+- Invalidar queries de conversas para que a lista atualize em background
 
-**Nova tabela `pipeline_meetings`**:
-- `id` (uuid PK)
-- `pipeline_item_id` (FK sales_pipeline)
-- `scheduled_at` (timestamptz) — data/hora da reuniao
-- `meeting_link` (text nullable) — link Google Meet, Zoom, etc
-- `location` (text nullable) — local presencial
-- `notes` (text nullable)
-- `confirmation_sent_at` (timestamptz nullable) — quando enviou confirmacao
-- `reminder_sent_at` (timestamptz nullable) — quando enviou lembrete
-- `status` (text default 'scheduled') — scheduled, completed, cancelled, no_show
-- `created_by` (uuid FK auth.users)
-- `created_at` (timestamptz default now())
+## 2. Zoom-out geral + preview ultima mensagem
 
-RLS: Usuarios autenticados (mesma politica das demais tabelas do pipeline).
+**Arquivo**: `src/components/whatsapp/WhatsAppInbox.tsx`
 
-### 2. Edge Function `meeting-notify`
+Reducao de tamanhos em toda a interface:
 
-Responsavel por enviar notificacoes ao lead. Recebe:
-```json
-{
-  "meeting_id": "uuid",
-  "type": "confirmation" | "reminder"
-}
+| Elemento | Antes | Depois |
+|---|---|---|
+| Sidebar width | `w-80 lg:w-[320px]` | `w-[260px]` |
+| Avatar | `h-10 w-10` | `h-8 w-8` |
+| Nome texto | `text-sm` | `text-[13px]` |
+| Timestamp | `text-[10px]` | `text-[10px]` (ok) |
+| Item padding | `px-3 py-3` | `p-2` |
+| Item gap | `gap-3` | `gap-2` |
+| Chat header | `py-4` | `py-2`, header `h-12` |
+| Chat header avatar | `h-9 w-9` | `h-8 w-8` |
+| Baloes texto | `text-[15px]` | `text-[13px]`, `px-3` |
+| Input area | `p-4` | `py-2 px-3` |
+| Messages padding | `p-5` | `p-4` |
+| Filtros | `text-[11px]` | `text-xs py-1 px-2` |
+
+Preview da ultima mensagem ja existe via `last_message_preview`. Garantir truncamento com `max-w-[180px]`.
+
+## 3. Atalhos — sugestao automatica ao digitar
+
+**Arquivo**: `src/components/whatsapp/WhatsAppInbox.tsx` (ChatArea)
+
+**Mudancas**:
+- Adicionar estado `suggestion` no ChatArea: `const [suggestion, setSuggestion] = useState<QuickReply | null>(null)`
+- No `handleInputChange`: verificar se o valor digitado bate exatamente com algum `shortcut` de `replies`
+- Se bater: mostrar popup de sugestao ACIMA do input
+- Tab ou Enter (quando sugestao visivel): aceitar sugestao, preencher input com conteudo (variaveis substituidas)
+- Esc: dispensar sugestao
+- Se usuario continuar digitando alem do atalho: sugestao desaparece
+- Ao aceitar: chamar `incrementUseCount`
+
+**Variaveis**: Usar `replaceVariables` existente com `contactContext` (nome, telefone, clinica)
+
+**Layout do popup**:
+```text
+Acima do input, posicao absolute bottom-full:
+[icone Zap] "atalho" -> Preview do conteudo (truncado)
+Tab ou Enter para usar
 ```
 
-Logica:
-1. Busca dados do meeting + pipeline_item (nome, telefone, email)
-2. Se tem telefone → envia via Evolution API (WhatsApp) usando mesma logica do `whatsapp-send`
-3. Se tem email → envia via Edge Function com template formatado
-4. Atualiza `confirmation_sent_at` ou `reminder_sent_at`
+**Logica de teclas**: Adicionar `onKeyDown` no Input:
+- Se `suggestion` existe e tecla = Tab ou Enter: preventDefault, aplicar template
+- Se tecla = Escape: setSuggestion(null)
 
-Templates de mensagem:
-- **Confirmacao**: "Ola {nome}! Sua reuniao com a Cubo esta confirmada para {data} as {hora}. {link_se_houver}"
-- **Lembrete 20min**: "Ola {nome}! Sua reuniao comeca em 20 minutos. {link_se_houver}"
+## 4. Botao excluir — hover na lista (ja implementado, ajuste fino)
 
-### 3. Edge Function `meeting-reminders` (cron)
+O botao de excluir ja existe com `opacity-0 group-hover:opacity-100`. Apenas ajustar:
+- Posicao: `absolute right-2 top-1/2 -translate-y-1/2` em vez de inline
+- Container do item: adicionar `relative`
+- Confirmar funcionamento em todos os filtros (ja usa mesmo `onDelete` handler)
 
-Roda a cada 5 minutos via `pg_cron`. Busca meetings onde:
-- `scheduled_at` esta dentro dos proximos 20 min
-- `reminder_sent_at` IS NULL
-- `status` = 'scheduled'
+## 5. Auditoria geral
 
-Para cada um, chama `meeting-notify` com type `reminder`.
+Verificar e corrigir silenciosamente:
 
-### 4. Interface — Pipeline.tsx
+**Console warning**: `WhatsAppInstances` — "Function components cannot be given refs". O componente renderiza multiplos `Dialog` no mesmo nivel. O warning vem de `Dialog` recebendo ref sem `forwardRef`. Solucao: envolver `WhatsAppInstances` em fragmento ou verificar se os Dialogs extras estao dentro de condicionais corretas.
 
-**Novo estagio visual**: `{ key: 'meeting', label: 'Reuniao Agendada', color: 'bg-indigo-500' }` entre Contatado e Qualificado.
+**Dashboard hooks**: `useWhatsAppDashboardMetrics` — queries usam campos `is_bot_active`, `bot_paused_until`, `status`, `resolved_at` que existem no schema. OK.
 
-**Dialog de agendamento**: Ao mover lead para estagio "Reuniao Agendada" ou clicar botao "Agendar Reuniao":
-- Campo data/hora (input datetime-local)
-- Campo link da reuniao (opcional)
-- Campo local (opcional)
-- Campo notas (opcional)
-- Botao "Confirmar e Notificar"
+**RLS**: Tabelas `quick_replies`, `whatsapp_contact_notes`, `whatsapp_instances` ja tem RLS com policies ALL para autenticados. OK.
 
-Ao confirmar:
-1. Insert na `pipeline_meetings`
-2. Move lead para estagio `meeting`
-3. Chama `meeting-notify` com type `confirmation`
-4. Toast: "Reuniao agendada! Confirmacao enviada ao lead."
+**Edge Functions**: `whatsapp-webhook` e `whatsapp-send` ja tem `normalizePhone`. OK.
 
-**No card do Kanban**: Mostrar badge com data/hora da reuniao quando houver meeting ativo.
-
-### 5. Hook `usePipelineMeetings`
-
-CRUD para `pipeline_meetings` + funcao `notifyMeeting(meetingId, type)` que invoca a Edge Function.
-
-### 6. Integracao com WhatsApp
-
-A funcao `meeting-notify` reutiliza a mesma logica de conexao com Evolution API que `whatsapp-send` ja usa (busca instancia ativa, normaliza telefone, POST `/message/sendText`).
-
-Para email: como o projeto nao tem dominio de email configurado, o envio sera feito via WhatsApp como canal primario. Email fica preparado na estrutura mas so funciona quando o dominio for configurado.
+**Dark mode**: CSS ja corrigido para matiz neutra 222. OK.
 
 ---
 
 ## Secao Tecnica — Arquivos
 
-| Arquivo | Mudanca |
+| Arquivo | Mudancas |
 |---|---|
-| Migration SQL | Criar tabela `pipeline_meetings` com RLS |
-| `supabase/functions/meeting-notify/index.ts` | Nova Edge Function — envia confirmacao/lembrete via WhatsApp |
-| `supabase/functions/meeting-reminders/index.ts` | Nova Edge Function cron — dispara lembretes 20min |
-| `supabase/config.toml` | Registrar `meeting-notify` e `meeting-reminders` com verify_jwt=false |
-| `src/hooks/usePipelineMeetings.ts` | Novo hook CRUD + invoke notify |
-| `src/hooks/usePipeline.ts` | Adicionar estagio `meeting` |
-| `src/pages/Pipeline.tsx` | Dialog de agendamento, badge de reuniao nos cards |
-| pg_cron SQL (insert tool) | Agendar `meeting-reminders` a cada 5 minutos |
+| `src/components/whatsapp/WhatsAppNewChat.tsx` | Prop `onConversationCreated`, retornar id apos insert, loading state |
+| `src/components/whatsapp/WhatsAppInbox.tsx` | Zoom-out (tamanhos menores), sugestao de atalho no input, callback NewChat, delete posicao absolute |
+| `src/components/whatsapp/WhatsAppInstances.tsx` | Fix ref warning (minor) |
 
 ### Ordem de implementacao
 
-1. Migration: tabela `pipeline_meetings`
-2. Edge Functions: `meeting-notify` + `meeting-reminders`
-3. Config.toml + pg_cron
-4. Hook `usePipelineMeetings`
-5. UI: estagio + dialog + cards
+1. WhatsAppNewChat — navegacao imediata com callback
+2. WhatsAppInbox — zoom-out + sugestao atalho + delete hover refinado + callback
+3. WhatsAppInstances — fix warning
 
