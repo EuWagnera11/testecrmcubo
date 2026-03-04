@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
-import { Plus, Trash2, Phone, Mail, DollarSign, ArrowRight, Filter, User, Download, Bell, CreditCard, QrCode, ExternalLink, Link2, CheckCircle2, MessageCircle } from 'lucide-react';
+import { Plus, Trash2, Phone, Mail, DollarSign, ArrowRight, Filter, User, Download, Bell, CreditCard, QrCode, ExternalLink, Link2, CheckCircle2, MessageCircle, CalendarClock, Clock, MapPin, Video } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { usePipeline, PIPELINE_STAGES, PipelineItem } from '@/hooks/usePipeline';
+import { usePipelineMeetings } from '@/hooks/usePipelineMeetings';
 import { useWebhookLeads } from '@/hooks/useWebhookLeads';
 import { useAsaas } from '@/hooks/useAsaas';
 import { useUsers } from '@/hooks/useUsers';
@@ -21,6 +22,7 @@ import { useToast } from '@/hooks/use-toast';
 
 export default function Pipeline() {
   const { items, isLoading, createItem, updateItem, deleteItem } = usePipeline();
+  const { meetings, createMeeting, notifyMeeting, getMeetingForItem } = usePipelineMeetings();
   const { leads: webhookLeads, pendingCount, importLead, importAllLeads } = useWebhookLeads();
   const { listCustomers, createCustomer, createPayment, getPixQrCode, customers, loading: asaasLoading } = useAsaas();
   const { users } = useUsers();
@@ -33,6 +35,11 @@ export default function Pipeline() {
   const [chargeForm, setChargeForm] = useState({ billingType: 'PIX', value: '', dueDate: '', description: '' });
   const [pixQr, setPixQr] = useState<{ encodedImage: string; payload: string } | null>(null);
   const [searchCustomer, setSearchCustomer] = useState('');
+
+  // Meeting scheduling state
+  const [meetingDialog, setMeetingDialog] = useState<PipelineItem | null>(null);
+  const [meetingForm, setMeetingForm] = useState({ scheduled_at: '', meeting_link: '', location: '', notes: '' });
+  const [meetingLoading, setMeetingLoading] = useState(false);
 
   const [form, setForm] = useState({
     title: '',
@@ -89,10 +96,60 @@ export default function Pipeline() {
   };
 
   const moveToStage = (id: string, newStage: string) => {
+    // If moving to meeting stage, open meeting dialog instead
+    if (newStage === 'meeting') {
+      const item = items.find(i => i.id === id);
+      if (item) {
+        openMeetingDialog(item);
+        return;
+      }
+    }
     const updates: Partial<PipelineItem> & { id: string } = { id, stage: newStage };
     if (newStage === 'won') updates.won_at = new Date().toISOString();
     if (newStage === 'lost') updates.lost_at = new Date().toISOString();
     updateItem.mutate(updates);
+  };
+
+  const openMeetingDialog = (item: PipelineItem) => {
+    setMeetingDialog(item);
+    // Default to tomorrow at 10:00
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(10, 0, 0, 0);
+    const localIso = tomorrow.toISOString().slice(0, 16);
+    setMeetingForm({ scheduled_at: localIso, meeting_link: '', location: '', notes: '' });
+  };
+
+  const handleScheduleMeeting = async () => {
+    if (!meetingDialog || !meetingForm.scheduled_at) return;
+    setMeetingLoading(true);
+    try {
+      const result = await createMeeting.mutateAsync({
+        pipeline_item_id: meetingDialog.id,
+        scheduled_at: new Date(meetingForm.scheduled_at).toISOString(),
+        meeting_link: meetingForm.meeting_link || null,
+        location: meetingForm.location || null,
+        notes: meetingForm.notes || null,
+        status: 'scheduled',
+      });
+
+      // Move to meeting stage
+      updateItem.mutate({ id: meetingDialog.id, stage: 'meeting' });
+
+      // Send confirmation notification
+      try {
+        await notifyMeeting(result.id, 'confirmation');
+        toast({ title: 'Reunião agendada!', description: 'Confirmação enviada ao lead via WhatsApp.' });
+      } catch (e) {
+        toast({ title: 'Reunião agendada!', description: 'Não foi possível enviar a notificação automática.', variant: 'destructive' });
+      }
+
+      setMeetingDialog(null);
+    } catch (e) {
+      toast({ title: 'Erro ao agendar reunião', variant: 'destructive' });
+    } finally {
+      setMeetingLoading(false);
+    }
   };
 
   const openAsaasDialog = (item: PipelineItem) => {
@@ -185,6 +242,14 @@ export default function Pipeline() {
     };
     const config = map[status] || { label: status, variant: 'secondary' as const };
     return <Badge variant={config.variant} className="text-xs">{config.label}</Badge>;
+  };
+
+  const formatMeetingDate = (iso: string) => {
+    try {
+      return format(new Date(iso), "dd/MM 'às' HH:mm", { locale: ptBR });
+    } catch {
+      return iso;
+    }
   };
 
   return (
@@ -360,6 +425,7 @@ export default function Pipeline() {
                   const stageIdx = activeStages.findIndex(s => s.key === item.stage);
                   const nextStage = activeStages[stageIdx + 1];
                   const assignedUser = users.find(u => u.id === item.assigned_to);
+                  const activeMeeting = getMeetingForItem(item.id);
 
                   return (
                     <Card key={item.id} className="border-border/50">
@@ -392,6 +458,18 @@ export default function Pipeline() {
                             </Badge>
                           )}
                         </div>
+
+                        {/* Meeting badge */}
+                        {activeMeeting && (
+                          <div className="flex items-center gap-1.5 text-xs bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-md px-2 py-1">
+                            <CalendarClock className="h-3.5 w-3.5" />
+                            <span className="font-medium">{formatMeetingDate(activeMeeting.scheduled_at)}</span>
+                            {activeMeeting.confirmation_sent_at && (
+                              <CheckCircle2 className="h-3 w-3 text-green-500 ml-auto" />
+                            )}
+                          </div>
+                        )}
+
                         {assignedUser && (
                           <div className="flex items-center gap-1 text-xs text-muted-foreground">
                             <User className="h-3 w-3" />
@@ -408,6 +486,15 @@ export default function Pipeline() {
                         )}
 
                         <div className="flex flex-wrap gap-1 pt-1">
+                          {/* Schedule meeting button - visible for contacted stage */}
+                          {item.stage === 'contacted' && !activeMeeting && (
+                            <Button variant="outline" size="sm" className="text-xs h-7 gap-1 border-indigo-500/50 text-indigo-600 hover:bg-indigo-500/10"
+                              onClick={() => openMeetingDialog(item)}>
+                              <CalendarClock className="h-3 w-3" />
+                              Agendar Reunião
+                            </Button>
+                          )}
+
                           {/* Asaas button - available from proposal stage onwards */}
                           {['proposal', 'negotiation', 'won'].includes(item.stage) && (
                             <Button variant="outline" size="sm" className="text-xs h-7"
@@ -445,6 +532,100 @@ export default function Pipeline() {
           ))}
         </div>
       )}
+
+      {/* Meeting Scheduling Dialog */}
+      <Dialog open={!!meetingDialog} onOpenChange={(o) => !o && setMeetingDialog(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CalendarClock className="h-5 w-5 text-indigo-500" />
+              Agendar Reunião
+            </DialogTitle>
+          </DialogHeader>
+
+          {meetingDialog && (
+            <div className="space-y-4 mt-2">
+              <div className="bg-muted/50 rounded-lg p-3">
+                <p className="text-sm font-medium">{meetingDialog.title}</p>
+                <p className="text-xs text-muted-foreground">{meetingDialog.contact_name}</p>
+                <div className="flex gap-2 mt-1">
+                  {meetingDialog.contact_phone && (
+                    <span className="text-xs text-muted-foreground flex items-center gap-1">
+                      <Phone className="h-3 w-3" /> {meetingDialog.contact_phone}
+                    </span>
+                  )}
+                  {meetingDialog.contact_email && (
+                    <span className="text-xs text-muted-foreground flex items-center gap-1">
+                      <Mail className="h-3 w-3" /> {meetingDialog.contact_email}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="flex items-center gap-1.5">
+                  <Clock className="h-3.5 w-3.5" /> Data e Hora *
+                </Label>
+                <Input
+                  type="datetime-local"
+                  value={meetingForm.scheduled_at}
+                  onChange={e => setMeetingForm(f => ({ ...f, scheduled_at: e.target.value }))}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label className="flex items-center gap-1.5">
+                  <Video className="h-3.5 w-3.5" /> Link da Reunião (opcional)
+                </Label>
+                <Input
+                  value={meetingForm.meeting_link}
+                  onChange={e => setMeetingForm(f => ({ ...f, meeting_link: e.target.value }))}
+                  placeholder="https://meet.google.com/..."
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label className="flex items-center gap-1.5">
+                  <MapPin className="h-3.5 w-3.5" /> Local (opcional)
+                </Label>
+                <Input
+                  value={meetingForm.location}
+                  onChange={e => setMeetingForm(f => ({ ...f, location: e.target.value }))}
+                  placeholder="Escritório, sala X..."
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Notas (opcional)</Label>
+                <Textarea
+                  value={meetingForm.notes}
+                  onChange={e => setMeetingForm(f => ({ ...f, notes: e.target.value }))}
+                  placeholder="Observações sobre a reunião..."
+                  rows={2}
+                />
+              </div>
+
+              <div className="bg-muted/30 rounded-lg p-3 text-xs text-muted-foreground space-y-1">
+                <p>✅ Confirmação enviada automaticamente via WhatsApp{meetingDialog.contact_email ? ' e Email' : ''}</p>
+                <p>⏰ Lembrete 20 min antes da reunião</p>
+              </div>
+
+              <Button
+                onClick={handleScheduleMeeting}
+                className="w-full"
+                disabled={!meetingForm.scheduled_at || meetingLoading}
+              >
+                {meetingLoading ? 'Agendando...' : (
+                  <>
+                    <CalendarClock className="h-4 w-4 mr-1" />
+                    Confirmar e Notificar
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Asaas Dialog */}
       <Dialog open={!!asaasDialog} onOpenChange={(o) => !o && setAsaasDialog(null)}>

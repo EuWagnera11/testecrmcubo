@@ -29,6 +29,7 @@ export interface PipelineItem {
 export const PIPELINE_STAGES = [
   { key: 'lead', label: 'Lead', color: 'bg-blue-500' },
   { key: 'contacted', label: 'Contatado', color: 'bg-yellow-500' },
+  { key: 'meeting', label: 'Reunião Agendada', color: 'bg-indigo-500' },
   { key: 'qualified', label: 'Qualificado', color: 'bg-orange-500' },
   { key: 'proposal', label: 'Proposta', color: 'bg-purple-500' },
   { key: 'negotiation', label: 'Negociação', color: 'bg-cyan-500' },

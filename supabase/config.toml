@@ -26,3 +26,9 @@ verify_jwt = false
 
 [functions.whatsapp-bot-update]
 verify_jwt = false
+
+[functions.meeting-notify]
+verify_jwt = false
+
+[functions.meeting-reminders]
+verify_jwt = false
